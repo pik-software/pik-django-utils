@@ -1,0 +1,2 @@
+# Text normalization library
+cucco==2.2.1

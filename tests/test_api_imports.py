@@ -1,7 +1,7 @@
 import pytest
 
 @pytest.fixture(params=[
-    'core', 'libs'
+    'core', 'libs', 'utils'
 ])
 def pik_module(request):
     return request.param
