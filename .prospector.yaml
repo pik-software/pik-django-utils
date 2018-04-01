@@ -1,0 +1,16 @@
+test-warnings: true
+strictness: veryhigh
+
+ignore-paths:
+  - docs
+  - migrations
+  - .venv
+  - README.md
+
+pylint:
+  disable:
+    - unused-argument
+    - too-few-public-methods
+    - too-many-arguments
+    - too-many-ancestors
+    - redefined-outer-name
