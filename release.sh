@@ -27,6 +27,7 @@ echo "PACKAGE: $NAME"
 echo "CURRENT VERSION: $LAST_VERSION"
 echo "NEW VERSION: $VERSION"
 
-python setup.py build sdist
+#python setup.py build
+python setup.py sdist
 python -m twine upload dist/*
 git tag -a v$VERSION -m "version $VERSION"
