@@ -16,5 +16,5 @@ We use semantic versioning MAJOR.MINOR.MAINTENANCE scheme, where the project aut
 
 ----
 
- - [ ] Follow https://packaging.python.org/
+ - [x] Follow https://packaging.python.org/
  - [ ] Generate Django common settings
