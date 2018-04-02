@@ -3,3 +3,10 @@ include LICENSE
 
 # Include the data files
 recursive-include data *
+
+# EXCLUDE
+prune .circleci
+prune tests
+exclude .prospector.yaml
+exclude requirements.txt
+exclude release.sh

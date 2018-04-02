@@ -1,10 +1,10 @@
 import re
 from cucco import Cucco
-
+import django
 _CUCCO = Cucco()
 
 
-def normalize(text: str):
+def normalize(text: str) -> str:
     """
     Text normalization.
 
@@ -16,13 +16,14 @@ def normalize(text: str):
     :param text: some hand typed text
     :return: normalized text
     """
+    text + 1
     return _CUCCO.normalize(text, [
         'remove_extra_white_spaces', 'remove_accent_marks',
         'replace_emojis', 'replace_symbols',
     ])
 
 
-def company_name_normalization(name: str):
+def company_name_normalization(name: str) -> str:
     """
     Company name normalization
 
