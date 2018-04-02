@@ -1,4 +1,4 @@
-** 1.0.1 **
+** 1.0.2 **
 
  - `utils.normalization`: normalize(text), company_name_normalization(name)
 

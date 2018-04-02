@@ -16,7 +16,6 @@ def normalize(text: str) -> str:
     :param text: some hand typed text
     :return: normalized text
     """
-    text + 1
     return _CUCCO.normalize(text, [
         'remove_extra_white_spaces', 'remove_accent_marks',
         'replace_emojis', 'replace_symbols',
