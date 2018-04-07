@@ -17,7 +17,7 @@ with open(path.join(here, 'requirements.txt'), encoding='utf-8') as f:
 
 setup(
     name='pik-django-utils',
-    version='1.0.2',
+    version='1.0.3',
     description='Common PIK Django utils and tools',
     # https://packaging.python.org/specifications/core-metadata/#description-optional
     long_description=long_description,

@@ -1,5 +1,7 @@
 # Include the license file
 include LICENSE
+include README.md
+include requirements.txt
 
 # Include the data files
 recursive-include data *
@@ -8,5 +10,4 @@ recursive-include data *
 prune .circleci
 prune tests
 exclude .prospector.yaml
-exclude requirements.txt
 exclude release.sh
