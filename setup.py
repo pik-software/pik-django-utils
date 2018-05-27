@@ -15,6 +15,13 @@ with open(path.join(here, 'requirements.txt'), encoding='utf-8') as f:
         if line and not line.startswith('#')
     ]
 
+with open(path.join(here, 'requirements.dev.txt'), encoding='utf-8') as f:
+    requirements_dev = [
+        line for line in f.readlines()
+        if line and not line.startswith('#')
+    ]
+
+
 setup(
     name='pik-django-utils',
     version='1.0.4',
@@ -41,18 +48,11 @@ setup(
     install_requires=requirements,
     python_requires='~=3.6',
 
-    # List additional groups of dependencies here (e.g. development
-    # dependencies). Users will be able to install these using the "extras"
-    # syntax, for example:
-    #
+    # List additional groups of dependencies here
     #   $ pip install sampleproject[dev]
-    #
-    # Similar to `install_requires` above, these must be valid existing
-    # projects.
-    # extras_require={  # Optional
-    #     'dev': ['check-manifest'],
-    #     'test': ['coverage'],
-    # },
+    extras_require={
+        'dev': requirements_dev,
+    },
 
     # If there are data files included in your packages that need to be
     # installed, specify them here.

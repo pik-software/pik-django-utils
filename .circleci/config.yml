@@ -37,6 +37,7 @@ jobs:
             pip install mypy
             pip install -U pip>=9.0.3 setuptools>=39.0.1 twine>=1.11.0 wheel>=0.30.0 pygments>=2.2.0
             pip install -r requirements.txt
+            pip install -r requirements.dev.txt
 
       - run:
           name: run tests
