@@ -114,20 +114,20 @@ class _BaseSoftDeletedQuerySet(models.QuerySet):
         self._result_cache = None
         return _delete_collected(collector)
 
-    delete.alters_data = True
-    delete.queryset_only = True
+    delete.alters_data = True  # type: ignore
+    delete.queryset_only = True  # type: ignore
 
     def hard_delete(self):
         return models.QuerySet.delete(self)
 
-    hard_delete.alters_data = True
-    hard_delete.queryset_only = True
+    hard_delete.alters_data = True  # type: ignore
+    hard_delete.queryset_only = True  # type: ignore
 
     def restore(self):
         return self.update(**{'deleted': None})
 
-    restore.alters_data = True
-    restore.queryset_only = True
+    restore.alters_data = True  # type: ignore
+    restore.queryset_only = True  # type: ignore
 
     def get_restore_or_create(self, **kwargs):
         obj, created = self.model.all_objects.get_or_create(**kwargs)
@@ -204,7 +204,7 @@ class SoftDeleted(models.Model):
         collector = _cascade_soft_delete(self, using, keep_parents)
         return _delete_collected(collector)
 
-    delete.alters_data = True
+    delete.alters_data = True  # type: ignore
 
     def hard_delete(self, *args, **kwargs):
         return models.Model.delete(self, *args, **kwargs)
