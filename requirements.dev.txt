@@ -13,6 +13,13 @@ pytest-base-url>=1.4.1
 pytest-benchmark>=3.1.1
 
 # packaging
+pip>=9.0.3
+setuptools>=39.0.1
+twine>=1.11.0
+wheel>=0.30.0
+pygments>=2.2.0
+
+# packaging checkers
 readme_renderer>=20.0
 check_manifest>=0.37
 

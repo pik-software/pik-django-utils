@@ -33,7 +33,6 @@ jobs:
             python3 -m venv .venv
             . .venv/bin/activate
             set +x
-            pip install -U 'pip>=9.0.3' 'setuptools>=39.0.1' 'twine>=1.11.0' 'wheel>=0.30.0' 'pygments>=2.2.0'
             pip install -r requirements.txt
             pip install -r requirements.dev.txt
 
@@ -41,8 +40,9 @@ jobs:
           name: run tests
           command: |
             . .venv/bin/activate
+            set +x
             check-manifest
-            python setup.py check -m -r -s
+            python setup.py check -m -s
             pytest --doctest-modules --cov-report term-missing --durations=0 --cov pik -vvv
             prospector --profile-path . --profile .prospector.yaml pik
             mypy pik --ignore-missing-imports
