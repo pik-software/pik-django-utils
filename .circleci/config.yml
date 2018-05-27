@@ -32,9 +32,7 @@ jobs:
           command: |
             python3 -m venv .venv
             . .venv/bin/activate
-            pip install --upgrade pytest pytest-cov pytest-benchmark prospector
-            pip install --upgrade readme_renderer check-manifest
-            pip install mypy
+            set +x
             pip install -U 'pip>=9.0.3' 'setuptools>=39.0.1' 'twine>=1.11.0' 'wheel>=0.30.0' 'pygments>=2.2.0'
             pip install -r requirements.txt
             pip install -r requirements.dev.txt
