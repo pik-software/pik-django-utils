@@ -11,13 +11,13 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 with open(path.join(here, 'requirements.txt'), encoding='utf-8') as f:
     requirements = [
-        line for line in f.readlines() 
+        line for line in f.readlines()
         if line and not line.startswith('#')
     ]
 
 setup(
     name='pik-django-utils',
-    version='1.0.3',
+    version='1.0.4',
     description='Common PIK Django utils and tools',
     # https://packaging.python.org/specifications/core-metadata/#description-optional
     long_description=long_description,
