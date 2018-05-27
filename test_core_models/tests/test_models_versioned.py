@@ -44,3 +44,14 @@ def test_strict_versioned_protocol(strict_versioned_model):
 
     obj.refresh_from_db()
     assert obj.version > version1
+
+
+def test_optimistic_concurrency_update(versioned_model):
+    model, factory = versioned_model
+    obj = factory.create()
+    version1 = obj.version
+    is_updated = obj.optimistic_concurrency_update()
+    obj.refresh_from_db()
+    version2 = obj.version
+    assert is_updated
+    assert version1 < version2
