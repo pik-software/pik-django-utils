@@ -1,5 +1,10 @@
+# Django
 Django==1.11.12
 django-simple-history==2.0
+
+# Celery
+celery==4.1.0
+kombu==4.1.0
 
 # Text normalization library
 cucco==2.2.1
