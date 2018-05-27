@@ -1,6 +1,7 @@
 import re
+
 from cucco import Cucco
-import django
+
 _CUCCO = Cucco()
 
 

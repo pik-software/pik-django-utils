@@ -21,7 +21,7 @@ def validate_and_create_object(model: Type[models.Model], **kwargs) \
         -> models.Model:
     """
     :raises ValueError
-    :return obj 
+    :return obj
     """
     assert issubclass(model, models.Model)
     obj = model(**kwargs)
