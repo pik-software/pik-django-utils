@@ -45,6 +45,22 @@ def cachedmethod(key: str, ttl: int = 5 * 60, cachename: str = 'default') \
             46
             >>> caches['default'].get('default_3_15')
             46
+            >>> calculate(a=10000)
+            46
+            >>> calculate(10000)
+            46
+            >>> calculate(10000, b=3)
+            46
+            >>> calculate(a=10000, b=3)
+            46
+            >>> calculate(c=15, b=3, a=10000)
+            46
+            >>> calculate(**{'a': 1000})
+            46
+            >>> calculate(1000, a=2000)
+            Traceback (most recent call last):
+            ...
+            TypeError: calculate() got multiple values for some argument
 
         Override ttl:
 
@@ -52,6 +68,8 @@ def cachedmethod(key: str, ttl: int = 5 * 60, cachename: str = 'default') \
             ... def calculate(a: int, b: int, c: int) -> int:
             ...     return a + b + c
             >>> calculate(1, 2, 3)
+            6
+            >>> calculate(1, 2, c=3)
             6
 
         Override cache:
@@ -72,9 +90,13 @@ def cachedmethod(key: str, ttl: int = 5 * 60, cachename: str = 'default') \
         defaults = dict(zip(spec.args[-len(defaults):], defaults))
 
         def decorator(*args, **kwargs) -> any:
-            cachekey = key.format(**defaults,
-                                  **dict(zip(spec.args, args)),
-                                  **kwargs)
+            positional = dict(zip(spec.args, args))
+            if set(positional) & set(kwargs):
+                msg = '{name}() got multiple values for some argument'.format(
+                    name=method.__name__)
+                raise TypeError(msg)
+            merged_kwargs = {**defaults, **positional, **kwargs}
+            cachekey = key.format(**merged_kwargs)
             value = cache.get(cachekey)
             if value is None:
                 value = method(*args, **kwargs)

@@ -1,3 +1,9 @@
+## 1.0.5 ##
+
+### NEW ###
+
+ - `core.cache`: @cachedmethod(key: str, ttl: int = 5 * 60, cachename: str = 'default')
+
 ## 1.0.4 ##
 
 ### NEW ###
