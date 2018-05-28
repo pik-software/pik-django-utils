@@ -1,4 +1,5 @@
 from inspect import getfullargspec
+from functools import wraps
 
 from django.core.cache import caches
 
@@ -89,6 +90,7 @@ def cachedmethod(key: str, ttl: int = 5 * 60, cachename: str = 'default') \
         defaults = spec.defaults or ()
         defaults = dict(zip(spec.args[-len(defaults):], defaults))
 
+        @wraps(method)
         def decorator(*args, **kwargs) -> any:
             positional = dict(zip(spec.args, args))
             if set(positional) & set(kwargs):
