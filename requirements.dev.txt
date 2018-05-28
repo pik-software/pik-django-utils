@@ -1,3 +1,8 @@
+# db
+redis==2.10.6
+psycopg2==2.7.4
+django-redis==4.9.0
+
 # tests
 prospector>=0.12.7
 pylint>=1.8.3
