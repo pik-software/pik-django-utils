@@ -6,3 +6,4 @@ from .uided import *  # noqa
 from .versioned import *  # noqa
 from .historized import *  # noqa
 from .base import *  # noqa
+from .named import *  # noqa
