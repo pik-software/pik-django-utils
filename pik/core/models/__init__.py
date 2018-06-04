@@ -5,7 +5,8 @@ from .uided import Uided, PUided
 from .versioned import Versioned
 from .historized import Historized
 from .base import BasePHistorical, BaseHistorical
+from .named import Named
 
 __all__ = [
     'Dated', 'SoftDeleted', 'NullOwned', 'Owned', 'Uided', 'PUided',
-    'Versioned', 'Historized', 'BasePHistorical', 'BaseHistorical']
+    'Versioned', 'Historized', 'BasePHistorical', 'BaseHistorical', 'Named']
