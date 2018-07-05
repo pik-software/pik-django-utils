@@ -2,7 +2,7 @@ import factory
 
 from ..models import MyDated, MyOwned, MyNullOwned, MyUided, MyPUided, \
     MyVersioned, MyStrictVersioned, MyHistorized, MyBasePHistorical, \
-    MyBaseHistorical
+    MyBaseHistorical, MySoftDeleted
 
 
 class MyDatedFactory(factory.django.DjangoModelFactory):
@@ -53,3 +53,8 @@ class MyBasePHistoricalFactory(factory.django.DjangoModelFactory):
 class MyBaseHistoricalFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = MyBaseHistorical
+
+
+class MySoftDeletedFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = MySoftDeleted

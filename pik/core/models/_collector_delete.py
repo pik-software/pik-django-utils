@@ -1,5 +1,5 @@
 # pylint: skip-file
-from collections import Counter
+from collections import Counter, defaultdict
 from django.db.models.expressions import Col
 from django.utils.timezone import now
 from operator import attrgetter
@@ -28,19 +28,34 @@ def _delete(self):
     # number of objects deleted for each model label
     deleted_counter = Counter()
 
+    _is_soft_deleted_mode = lambda model: issubclass(model, SoftDeleted)
+    _is_not_soft_deleted = lambda obj: getattr(obj, FIELD) is None
+
     with transaction.atomic(using=self.using, savepoint=False):
         # send pre_delete signals
-        for model, obj in self.instances_with_model():
+        for model, instances in six.iteritems(self.data):
             if not model._meta.auto_created:
-                signals.pre_delete.send(
-                    sender=model, instance=obj, using=self.using
-                )
+                if _is_soft_deleted_mode(model):
+                    for obj in instances:
+                        if _is_not_soft_deleted(obj):
+                            signals.pre_delete.send(
+                                sender=model, instance=obj, using=self.using
+                            )
+                else:
+                    for obj in instances:
+                        signals.pre_delete.send(
+                            sender=model, instance=obj, using=self.using
+                        )
+
+        soft_deleted = defaultdict(set)
 
         # fast deletes
         for qs in self.fast_deletes:
-            if issubclass(qs.model, SoftDeleted):
-                pk_list = [obj.pk for obj in qs]
-                qs = sql.UpdateQuery(qs.model)
+            model = qs.model
+            if _is_soft_deleted_mode(model):
+                pk_list = [obj.pk for obj in qs if _is_not_soft_deleted(obj)]
+                soft_deleted[model].update(pk_list)
+                qs = sql.UpdateQuery(model)
                 qs.update_batch(pk_list, {FIELD: time}, self.using)
                 count = len(pk_list)
             else:
@@ -60,9 +75,10 @@ def _delete(self):
 
         # delete instances
         for model, instances in six.iteritems(self.data):
-            if issubclass(model, SoftDeleted):
+            if _is_soft_deleted_mode(model):
                 query = sql.UpdateQuery(model)
-                pk_list = [obj.pk for obj in instances]
+                pk_list = [obj.pk for obj in instances if _is_not_soft_deleted(obj)]
+                soft_deleted[model].update(pk_list)
                 query.update_batch(pk_list, {FIELD: time}, self.using)
                 for instance in instances:
                     setattr(instance, FIELD, time)
@@ -74,10 +90,18 @@ def _delete(self):
             deleted_counter[model._meta.label] += count
 
             if not model._meta.auto_created:
-                for obj in instances:
-                    signals.post_delete.send(
-                        sender=model, instance=obj, using=self.using
-                    )
+                if _is_soft_deleted_mode(model):
+                    soft_deleted_instances = soft_deleted[model]
+                    for obj in instances:
+                        if obj.pk in soft_deleted_instances:
+                            signals.post_delete.send(
+                                sender=model, instance=obj, using=self.using
+                            )
+                else:
+                    for obj in instances:
+                        signals.post_delete.send(
+                            sender=model, instance=obj, using=self.using
+                        )
 
     # update collected instances
     for model, instances_for_fieldvalues in six.iteritems(self.field_updates):
@@ -86,7 +110,8 @@ def _delete(self):
                 setattr(obj, field.attname, value)
     for model, instances in six.iteritems(self.data):
         for instance in instances:
-            setattr(instance, model._meta.pk.attname, None)
+            if not _is_soft_deleted_mode(model):
+                setattr(instance, model._meta.pk.attname, None)
     return sum(deleted_counter.values()), dict(deleted_counter)
 
 

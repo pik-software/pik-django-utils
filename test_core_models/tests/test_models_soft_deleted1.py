@@ -1,4 +1,4 @@
-from django.db.models.signals import post_delete
+from django.db.models.signals import post_delete, pre_delete
 from django.test import TestCase
 from django.utils.timezone import now
 
@@ -83,17 +83,23 @@ class TestDelete(TestCase):
 
     def test_double_delete(self):
         self.called = 0
+        self.pre_called = 0
 
         def post_delete_receiver(*args, **kwargs):
             self.called += 1
 
+        def pre_delete_receiver(*args, **kwargs):
+            self.pre_called += 1
+
         post_delete.connect(post_delete_receiver, sender=PermanentDepended)
+        pre_delete.connect(pre_delete_receiver, sender=PermanentDepended)
 
         model = PermanentDepended
         model.objects.create(dependence=self.permanent, deleted=now())
         model.objects.create(dependence=self.permanent)
         self.permanent.delete()
         self.assertEqual(self.called, 1)
+        self.assertEqual(self.pre_called, 1)
 
     def test_restore(self):
         self.called_pre = 0
