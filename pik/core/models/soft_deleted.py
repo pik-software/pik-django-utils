@@ -1,12 +1,8 @@
-from collections import defaultdict
-
-from django.contrib.admin.utils import NestedObjects
-from django.core.exceptions import FieldDoesNotExist
-from django.db import models, router, transaction
-from django.db.models import Q, signals
+from django.db import models
+from django.db.models import Q
 from django.db.models.sql.where import WhereNode
-from django.utils.timezone import now
 from django.utils.translation import ugettext as _
+
 from ._collector_delete import Collector
 
 assert Collector.delete
