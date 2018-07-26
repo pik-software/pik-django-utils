@@ -1,7 +1,6 @@
-from collections import Callable
 from inspect import getfullargspec
 from functools import wraps
-from typing import Any
+from typing import Any, Callable
 
 from django.core.cache import caches
 
