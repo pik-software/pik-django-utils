@@ -46,21 +46,21 @@ class _SoftObjectsWhereNode(WhereNode):
     pass
 
 
-class SoftObjectsQuerySet(_BaseSoftDeletedQuerySet):
+class SoftObjectsQuerySet(_BaseSoftDeletedQuerySet):  # noqa: pylint=abstract-method
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.query.where_class = _SoftObjectsWhereNode
         self.query.add_q(Q(deleted=None))
 
 
-class SoftDeletedObjectsQuerySet(_BaseSoftDeletedQuerySet):
+class SoftDeletedObjectsQuerySet(_BaseSoftDeletedQuerySet):  # noqa: pylint=abstract-method
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.query.where_class = _SoftDeletedObjectsWhereNode
         self.query.add_q(~Q(deleted=None))
 
 
-class AllObjectsQuerySet(_BaseSoftDeletedQuerySet):
+class AllObjectsQuerySet(_BaseSoftDeletedQuerySet):  # noqa: pylint=abstract-method
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.query.where_class = _AllWhereNode
