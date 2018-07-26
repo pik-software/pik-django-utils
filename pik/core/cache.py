@@ -1,11 +1,13 @@
+from collections import Callable
 from inspect import getfullargspec
 from functools import wraps
+from typing import Any
 
 from django.core.cache import caches
 
 
 def cachedmethod(key: str, ttl: int = 5 * 60, cachename: str = 'default') \
-        -> callable:
+        -> Callable:
     """
     Method result caching decorator
 
@@ -85,13 +87,13 @@ def cachedmethod(key: str, ttl: int = 5 * 60, cachename: str = 'default') \
 
     cache = caches[cachename]
 
-    def wrapper(method: callable) -> callable:
+    def wrapper(method: Callable) -> Callable:
         spec = getfullargspec(method)
-        defaults = spec.defaults or ()
-        defaults = dict(zip(spec.args[-len(defaults):], defaults))
+        spec_keys = spec.defaults or ()
+        defaults = dict(zip(spec.args[-len(spec_keys):], spec_keys))
 
         @wraps(method)
-        def decorator(*args, **kwargs) -> any:
+        def decorator(*args, **kwargs) -> Any:
             positional = dict(zip(spec.args, args))
             if set(positional) & set(kwargs):
                 msg = '{name}() got multiple values for some argument'.format(
