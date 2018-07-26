@@ -4,12 +4,12 @@ psycopg2==2.7.4
 django-redis==4.9.0
 
 # tests
-prospector>=0.12.7
-pylint>=1.8.3
-factory_boy>=2.10.0
-freezegun>=0.3.10
-pdbpp>=0.9.2
-pytest==3.4.2
+prospector==0.12.11
+pylint==1.9.1
+factory_boy==2.11.1
+freezegun==0.3.10
+pdbpp==0.9.2
+pytest>=3.6
 pytest-mock>=1.9.0
 pytest-cov>=2.5.1
 pytest-django>=3.1.2
