@@ -1,3 +1,12 @@
+## 1.0.7 ##
+ - ??
+
+## 1.0.6 ##
+
+### FIX ###
+
+ - `core.models`: change ugettext to ugettext_lazy
+
 ## 1.0.5 ##
 
 ### NEW ###
