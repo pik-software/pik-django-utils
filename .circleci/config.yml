@@ -46,3 +46,4 @@ jobs:
             pytest --doctest-modules --cov-report term-missing --durations=0 --cov pik -vvv
             prospector --profile-path . --profile .prospector.yaml pik
             mypy pik --ignore-missing-imports
+            pip check
