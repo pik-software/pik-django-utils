@@ -1,5 +1,8 @@
 ## 1.0.7 ##
- - ??
+
+### NEW ###
+
+ - `core.shortcuts`: get_current_request()
 
 ## 1.0.6 ##
 
