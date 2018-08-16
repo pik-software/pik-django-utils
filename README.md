@@ -45,6 +45,7 @@ We use semantic versioning MAJOR.MINOR.MAINTENANCE scheme, where the project aut
  - `validate_and_create_object(model: Type[models.Model], **kwargs) -> models.Model`
  - `validate_and_update_object(obj: models.Model, **kwargs) -> Tuple[models.Model, bool]`
  - `update_or_create_object(model: Type[models.Model], search_keys: Optional[dict] = None, **kwargs) -> Tuple[models.Model, bool, bool]`
+ - `get_current_request() -> Optional[HttpRequest]`
 
 ## pik.libs ##
 
