@@ -1,3 +1,31 @@
+## 1.0.9 ##
+
+### NEW ###
+
+ - nothing changed yet
+
+## 1.0.8 ##
+
+### NEW ###
+
+ - `core.shortcuts`: get_current_request()
+
+## 1.0.7 ##
+
+### FIX ###
+
+ - `core.shortcuts`: fix validate_and_update_object() to revert object changes on validation fail
+
+### NEW ###
+
+ - `core.shortcuts`: get_current_request()
+
+## 1.0.6 ##
+
+### FIX ###
+
+ - `core.models`: change ugettext to ugettext_lazy
+
 ## 1.0.5 ##
 
 ### NEW ###

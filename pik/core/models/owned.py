@@ -1,12 +1,12 @@
 from django.conf import settings
 from django.db import models
-from django.utils.translation import ugettext as _
+from django.utils.translation import ugettext_lazy as _
 
 
 class Owned(models.Model):
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, verbose_name=_("User"),
-        related_name="%(class)ss", db_index=True,
+        settings.AUTH_USER_MODEL, verbose_name=_('User'),
+        related_name='%(class)ss', db_index=True,
         on_delete=models.CASCADE, editable=False)
 
     class Meta:
@@ -15,8 +15,8 @@ class Owned(models.Model):
 
 class NullOwned(models.Model):
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, verbose_name=_("User"),
-        related_name="%(class)ss", db_index=True,
+        settings.AUTH_USER_MODEL, verbose_name=_('User'),
+        related_name='%(class)ss', db_index=True,
         on_delete=models.CASCADE, editable=False,
         null=True)
 

@@ -44,23 +44,25 @@ def validate_and_update_object(obj: models.Model, **kwargs) \
     assert isinstance(obj, models.Model)
     model = type(obj)
 
-    is_updated = False
+    updated_keys = {}
     for key, value in kwargs.items():
         old_value = getattr(obj, key)
         if old_value == value:
             continue
         setattr(obj, key, value)
-        is_updated = True
+        updated_keys[key] = old_value
 
-    if is_updated:
+    if updated_keys:
         try:
             obj.full_clean()
             obj.save()
         except (ValidationError, IntegrityError) as exc:
+            for key, old_value in updated_keys.items():
+                setattr(obj, key, old_value)
             LOGGER.warning(
                 'Update %s error: %r (kwargs=%r)', model.__name__, exc, kwargs)
             raise ValueError(str(exc))
-    return obj, is_updated
+    return obj, bool(updated_keys)
 
 
 def update_or_create_object(

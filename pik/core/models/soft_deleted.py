@@ -6,7 +6,7 @@ from django.db import models, router, transaction
 from django.db.models import Q, signals
 from django.db.models.sql.where import WhereNode
 from django.utils.timezone import now
-from django.utils.translation import ugettext as _
+from django.utils.translation import ugettext_lazy as _
 from ._collector_delete import Collector
 
 assert Collector.delete
