@@ -1,8 +1,16 @@
-## 1.0.9 ##
-
-### NEW ###
+## 1.0.11 ##
 
  - nothing changed yet
+
+## 1.0.10 ##
+
+### FIX ###
+
+ - `pik.utils.normalization`: fix bug with autocorrect 'Й' to 'И' and 'Ё' to 'Е'
+
+## 1.0.9 ##
+
+ - Django==1.11.15
 
 ## 1.0.8 ##
 

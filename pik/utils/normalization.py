@@ -4,6 +4,17 @@ from cucco import Cucco
 
 _CUCCO = Cucco()
 
+UNICODE_SYMBOL_SHORT_I = '̆'
+UNICODE_SYMBOL_E = '̈'
+
+NORMALIZATIONS = [
+    'remove_extra_white_spaces',
+    'replace_emojis',
+    ('remove_accent_marks', {'excluded': [
+        UNICODE_SYMBOL_SHORT_I, UNICODE_SYMBOL_E]}),
+    ('replace_symbols', {'excluded': [
+        UNICODE_SYMBOL_SHORT_I, UNICODE_SYMBOL_E]})]
+
 
 def normalize(text: str) -> str:
     """
@@ -12,15 +23,14 @@ def normalize(text: str) -> str:
     >>> normalize("ООО  'ВЫМПЕЛКОМ' ")
     "ООО 'ВЫМПЕЛКОМ'"
     >>> normalize('ЗАО "ЮВЕЛИРНЫЙ завод')
-    'ЗАО "ЮВЕЛИРНЫИ завод'
+    'ЗАО "ЮВЕЛИРНЫЙ завод'
+    >>> normalize("ОАО 'ЁЛКИ и ПАЛКИ' ")
+    "ОАО 'ЁЛКИ и ПАЛКИ'"
 
     :param text: some hand typed text
     :return: normalized text
     """
-    return _CUCCO.normalize(text, [
-        'remove_extra_white_spaces', 'remove_accent_marks',
-        'replace_emojis', 'replace_symbols',
-    ])
+    return _CUCCO.normalize(text, NORMALIZATIONS)
 
 
 def company_name_normalization(name: str) -> str:
