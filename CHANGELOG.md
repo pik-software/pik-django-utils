@@ -1,7 +1,7 @@
 
 ## 1.0.10 ##
 
-### NEW ###
+### FIX ###
 
  - `pik.utils.normalization`: fix bug with autocorrect 'Й' to 'И' and 'Ё' to 'Е'
 
