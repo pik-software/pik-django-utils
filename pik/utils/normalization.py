@@ -24,6 +24,8 @@ def normalize(text: str) -> str:
     "ООО 'ВЫМПЕЛКОМ'"
     >>> normalize('ЗАО "ЮВЕЛИРНЫЙ завод')
     'ЗАО "ЮВЕЛИРНЫЙ завод'
+    >>> normalize("ОАО 'ЁЛКИ и ПАЛКИ' ")
+    "ОАО 'ЁЛКИ и ПАЛКИ'"
 
     :param text: some hand typed text
     :return: normalized text
