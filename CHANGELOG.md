@@ -1,6 +1,12 @@
+## 1.0.12 ##
+
+ - ??
+
 ## 1.0.11 ##
 
- - nothing changed yet
+### FIX ###
+
+ - correct created/updated translations
 
 ## 1.0.10 ##
 
