@@ -1,5 +1,5 @@
 # Django
-Django==1.11.15
+Django>=1.11.15,<2.0.0
 django-simple-history==2.0
 
 # Celery
