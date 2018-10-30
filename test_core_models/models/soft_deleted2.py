@@ -8,7 +8,8 @@ class BaseModel(models.Model):
 
 
 class NullRelatedModel(models.Model):
-    nullable_base = models.ForeignKey(BaseModel, blank=True, null=True)
+    nullable_base = models.ForeignKey(
+        BaseModel, blank=True, null=True, on_delete=models.CASCADE)
 
 
 class BaseArchiveModel(SoftDeleted):
@@ -16,7 +17,8 @@ class BaseArchiveModel(SoftDeleted):
 
 
 class RelatedModel(models.Model):
-    base = models.ForeignKey(BaseArchiveModel)
+    base = models.ForeignKey(
+        BaseArchiveModel, null=True, on_delete=models.CASCADE)
     set_null_base = models.ForeignKey(
         BaseArchiveModel,
         blank=True, null=True, on_delete=models.deletion.SET_NULL)
@@ -26,7 +28,8 @@ class RelatedModel(models.Model):
 
 
 class RelatedCousinModel(models.Model):
-    related = models.ForeignKey(RelatedModel)
+    related = models.ForeignKey(
+        RelatedModel, null=True, on_delete=models.CASCADE)
     set_null_related = models.ForeignKey(
         RelatedModel,
         blank=True, null=True, on_delete=models.deletion.SET_NULL)
@@ -36,7 +39,8 @@ class RelatedCousinModel(models.Model):
 
 
 class RelatedArchiveModel(SoftDeleted):
-    base = models.ForeignKey(BaseArchiveModel)
+    base = models.ForeignKey(
+        BaseArchiveModel, null=True, on_delete=models.CASCADE)
     set_null_base = models.ForeignKey(
         BaseArchiveModel,
         blank=True, null=True, on_delete=models.deletion.SET_NULL)
@@ -46,7 +50,8 @@ class RelatedArchiveModel(SoftDeleted):
 
 
 class RelatedCousinArchiveModel(SoftDeleted):
-    related = models.ForeignKey(RelatedArchiveModel)
+    related = models.ForeignKey(
+        RelatedArchiveModel, null=True, on_delete=models.CASCADE)
     set_null_related = models.ForeignKey(
         RelatedArchiveModel,
         blank=True, null=True, on_delete=models.deletion.SET_NULL)
