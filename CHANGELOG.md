@@ -1,12 +1,19 @@
-## 1.0.12 ##
+## 1.0.13 ##
 
  - nothing changed yet
 
-## 1.0.11 ##
+## 1.0.12 ##
 
  - Django>=1.11.15
  - celery>=4.2.1
  - kombu>=4.2.1
+
+## 1.0.11 ##
+
+### FIX ###
+
+ - `core.models.dated`: fix verbose_name
+ - flake8==3.5.0
 
 ## 1.0.10 ##
 
