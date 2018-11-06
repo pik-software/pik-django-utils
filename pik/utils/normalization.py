@@ -40,7 +40,7 @@ def company_name_normalization(name: str) -> str:
     >>> company_name_normalization("ООО  'ВЫМПЕЛКОМ' ")
     'ООО ВЫМПЕЛКОМ'
     >>> company_name_normalization('ЗАО "ЮВЕЛИРНЫЙ завод')
-    'ЗАО ЮВЕЛИРНЫИ ЗАВОД'
+    'ЗАО ЮВЕЛИРНЫЙ ЗАВОД'
     >>> company_name_normalization('ООО ПИК-Комфорт')
     'ООО ПИК-КОМФОРТ'
     >>> company_name_normalization('ООО ПИК\u2015Комфорт')
@@ -49,6 +49,8 @@ def company_name_normalization(name: str) -> str:
     'ООО ПИК-КОМФОРТ'
     >>> company_name_normalization('ООО ПИК - - Комфорт')
     'ООО ПИК-КОМФОРТ'
+    >>> company_name_normalization('Районный Ёлочный рынок')
+    'РАЙОННЫЙ ЁЛОЧНЫЙ РЫНОК'
     >>> company_name_normalization('ZAO “Interfax”')
     'ЗАО INTERFAX'
 
@@ -60,7 +62,8 @@ def company_name_normalization(name: str) -> str:
     name = re.sub(r'[\u2010-\u2017]', '-', name)
     name = re.sub(r'\s*-\s*', '-', name)
     name = re.sub(r'[-]+', '-', name)
-    name = ' '.join(re.findall(r'[\w-]+', name))
+    name = ' '.join(re.findall(r'[\w-][^йЙ“”]+', name))
+    name = _CUCCO.remove_extra_white_spaces(name)
     name = name.replace('IP ', 'ИП ')  # Individual entrepreneur
     name = name.replace('OOO ', 'ООО ')  # Limited liability company
     name = name.replace('ZAO ', 'ЗАО ')  # Private joint-stock company
