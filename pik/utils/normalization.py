@@ -62,7 +62,6 @@ def company_name_normalization(name: str) -> str:
     name = re.sub(r'\s*-\s*', '-', name)
     name = re.sub(r'[-]+', '-', name)
     name = ' '.join(re.findall(r'[\w-]+', name))
-    name = _CUCCO.remove_extra_white_spaces(name)
     name = name.replace('IP ', 'ИП ')  # Individual entrepreneur
     name = name.replace('OOO ', 'ООО ')  # Limited liability company
     name = name.replace('ZAO ', 'ЗАО ')  # Private joint-stock company
