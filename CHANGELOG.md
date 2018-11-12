@@ -1,6 +1,12 @@
-## 1.0.13 ##
+## 1.0.14 ##
 
  - nothing changed yet
+
+## 1.0.13 ##
+
+### FIX ###
+
+ - `pik.utils.normalization`: fix company_name_normalization
 
 ## 1.0.12 ##
 
