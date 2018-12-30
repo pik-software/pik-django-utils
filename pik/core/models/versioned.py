@@ -8,7 +8,7 @@ class Versioned(models.Model):
     # Strict increment leads to problems in SimpleHistory (disable by default)
     strict_autoincrement_version = False
 
-    version = models.IntegerField(editable=False, default=1)
+    version = models.IntegerField(editable=False, default=0)
 
     def save(self, *args, **kwargs):  # noqa: pylint=arguments-differ
         if not self.version:
