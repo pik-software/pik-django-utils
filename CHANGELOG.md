@@ -1,6 +1,13 @@
+## 1.0.15 ##
+
+ - ??
+
 ## 1.0.14 ##
 
+### NEW ###
+
  - `core.models.dated`: add indexes on `updated` and `created` fileds in `Dated` model
+
 ## 1.0.13 ##
 
 ### FIX ###
