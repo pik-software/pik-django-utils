@@ -12,8 +12,7 @@ NORMALIZATIONS = [
     'replace_emojis',
     ('remove_accent_marks', {'excluded': [
         UNICODE_SYMBOL_SHORT_I, UNICODE_SYMBOL_E]}),
-    ('replace_symbols', {'excluded': [
-        UNICODE_SYMBOL_SHORT_I, UNICODE_SYMBOL_E]})]
+    ('replace_symbols', {'form': 'NFKC'})]
 
 
 def normalize(text: str) -> str:
@@ -23,9 +22,9 @@ def normalize(text: str) -> str:
     >>> normalize("ООО  'ВЫМПЕЛКОМ' ")
     "ООО 'ВЫМПЕЛКОМ'"
     >>> normalize('ЗАО "ЮВЕЛИРНЫЙ завод')
-    'ЗАО "ЮВЕЛИРНЫЙ завод'
+    'ЗАО "ЮВЕЛИРНЫЙ завод'
     >>> normalize("ОАО 'ЁЛКИ и ПАЛКИ' ")
-    "ОАО 'ЁЛКИ и ПАЛКИ'"
+    "ОАО 'ЁЛКИ и ПАЛКИ'"
 
     :param text: some hand typed text
     :return: normalized text
@@ -40,7 +39,7 @@ def company_name_normalization(name: str) -> str:
     >>> company_name_normalization("ООО  'ВЫМПЕЛКОМ' ")
     'ООО ВЫМПЕЛКОМ'
     >>> company_name_normalization('ЗАО "ЮВЕЛИРНЫЙ завод')
-    'ЗАО ЮВЕЛИРНЫИ ЗАВОД'
+    'ЗАО ЮВЕЛИРНЫЙ ЗАВОД'
     >>> company_name_normalization('ООО ПИК-Комфорт')
     'ООО ПИК-КОМФОРТ'
     >>> company_name_normalization('ООО ПИК\u2015Комфорт')
@@ -49,6 +48,8 @@ def company_name_normalization(name: str) -> str:
     'ООО ПИК-КОМФОРТ'
     >>> company_name_normalization('ООО ПИК - - Комфорт')
     'ООО ПИК-КОМФОРТ'
+    >>> company_name_normalization('Районный Ёлочный рынок')
+    'РАЙОННЫЙ ЁЛОЧНЫЙ РЫНОК'
     >>> company_name_normalization('ZAO “Interfax”')
     'ЗАО INTERFAX'
 

@@ -1,6 +1,32 @@
+## 1.0.15 ##
+
+ - ??
+
+## 1.0.14 ##
+
+### NEW ###
+
+ - `core.models.dated`: add indexes on `updated` and `created` fileds in `Dated` model
+
+## 1.0.13 ##
+
+### FIX ###
+
+ - `pik.utils.normalization`: fix company_name_normalization
+
+## 1.0.12 ##
+
+ - Django>=1.11.15
+ - celery>=4.2.1
+ - kombu>=4.2.1
+
 ## 1.0.11 ##
 
- - nothing changed yet
+ - flake8==3.5.0
+
+### FIX ###
+
+ - `core.models.dated`: fix verbose_name
 
 ## 1.0.10 ##
 
