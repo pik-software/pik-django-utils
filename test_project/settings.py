@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'test_core_models',
+    'test_core_models_fields',
     'test_core_shortcuts',
 ]
 
