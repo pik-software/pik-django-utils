@@ -1,6 +1,12 @@
+## 1.0.16 ##
+
+ - ?
+
 ## 1.0.15 ##
 
- - ??
+### NEW ###
+
+ - `pik.core.models.fields`: InheritPrimaryUidField
 
 ## 1.0.14 ##
 
