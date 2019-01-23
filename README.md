@@ -25,6 +25,7 @@ We use semantic versioning MAJOR.MINOR.MAINTENANCE scheme, where the project aut
 ## pik.core ##
 
  - `pik.core.models` - Abstract Django models for common use cases
+ - `pik.core.models.fields` - common model fields
  - `pik.core.tests` - Testing helpers
  - `pik.core.shortcuts` - Django code shortcuts and missed helpers
  - `pik.core.cache` - Cache helpers
@@ -34,6 +35,10 @@ We use semantic versioning MAJOR.MINOR.MAINTENANCE scheme, where the project aut
  - `BasePHistorical` / `BaseHistorical` - Base Historical Entity models
  - `NullOwned` / `Owned` - Models for user relation
  - `SoftDeleted` - Soft deletable model
+
+### pik.core.models.fields ###
+
+ - `InheritPrimaryUidField` - Allows you to save the same UID Identifier for child table in inherited tables as in parent table
 
 ### pik.core.tests ###
 
