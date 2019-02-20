@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Type, Tuple
+from typing import Optional, Type, Tuple, Union
 
 from django.core.exceptions import ValidationError
 from django.db import models, IntegrityError
@@ -7,14 +7,19 @@ from django.db import models, IntegrityError
 LOGGER = logging.getLogger(__name__)
 
 
-def get_object_or_none(model: Type[models.Model], **search_keys) \
-        -> Optional[models.Model]:
-    assert issubclass(model, models.Model)
+def get_object_or_none(
+        source: Union[Type[models.Model], models.QuerySet, models.Manager],
+        *args, **kwargs) -> Optional[models.Model]:
+    assert (isinstance(source, (models.QuerySet, models.Manager))
+            or issubclass(source, models.Model))
+
+    if not isinstance(source, (models.QuerySet, models.Manager)):
+        source = source.objects
+
     try:
-        obj = model.objects.get(**search_keys)
-    except model.DoesNotExist:
-        obj = None
-    return obj
+        return source.get(*args, **kwargs)
+    except source.model.DoesNotExist:
+        return None
 
 
 def validate_and_create_object(model: Type[models.Model], **kwargs) \
