@@ -1,6 +1,18 @@
+## 1.0.18 ##
+
+ - ???
+
 ## 1.0.17 ##
 
- - ??
+### FIX ###
+
+ - `core.shortcuts`: get_object_or_none add QuerySet support
+ - `core.shortcuts`: validate_and_update_object return updated fields list
+ - `core.shortcuts`: update_or_create_object return updated fields list
+
+### NOTE ###
+
+ - validate_and_update_object, update_or_create_object -- changed return value !!
 
 ## 1.0.16 ##
 

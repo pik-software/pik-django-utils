@@ -10,3 +10,8 @@ kombu>=4.2.1
 cucco==2.2.1
 # Lexical Sortable UUID
 ulid-py==0.0.6
+
+# Other
+# Requests doesn't support newer urllib3
+# https://github.com/kennethreitz/requests/issues/5067
+urllib3<=1.24.2
