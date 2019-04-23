@@ -1,8 +1,10 @@
 import pytest
+from django.db.models import Q
 from django.utils.crypto import get_random_string
 
-from pik.core.shortcuts import get_object_or_none, validate_and_create_object, \
-    validate_and_update_object, update_or_create_object
+from pik.core.shortcuts import (
+    get_object_or_none, validate_and_create_object, validate_and_update_object,
+    update_or_create_object)
 from .factories import MySimpleModelFactory
 from ..models import MySimpleModel
 
@@ -22,7 +24,40 @@ def test_get_object_or_none(test_model):
     assert obj is None
 
     obj = get_object_or_none(model, data=objs[-1].data)
-    assert obj.pk
+    assert obj is not None
+
+
+def test_get_object_or_none_queryset(test_model):
+    model, factory = test_model
+    objs = factory.create_batch(10)
+
+    obj = get_object_or_none(model.objects.filter(data=get_random_string()))
+    assert obj is None
+
+    obj = get_object_or_none(model.objects.filter(data=objs[-1].data))
+    assert obj is not None
+
+
+def test_get_object_or_none_manager(test_model):
+    model, factory = test_model
+    objs = factory.create_batch(10)
+
+    obj = get_object_or_none(model.objects, data=get_random_string())
+    assert obj is None
+
+    obj = get_object_or_none(model.objects, data=objs[-1].data)
+    assert obj is not None
+
+
+def test_get_object_or_none_args(test_model):
+    model, factory = test_model
+    objs = factory.create_batch(10)
+
+    obj = get_object_or_none(model, Q(data=get_random_string()))
+    assert obj is None
+
+    obj = get_object_or_none(model, Q(data=objs[-1].data))
+    assert obj is not None
 
 
 def test_validate_and_create_object(test_model):
