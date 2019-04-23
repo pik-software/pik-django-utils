@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Type, Tuple
+from typing import Optional, Type, Tuple, List
 
 from django.core.exceptions import ValidationError
 from django.db import models, IntegrityError
@@ -36,7 +36,7 @@ def validate_and_create_object(model: Type[models.Model], **kwargs) \
 
 
 def validate_and_update_object(obj: models.Model, **kwargs) \
-        -> Tuple[models.Model, bool]:
+        -> Tuple[models.Model, List[str]]:
     """
     :raises ValueError
     :return obj, is_updated
@@ -62,14 +62,14 @@ def validate_and_update_object(obj: models.Model, **kwargs) \
             LOGGER.warning(
                 'Update %s error: %r (kwargs=%r)', model.__name__, exc, kwargs)
             raise ValueError(str(exc))
-    return obj, bool(updated_keys)
+    return obj, list(updated_keys.keys())
 
 
 def update_or_create_object(
         model: Type[models.Model],
         search_keys: Optional[dict] = None,
         **kwargs) \
-        -> Tuple[models.Model, bool, bool]:
+        -> Tuple[models.Model, List[str], bool]:
     """
     :raises ValueError
     :return obj, is_updated, is_created
@@ -77,9 +77,9 @@ def update_or_create_object(
     obj = get_object_or_none(model, **search_keys) if search_keys else None
     if obj:
         is_created = False
-        obj, is_updated = validate_and_update_object(obj, **kwargs)
+        obj, updates = validate_and_update_object(obj, **kwargs)
     else:
-        is_updated = False
+        updates = []
         is_created = True
         obj = validate_and_create_object(model, **kwargs)
-    return obj, is_updated, is_created
+    return obj, updates, is_created
