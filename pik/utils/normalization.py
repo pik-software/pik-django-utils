@@ -1,17 +1,11 @@
 import re
-import unicodedata
 from cucco import Cucco
 
+_CUCCO = Cucco()
 
-NFC_FORM = 'NFC'
-
-NUMBER_SIGN = '№'
 
 NORMALIZATIONS = [
-    'remove_extra_white_spaces',
-    'replace_emojis',
-    'remove_accent_marks',
-    ('replace_symbols', {'form': NFC_FORM, 'excluded': [NUMBER_SIGN]})]
+    'remove_extra_white_spaces']
 
 
 def normalize(text: str) -> str:
@@ -31,36 +25,6 @@ def normalize(text: str) -> str:
     :return: normalized text
     """
     return _CUCCO.normalize(text, NORMALIZATIONS)
-
-
-class CustomCucco(Cucco):
-    @staticmethod
-    def remove_accent_marks(text, excluded=None):
-        # We need to use NFC (Normalization Form Canonical Composition) for
-        # normalize composite cyrillic symbols like "Й", "Ё" or "№"
-
-        """Remove accent marks from input text.
-
-        This function removes accent marks in the text, but leaves
-        unicode characters defined in the 'excluded' parameter.
-
-        Args:
-            text: The text to be processed.
-            excluded: Set of unicode characters to exclude.
-
-        Returns:
-            The text without accent marks.
-        """
-        if excluded is None:
-            excluded = set()
-
-        return unicodedata.normalize(
-            NFC_FORM, ''.join(
-                c for c in unicodedata.normalize(NFC_FORM, text)
-                if unicodedata.category(c) != 'Mn' or c in excluded))
-
-
-_CUCCO = CustomCucco()
 
 
 def company_name_normalization(name: str) -> str:
