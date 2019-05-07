@@ -57,5 +57,5 @@ class PermanentM2MThrough(SoftDeleted):
     m2m_to = models.ForeignKey('M2MTo', on_delete=models.CASCADE)
 
 
-class M2MTo(BaseTestModel):
+class M2MTo(SoftDeleted):
     m2m_from = models.ManyToManyField('M2MFrom', through=PermanentM2MThrough)

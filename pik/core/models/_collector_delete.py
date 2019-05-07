@@ -11,6 +11,7 @@ from django.db.models.fields.related import ForeignObject
 from django.utils import six
 
 FIELD = 'deleted'
+IS_DELETED_FIELD = 'is_deleted'
 
 
 def _delete(self):
@@ -41,7 +42,8 @@ def _delete(self):
             if issubclass(qs.model, SoftDeleted):
                 pk_list = [obj.pk for obj in qs]
                 qs = sql.UpdateQuery(qs.model)
-                qs.update_batch(pk_list, {FIELD: time}, self.using)
+                qs.update_batch(pk_list, {FIELD: time, IS_DELETED_FIELD: True},
+                                self.using)
                 count = len(pk_list)
             else:
                 count = qs._raw_delete(using=self.using)
@@ -63,9 +65,11 @@ def _delete(self):
             if issubclass(model, SoftDeleted):
                 query = sql.UpdateQuery(model)
                 pk_list = [obj.pk for obj in instances]
-                query.update_batch(pk_list, {FIELD: time}, self.using)
+                query.update_batch(
+                    pk_list, {FIELD: time, IS_DELETED_FIELD: True}, self.using)
                 for instance in instances:
                     setattr(instance, FIELD, time)
+                    setattr(instance, IS_DELETED_FIELD, True)
                 count = len(pk_list)
             else:
                 query = sql.DeleteQuery(model)

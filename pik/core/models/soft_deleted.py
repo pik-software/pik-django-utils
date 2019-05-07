@@ -47,6 +47,7 @@ def _cascade_soft_delete(inst_or_qs, using, keep_parents=False):
         instances = inst_or_qs
 
     deleted = now()
+    is_deleted = True
 
     # The collector will iteratively crawl the relationships and
     # create a list of models and instances that are connected to
@@ -62,10 +63,13 @@ def _cascade_soft_delete(inst_or_qs, using, keep_parents=False):
         # remove archive mixin models from the delete list and put
         # them in the update list.  If we do this, we can just call
         # the collector.delete method.
-        if _has_field(model, 'deleted'):
+        if _has_field(model, 'deleted') and _has_field(model, 'is_deleted'):
             inst_list = [x for x in instances if x.deleted is None]
             deleted_on_field = _get_field_by_name(model, 'deleted')
+            is_deleted_on_field = _get_field_by_name(model, 'is_deleted')
             collector.add_field_update(deleted_on_field, deleted, inst_list)
+            collector.add_field_update(
+                is_deleted_on_field, is_deleted, inst_list)
             soft_delete_objs[model].update(inst_list)
             del collector.data[model]
 
@@ -75,10 +79,13 @@ def _cascade_soft_delete(inst_or_qs, using, keep_parents=False):
         # make sure that we do archive on fast deletable models as
         # well.
         model = q_set.model
-        if _has_field(model, 'deleted'):
+        if _has_field(model, 'deleted') and _has_field(model, 'is_deleted'):
             inst_list = [x for x in instances if x.deleted is None]
             deleted_on_field = _get_field_by_name(model, 'deleted')
+            is_deleted_on_field = _get_field_by_name(model, 'is_deleted')
             collector.add_field_update(deleted_on_field, deleted, inst_list)
+            collector.add_field_update(
+                is_deleted_on_field, is_deleted, inst_list)
             collector.fast_deletes[i] = q_set.none()
 
     return collector
@@ -124,7 +131,7 @@ class _BaseSoftDeletedQuerySet(models.QuerySet):
     hard_delete.queryset_only = True  # type: ignore
 
     def restore(self):
-        return self.update(**{'deleted': None})
+        return self.update(**{'deleted': None, 'is_deleted': False})
 
     restore.alters_data = True  # type: ignore
     restore.queryset_only = True  # type: ignore
@@ -182,7 +189,7 @@ class SoftDeleted(models.Model):
     deleted = models.DateTimeField(
         editable=False, null=True, blank=True, verbose_name=_('Deleted')
     )
-
+    is_deleted = models.BooleanField(default=False)
     objects = SoftObjectsQuerySet.as_manager()
     deleted_objects = SoftDeletedObjectsQuerySet.as_manager()
     all_objects = AllObjectsQuerySet.as_manager()
@@ -194,7 +201,7 @@ class SoftDeleted(models.Model):
             "%s object can't be deleted because its %s attribute " \
             "is set to None." % (self._meta.object_name, self._meta.pk.attname)
 
-        if self.deleted:
+        if self.is_deleted:
             return 0, {}  # short-circuit here to prevent lots of nesting
 
         if not self._meta.auto_created:
@@ -211,7 +218,8 @@ class SoftDeleted(models.Model):
 
     def restore(self):
         self.deleted = None
-        self.save(update_fields=['deleted'])
+        self.is_deleted = False
+        self.save(update_fields=['deleted', 'is_deleted'])
 
     class Meta:
         abstract = True
