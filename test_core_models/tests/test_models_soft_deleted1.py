@@ -157,7 +157,6 @@ class TestIntegration(TestCase):
         _to = M2MTo.objects.create()
         PermanentM2MThrough.objects.create(m2m_from=_from, m2m_to=_to)
         self.assertEqual(_from.m2mto_set.count(), 1)
-        # m2m.delete()
         _from.m2mto_set.all().delete()
         self.assertEqual(_from.m2mto_set.count(), 0)
         self.assertEqual(M2MFrom.objects.count(), 1)
