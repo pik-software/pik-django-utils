@@ -5,7 +5,7 @@ from django.utils.crypto import get_random_string
 from pik.core.shortcuts import (
     get_object_or_none, validate_and_create_object, validate_and_update_object,
     update_or_create_object)
-from .factories import MySimpleModelFactory
+from .factories import MySimpleModelFactory, TestNameModelFactory
 from ..models import MySimpleModel
 
 
@@ -61,18 +61,25 @@ def test_get_object_or_none_args(test_model):
 
 
 def test_validate_and_create_object(test_model):
+    name1 = TestNameModelFactory.create()
+    name2 = TestNameModelFactory.create()
     model, factory = test_model
 
-    obj = validate_and_create_object(model, data=get_random_string())
+    kwargs = {'data': get_random_string(), 'names': [name1, name2]}
+    obj = validate_and_create_object(model, **kwargs)
     assert obj.pk
 
 
 def test_validate_and_update_object__update(test_model):
     model, factory = test_model
+    name1 = TestNameModelFactory.create()
+    name2 = TestNameModelFactory.create()
+
     obj = factory.create()
     new_data = get_random_string()
+    kwargs = {'data': new_data, 'names': [name1, name2]}
 
-    res_obj, is_updated = validate_and_update_object(obj, data=new_data)
+    res_obj, is_updated = validate_and_update_object(obj, **kwargs)
     assert res_obj.pk == obj.pk
     assert is_updated
     assert res_obj.data == new_data
@@ -80,9 +87,13 @@ def test_validate_and_update_object__update(test_model):
 
 def test_validate_and_update_object__no_update(test_model):
     model, factory = test_model
-    obj = factory.create()
+    name1 = TestNameModelFactory.create()
+    name2 = TestNameModelFactory.create()
 
-    res_obj, is_updated = validate_and_update_object(obj, data=obj.data)
+    obj = factory.create(names=(name1, name2))
+    kwargs = {'data': obj.data, 'names': [name1, name2]}
+
+    res_obj, is_updated = validate_and_update_object(obj, **kwargs)
     assert res_obj.pk == obj.pk
     assert not is_updated
     assert res_obj.data == obj.data
@@ -91,9 +102,12 @@ def test_validate_and_update_object__no_update(test_model):
 def test_update_or_create_object__create_without_search(test_model):
     model, _ = test_model
     new_data = get_random_string()
+    name1 = TestNameModelFactory.create()
+    name2 = TestNameModelFactory.create()
+    kwargs = {'data':new_data, 'names': [name1, name2]}
 
     res_obj, is_updated, is_created = update_or_create_object(
-        model, data=new_data)
+        model, **kwargs)
     assert res_obj.pk
     assert not is_updated
     assert is_created
@@ -103,9 +117,12 @@ def test_update_or_create_object__create(test_model):
     model, factory = test_model
     obj = factory.create()
     new_data = get_random_string()
+    name1 = TestNameModelFactory.create()
+    name2 = TestNameModelFactory.create()
+    kwargs = {'data':new_data, 'names': [name1, name2]}
 
     res_obj, is_updated, is_created = update_or_create_object(
-        model, search_keys=dict(data=new_data), data=new_data)
+        model, search_keys=dict(data=new_data), **kwargs)
     assert res_obj.pk != obj.pk
     assert not is_updated
     assert is_created
@@ -114,9 +131,12 @@ def test_update_or_create_object__create(test_model):
 def test_update_or_create_object__no_update(test_model):
     model, factory = test_model
     obj = factory.create()
+    name1 = TestNameModelFactory.create()
+    name2 = TestNameModelFactory.create()
+    kwargs = {'data': obj.data, 'names': [name1, name2]}
 
     res_obj, is_updated, is_created = update_or_create_object(
-        model, search_keys=dict(data=obj.data), data=obj.data)
+        model, search_keys=dict(data=obj.data), **kwargs)
     assert res_obj.pk == obj.pk
     assert not is_updated
     assert not is_created

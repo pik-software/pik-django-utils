@@ -17,7 +17,7 @@ def _update_m2m_fields(obj, **kwargs):
 
 def _get_m2m_kwargs(model, **kwargs):
     m2m_kwargs = {}
-    for field in model._meta.get_fields():
+    for field in model._meta.get_fields():  # noqa: pylint=protected-access
         if field.get_internal_type() == "ManyToManyField":
             m2m_kwargs[field.name] = kwargs.pop(field.name)
     return m2m_kwargs, kwargs
