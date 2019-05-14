@@ -6,6 +6,7 @@ ignore-paths:
   - migrations
   - .venv
   - README.md
+  - pik/core/models/_collector_delete.py
 
 pylint:
   disable:
