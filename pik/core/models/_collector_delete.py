@@ -1,4 +1,3 @@
-# pylint: skip-file
 from collections import Counter
 from django.db.models.expressions import Col
 from django.utils.timezone import now
