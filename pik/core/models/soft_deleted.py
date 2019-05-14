@@ -178,6 +178,11 @@ class SoftDeleted(models.Model):
     """
     Soft deletable model. Inspired by:
     https://lucasroesler.com/2017/04/delete-or-not-to-delete/
+
+    If you want to use SoftDeleted with unique constraint there are
+    a problem because NULL != NULL.
+    You can use workaround with `UniqueConstraint in django>=2.2
+    https://docs.djangoproject.com/en/2.2/ref/models/constraints/#django.db.models.UniqueConstraint
     """
     deleted = models.DateTimeField(
         editable=False, null=True, blank=True, verbose_name=_('Deleted')
