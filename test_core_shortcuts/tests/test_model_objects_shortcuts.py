@@ -130,9 +130,10 @@ def test_update_or_create_object__create(test_model):
 
 def test_update_or_create_object__no_update(test_model):
     model, factory = test_model
-    obj = factory.create()
     name1 = TestNameModelFactory.create()
     name2 = TestNameModelFactory.create()
+
+    obj = factory.create(names=(name1, name2))
     kwargs = {'data': obj.data, 'names': [name1, name2]}
 
     res_obj, is_updated, is_created = update_or_create_object(
