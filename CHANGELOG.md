@@ -1,6 +1,14 @@
 ## 1.0.18 ##
 
- - ???
+### FIX ###
+
+ - sqlite3 tests issue
+ - softdelete tests
+ - `№` symbol noramilzation issue
+ 
+ ### NEW ###
+ 
+ - `validate_and_update_object` `validate_and_create_object` m2m support
 
 ## 1.0.17 ##
 
