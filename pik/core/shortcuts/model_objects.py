@@ -7,18 +7,18 @@ from django.db import models, IntegrityError
 LOGGER = logging.getLogger(__name__)
 
 
-def _update_m2m_fields(obj, **kwargs):
+def _update_m2m_fields(_obj, **kwargs):
     for key, values in kwargs.items():
         for value in values:
-            m2m_set = getattr(obj, key)
+            m2m_set = getattr(_obj, key)
             if value not in m2m_set.all():
                 m2m_set.add(value)
 
 
-def _get_m2m_kwargs(model, **kwargs):
+def _get_m2m_kwargs(_model, **kwargs):
     m2m_kwargs = {}
-    for field in model._meta.get_fields():  # noqa: pylint=protected-access
-        if field.get_internal_type() == "ManyToManyField":
+    for field in _model._meta.get_fields():  # noqa: pylint=protected-access
+        if field.get_internal_type() == 'ManyToManyField':
             m2m_kwargs[field.name] = kwargs.pop(field.name)
     return m2m_kwargs, kwargs
 
