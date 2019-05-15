@@ -68,6 +68,8 @@ def test_validate_and_create_object(test_model):
     kwargs = {'data': get_random_string(), 'names': [name1, name2]}
     obj = validate_and_create_object(model, **kwargs)
     assert obj.pk
+    assert name1 in obj.names.all()
+    assert name2 in obj.names.all()
 
 
 def test_validate_and_update_object__update(test_model):
@@ -83,6 +85,8 @@ def test_validate_and_update_object__update(test_model):
     assert res_obj.pk == obj.pk
     assert is_updated
     assert res_obj.data == new_data
+    assert name1 in res_obj.names.all()
+    assert name2 in res_obj.names.all()
 
 
 def test_validate_and_update_object__no_update(test_model):
@@ -97,6 +101,8 @@ def test_validate_and_update_object__no_update(test_model):
     assert res_obj.pk == obj.pk
     assert not is_updated
     assert res_obj.data == obj.data
+    assert name1 in res_obj.names.all()
+    assert name2 in res_obj.names.all()
 
 
 def test_update_or_create_object__create_without_search(test_model):
@@ -111,6 +117,8 @@ def test_update_or_create_object__create_without_search(test_model):
     assert res_obj.pk
     assert not is_updated
     assert is_created
+    assert name1 in res_obj.names.all()
+    assert name2 in res_obj.names.all()
 
 
 def test_update_or_create_object__create(test_model):
@@ -126,6 +134,8 @@ def test_update_or_create_object__create(test_model):
     assert res_obj.pk != obj.pk
     assert not is_updated
     assert is_created
+    assert name1 in res_obj.names.all()
+    assert name2 in res_obj.names.all()
 
 
 def test_update_or_create_object__no_update(test_model):
@@ -141,3 +151,5 @@ def test_update_or_create_object__no_update(test_model):
     assert res_obj.pk == obj.pk
     assert not is_updated
     assert not is_created
+    assert name1 in res_obj.names.all()
+    assert name2 in res_obj.names.all()
