@@ -1,3 +1,9 @@
+## 1.0.19 ##
+
+### FIX ###
+
+ - `pik.core.shortcuts.model_objects:` fix get m2m kwargs
+
 ## 1.0.18 ##
 
 ### FIX ###
