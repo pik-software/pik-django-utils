@@ -1,3 +1,4 @@
+import datetime
 from collections import defaultdict
 
 from django.contrib.admin.utils import NestedObjects
@@ -178,11 +179,6 @@ class SoftDeleted(models.Model):
     """
     Soft deletable model. Inspired by:
     https://lucasroesler.com/2017/04/delete-or-not-to-delete/
-
-    If you want to use SoftDeleted with unique constraint there are
-    a problem because NULL != NULL.
-    You can use workaround with `UniqueConstraint in django>=2.2
-    https://docs.djangoproject.com/en/2.2/ref/models/constraints/#django.db.models.UniqueConstraint
     """
     deleted = models.DateTimeField(
         editable=False, null=True, blank=True, verbose_name=_('Deleted')
@@ -211,6 +207,13 @@ class SoftDeleted(models.Model):
 
     delete.alters_data = True  # type: ignore
 
+    @classmethod
+    def post_delete_handler(cls, instance, **kwargs):
+        for field in instance._meta.get_fields():
+            if hasattr(field, 'auto_now'):
+                instance.save()
+                return
+
     def hard_delete(self, *args, **kwargs):
         return models.Model.delete(self, *args, **kwargs)
 
@@ -220,3 +223,6 @@ class SoftDeleted(models.Model):
 
     class Meta:
         abstract = True
+
+
+signals.post_delete.connect(SoftDeleted.post_delete_handler)
