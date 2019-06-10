@@ -216,7 +216,7 @@ class SoftDeleted(models.Model):
     def post_delete_handler(cls, instance, **kwargs):
         for field in instance._meta.get_fields():
             if hasattr(field, 'auto_now'):
-                instance.save()
+                instance.save_without_historical_record()
                 return
 
     def hard_delete(self, *args, **kwargs):
