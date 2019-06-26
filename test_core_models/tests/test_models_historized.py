@@ -11,7 +11,8 @@ def historized_model(request):
     return request.param
 
 
-def test_historized_protocol(historized_model):
+def test_historized_protocol(historized_model, settings):
+    settings.SAFE_MODE = False
     model, factory = historized_model
     obj = factory.create()
     history = obj.history.all()

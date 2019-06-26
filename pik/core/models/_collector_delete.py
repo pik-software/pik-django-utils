@@ -8,12 +8,19 @@ from django.db.models import signals, sql
 from django.db.models.deletion import Collector
 from django.db.models.fields.related import ForeignObject
 from django.utils import six
+from django.utils.translation import ugettext_lazy as _
+from django.conf import settings
 
 FIELD = 'deleted'
 
 
+class DeleteNotSoftDeletedModel(Exception):
+    pass
+
+
 def _delete(self):
     from .soft_deleted import SoftDeleted
+    safe_mode = getattr(settings, 'SAFE_MODE', True)
     time = now()
 
     # sort instance collections
@@ -30,7 +37,15 @@ def _delete(self):
     with transaction.atomic(using=self.using, savepoint=False):
         # send pre_delete signals
         for model, obj in self.instances_with_model():
-            if not model._meta.auto_created:
+            if not model._meta.auto_created and not issubclass(  # noqa: pylint=protected-access
+                    model, SoftDeleted):
+                if safe_mode:
+                    raise DeleteNotSoftDeletedModel(
+                        _(f'You are trying to delete {model.__name__} instance,'
+                          f' but {model.__name__} is not subclass of '
+                          f'{SoftDeleted.__name__}. You need to inherit your '
+                          f'model from {SoftDeleted.__name__}'
+                          f' or set settings.SAFE_MODE to False'))
                 signals.pre_delete.send(
                     sender=model, instance=obj, using=self.using
                 )
@@ -70,13 +85,13 @@ def _delete(self):
                 query = sql.DeleteQuery(model)
                 pk_list = [obj.pk for obj in instances]
                 count = query.delete_batch(pk_list, self.using)
-            deleted_counter[model._meta.label] += count
 
-            if not model._meta.auto_created:
-                for obj in instances:
-                    signals.post_delete.send(
-                        sender=model, instance=obj, using=self.using
-                    )
+                if not model._meta.auto_created:
+                    for obj in instances:
+                        signals.post_delete.send(
+                            sender=model, instance=obj, using=self.using
+                        )
+            deleted_counter[model._meta.label] += count
 
     # update collected instances
     for model, instances_for_fieldvalues in six.iteritems(self.field_updates):
