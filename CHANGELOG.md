@@ -1,3 +1,14 @@
+## 1.0.20 ##
+
+### FIX ###
+
+- `pik.core.models.soft_deleted:` made `SoftDeleted` model work correctly with history and auto_now fields
+
+### NEW ###
+
+- For now all not soft deletions are restricted by default. You can change it by setting `settings.SAFE_MODE` to `False`
+- SoftDeleted models don't send `pre_delete` and `post_delete` signals
+
 ## 1.0.19 ##
 
 ### FIX ###
