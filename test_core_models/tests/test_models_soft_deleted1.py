@@ -1,4 +1,4 @@
-from django.db.models.signals import post_delete
+from django.db.models.signals import post_delete, post_save
 from django.test import TestCase
 from django.utils.timezone import now
 
@@ -35,7 +35,8 @@ class TestDelete(TestCase):
     def test_depended(self):
         model = RemovableDepended
         model.objects.create(dependence=self.permanent)
-        self.permanent.delete()
+        with self.settings(SAFE_MODE=False):
+            self.permanent.delete()
         self.assertEqual(list(model.objects.all()), [])
 
     def test_non_removable_depended(self):
@@ -82,18 +83,25 @@ class TestDelete(TestCase):
         self.assertEqual(list(PermanentDepended.all_objects.select_related('dependence').all()), [p])
 
     def test_double_delete(self):
-        self.called = 0
+        self.called_post_delete = 0
+        self.called_post_save = 0
 
         def post_delete_receiver(*args, **kwargs):
-            self.called += 1
+            self.called_post_delete += 1
+
+        def post_save_receiver(*args, **kwargs):
+            self.called_post_save += 1
 
         post_delete.connect(post_delete_receiver, sender=PermanentDepended)
+        post_save.connect(post_save_receiver, sender=PermanentDepended)
 
         model = PermanentDepended
         model.objects.create(dependence=self.permanent, deleted=now())
-        model.objects.create(dependence=self.permanent)
         self.permanent.delete()
-        self.assertEqual(self.called, 1)
+        # because we don't called pre/post delete signals on
+        # softdeleted modelds
+        self.assertEqual(self.called_post_delete, 0)
+        self.assertEqual(self.called_post_save, 1)
 
     def test_restore(self):
         self.called_pre = 0

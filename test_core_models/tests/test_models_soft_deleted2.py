@@ -1,10 +1,12 @@
 from test_core_models import models
 
 
-def test_built_in_cascade():
+def test_built_in_cascade(settings):
     """
     Verifies cascade deletion
     """
+    settings.SAFE_MODE = False
+
     base = models.BaseModel.objects.create(name='test')
     models.NullRelatedModel.objects.create(nullable_base=base)
 
@@ -12,12 +14,13 @@ def test_built_in_cascade():
     assert not (models.NullRelatedModel.objects.exists())
 
 
-def test_cascade_delete():
+def test_cascade_delete(settings):
     """
     Verify that if we delete a model with the ArchiveMixin, then the
     delete cascades to its "parents", i.e. the models with foreign keys
     to it.
     """
+    settings.SAFE_MODE = False
     base = models.BaseArchiveModel.objects.create(name='test')
     related = models.RelatedModel.objects.create(base=base)
     models.RelatedCousinModel.objects.create(related=related)
@@ -44,12 +47,13 @@ def test_cascade_delete():
     assert (cousin_archivable.deleted) is not None
 
 
-def test_cascade_delete_qs():
+def test_cascade_delete_qs(settings):
     """
     Verify that if we delete a model with the ArchiveMixin, then the
     delete cascades to its "parents", i.e. the models with foreign keys
     to it.
     """
+    settings.SAFE_MODE = False
     base = models.BaseArchiveModel.objects.create(name='test')
     models.BaseArchiveModel.objects.create(name='test')
     models.BaseArchiveModel.objects.create(name='test')

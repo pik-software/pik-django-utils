@@ -111,3 +111,8 @@ USE_TZ = False
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
+
+
+# SOFT DELETE
+# when SAFE_MODE is True - not soft deletion restricted
+SAFE_MODE = True
