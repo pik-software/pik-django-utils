@@ -171,6 +171,12 @@ class AllObjectsQuerySet(_BaseSoftDeletedQuerySet):
         super().__init__(*args, **kwargs)
         self.query.where_class = _AllWhereNode
 
+    def is_deleted(self):
+        return self.filter(deleted__isnull=False)
+
+    def is_not_deleted(self):
+        return self.filter(deleted__isnull=True)
+
 
 class SoftDeleted(models.Model):
     """

@@ -1,6 +1,11 @@
 ## 1.0.21 ##
 
- - ???
+### NEW ###
+
++ `pik.core.models.soft_deleted:` `AllObjectsQuerySet` now supports two queryset filters. It might be helpfull 
+if you want to add filtering in your API not by `deleted` field, but on custom property (like `is_deleted`):
+    + `is_deleted`. Example: `SomeModel.all_objects.is_deleted()`
+    + `is_not_deleted`. Example: `SomeModel.all_objects.is_not_deleted()`
 
 ## 1.0.20 ##
 
