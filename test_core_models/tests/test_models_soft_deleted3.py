@@ -165,3 +165,24 @@ def test_hard_delete_without_safe_mode(settings):
 
     with pytest.raises(models.MySoftDeleteModel.DoesNotExist):
         obj.refresh_from_db()
+
+
+def test_all_objects_is_deleted_filter(settings):
+    settings.SAFE_MODE = True
+    obj1 = models.MySoftDeleteModel.objects.create(name="obj 1")
+    obj2 = models.MySoftDeleteModel.objects.create(name="obj 2")
+    obj3 = models.MySoftDeleteModel.objects.create(name="obj 3")
+
+    obj2.delete()
+    obj3.delete()
+
+    assert 3 == len(models.MySoftDeleteModel.all_objects.all())
+
+    is_deleted_qs = models.MySoftDeleteModel.all_objects.is_deleted()
+    assert 2 == len(is_deleted_qs)
+    assert obj2 in is_deleted_qs
+    assert obj3 in is_deleted_qs
+
+    is_not_deleted_qs = models.MySoftDeleteModel.all_objects.is_not_deleted()
+    assert 1 == len(is_not_deleted_qs)
+    assert obj1 in is_not_deleted_qs
