@@ -114,5 +114,6 @@ STATIC_URL = '/static/'
 
 
 # SOFT DELETE
-# when SAFE_MODE is True - not soft deletion restricted
-SAFE_MODE = True
+# when SOFT_DELETE_SAFE_MODE is True - not soft deletion restricted
+SOFT_DELETE_SAFE_MODE = True
+SOFT_DELETE_EXCLUDE = []

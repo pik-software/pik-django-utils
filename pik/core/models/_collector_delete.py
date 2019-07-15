@@ -20,7 +20,8 @@ class DeleteNotSoftDeletedModel(Exception):
 
 def _delete(self):
     from .soft_deleted import SoftDeleted
-    safe_mode = getattr(settings, 'SAFE_MODE', True)
+    safe_mode = getattr(settings, 'SOFT_DELETE_SAFE_MODE', True)
+    soft_delete_exclude_list = getattr(settings, 'SOFT_DELETE_EXCLUDE', [])
     time = now()
 
     # sort instance collections
@@ -39,13 +40,13 @@ def _delete(self):
         for model, obj in self.instances_with_model():
             if not model._meta.auto_created and not issubclass(  # noqa: pylint=protected-access
                     model, SoftDeleted):
-                if safe_mode:
+                if safe_mode and model._meta.object_name not in soft_delete_exclude_list:
                     raise DeleteNotSoftDeletedModel(
-                        _(f'You are trying to delete {model.__name__} instance,'
-                          f' but {model.__name__} is not subclass of '
-                          f'{SoftDeleted.__name__}. You need to inherit your '
-                          f'model from {SoftDeleted.__name__}'
-                          f' or set settings.SAFE_MODE to False'))
+                        _(f'You are trying to delete {model._meta.object_name} instance,'
+                          f' but {model._meta.object_name} is not subclass of '
+                          f'{SoftDeleted._meta.object_name}. You need to inherit your '
+                          f'model from {SoftDeleted._meta.object_name}'
+                          f' or set settings.SOFT_DELETE_SAFE_MODE to False'))
                 signals.pre_delete.send(
                     sender=model, instance=obj, using=self.using
                 )

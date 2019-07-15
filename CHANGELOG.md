@@ -1,8 +1,18 @@
+## 1.0.22 ##
+
+### NEW ###
+
+- You can provide list of model's names in `SOFT_DELETE_EXCLUDE` to prevent soft delete logic on this models
+
+### FIX ###
+
+- `settings.SAFE_MODE` renamed to `settings.SOFT_DELETE_SAFE_MODE`
+
 ## 1.0.21 ##
 
 ### NEW ###
 
-+ `pik.core.models.soft_deleted:` `AllObjectsQuerySet` now supports two queryset filters. It might be helpfull 
++ `pik.core.models.soft_deleted:` `AllObjectsQuerySet` now supports two queryset filters. It might be helpful
 if you want to add filtering in your API not by `deleted` field, but on custom property (like `is_deleted`):
     + `is_deleted`. Example: `SomeModel.all_objects.is_deleted()`
     + `is_not_deleted`. Example: `SomeModel.all_objects.is_not_deleted()`
