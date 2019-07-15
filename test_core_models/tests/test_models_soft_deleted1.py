@@ -35,7 +35,7 @@ class TestDelete(TestCase):
     def test_depended(self):
         model = RemovableDepended
         model.objects.create(dependence=self.permanent)
-        with self.settings(SAFE_MODE=False):
+        with self.settings(SOFT_DELETE_SAFE_MODE=False):
             self.permanent.delete()
         self.assertEqual(list(model.objects.all()), [])
 

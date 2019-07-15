@@ -5,7 +5,7 @@ def test_built_in_cascade(settings):
     """
     Verifies cascade deletion
     """
-    settings.SAFE_MODE = False
+    settings.SOFT_DELETE_SAFE_MODE = False
 
     base = models.BaseModel.objects.create(name='test')
     models.NullRelatedModel.objects.create(nullable_base=base)
@@ -20,7 +20,7 @@ def test_cascade_delete(settings):
     delete cascades to its "parents", i.e. the models with foreign keys
     to it.
     """
-    settings.SAFE_MODE = False
+    settings.SOFT_DELETE_SAFE_MODE = False
     base = models.BaseArchiveModel.objects.create(name='test')
     related = models.RelatedModel.objects.create(base=base)
     models.RelatedCousinModel.objects.create(related=related)
@@ -53,7 +53,7 @@ def test_cascade_delete_qs(settings):
     delete cascades to its "parents", i.e. the models with foreign keys
     to it.
     """
-    settings.SAFE_MODE = False
+    settings.SOFT_DELETE_SAFE_MODE = False
     base = models.BaseArchiveModel.objects.create(name='test')
     models.BaseArchiveModel.objects.create(name='test')
     models.BaseArchiveModel.objects.create(name='test')

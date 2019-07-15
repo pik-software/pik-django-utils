@@ -1,4 +1,5 @@
 import pytest
+from django.contrib.auth import get_user_model
 from django.db.utils import IntegrityError
 from django.utils.timezone import now
 
@@ -93,7 +94,7 @@ def test_restore_soft_deleted_model():
 
 
 def test_cascade_delete_with_fk_to_not_soft_deleted_model(settings):
-    settings.SAFE_MODE = False
+    settings.SOFT_DELETE_SAFE_MODE = False
     not_soft_del_obj = models.MyNotSoftDeletedModel.objects.create(name='test')
     models.MySoftDeletedModelWithFK.objects.create(
         name='test soft', not_soft_deleted_fk=not_soft_del_obj)
@@ -103,7 +104,7 @@ def test_cascade_delete_with_fk_to_not_soft_deleted_model(settings):
 
 
 def test_cascade_delete_with_fk_to_soft_deleted_model_failed(settings):
-    settings.SAFE_MODE = True
+    settings.SOFT_DELETE_SAFE_MODE = True
     soft_del_obj = models.MySoftDeleteModel.objects.create(
         name='test soft')
     models.MyRelatedNotSoftDeletedModel.objects.create(
@@ -114,7 +115,7 @@ def test_cascade_delete_with_fk_to_soft_deleted_model_failed(settings):
 
 
 def test_cascade_delete_with_fk_to_soft_deleted_model_success(settings):
-    settings.SAFE_MODE = False
+    settings.SOFT_DELETE_SAFE_MODE = False
     soft_del_obj = models.MySoftDeleteModel.objects.create(
         name='test soft')
     not_soft_del_obj = models.MyRelatedNotSoftDeletedModel.objects.create(
@@ -142,7 +143,7 @@ def test_cascade_soft_delete_with_already_deleted_model():
 
 
 def test_not_soft_delete_without_safe_mode(settings):
-    settings.SAFE_MODE = False
+    settings.SOFT_DELETE_SAFE_MODE = False
     obj = models.MyNotSoftDeletedModel.objects.create(
         name='test soft')
 
@@ -150,7 +151,7 @@ def test_not_soft_delete_without_safe_mode(settings):
 
 
 def test_hard_delete_with_safe_mode(settings):
-    settings.SAFE_MODE = True
+    settings.SOFT_DELETE_SAFE_MODE = True
     obj = models.MySoftDeleteModel.objects.create(name="i'm gone")
     obj.hard_delete()
 
@@ -159,7 +160,7 @@ def test_hard_delete_with_safe_mode(settings):
 
 
 def test_hard_delete_without_safe_mode(settings):
-    settings.SAFE_MODE = False
+    settings.SOFT_DELETE_SAFE_MODE = False
     obj = models.MySoftDeleteModel.objects.create(name="I'm gone too")
     obj.hard_delete()
 
@@ -168,7 +169,7 @@ def test_hard_delete_without_safe_mode(settings):
 
 
 def test_all_objects_is_deleted_filter(settings):
-    settings.SAFE_MODE = True
+    settings.SOFT_DELETE_SAFE_MODE = True
     obj1 = models.MySoftDeleteModel.objects.create(name="obj 1")
     obj2 = models.MySoftDeleteModel.objects.create(name="obj 2")
     obj3 = models.MySoftDeleteModel.objects.create(name="obj 3")
@@ -186,3 +187,15 @@ def test_all_objects_is_deleted_filter(settings):
     is_not_deleted_qs = models.MySoftDeleteModel.all_objects.is_not_deleted()
     assert 1 == len(is_not_deleted_qs)
     assert obj1 in is_not_deleted_qs
+
+
+def test_deleted_model_from_exclude_list(settings):
+    settings.SOFT_DELETE_SAFE_MODE = True
+    settings.SOFT_DELETE_EXCLUDE = ['User']
+
+    User = get_user_model()
+    u = User.objects.create(username='test_user')
+    u.delete()
+
+    with pytest.raises(User.DoesNotExist):
+        u.refresh_from_db()

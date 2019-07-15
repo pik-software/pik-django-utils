@@ -55,7 +55,7 @@ def test_historical_protocol_update(historical_model):
 
 
 def test_historical_protocol_history(historical_model, settings):
-    settings.SAFE_MODE = False
+    settings.SOFT_DELETE_SAFE_MODE = False
     model, factory = historical_model
     obj1 = factory.create()
     obj2 = factory.create()
