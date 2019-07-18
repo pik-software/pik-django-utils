@@ -191,7 +191,7 @@ def test_all_objects_is_deleted_filter(settings):
 
 def test_deleted_model_from_exclude_list(settings):
     settings.SOFT_DELETE_SAFE_MODE = True
-    settings.SOFT_DELETE_EXCLUDE = ['User']
+    settings.SOFT_DELETE_EXCLUDE = ['auth.User']
 
     User = get_user_model()
     u = User.objects.create(username='test_user')
