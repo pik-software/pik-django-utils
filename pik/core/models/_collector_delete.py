@@ -18,10 +18,18 @@ class DeleteNotSoftDeletedModel(Exception):
     pass
 
 
+def _is_soft_excluded(model):
+    soft_delete_exclude_list = getattr(settings, 'SOFT_DELETE_EXCLUDE', [])
+    value = f'{model._meta.app_label}.{model._meta.object_name}'
+    if value in soft_delete_exclude_list:
+        return True
+    return False
+
+
 def _delete(self):
     from .soft_deleted import SoftDeleted
     safe_mode = getattr(settings, 'SOFT_DELETE_SAFE_MODE', True)
-    soft_delete_exclude_list = getattr(settings, 'SOFT_DELETE_EXCLUDE', [])
+
     time = now()
 
     # sort instance collections
@@ -40,7 +48,8 @@ def _delete(self):
         for model, obj in self.instances_with_model():
             if not model._meta.auto_created and not issubclass(  # noqa: pylint=protected-access
                     model, SoftDeleted):
-                if safe_mode and model._meta.object_name not in soft_delete_exclude_list:
+
+                if safe_mode and not _is_soft_excluded(model):
                     raise DeleteNotSoftDeletedModel(
                         _(f'You are trying to delete {model._meta.object_name} instance,'
                           f' but {model._meta.object_name} is not subclass of '
