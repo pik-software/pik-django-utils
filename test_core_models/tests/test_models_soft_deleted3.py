@@ -1,6 +1,6 @@
 import pytest
 from django.contrib.auth import get_user_model
-from django.db.utils import IntegrityError
+from django.db.utils import IntegrityError, OperationalError
 from django.utils.timezone import now
 
 from pik.core.models._collector_delete import DeleteNotSoftDeletedModel  # noqa: protected access
@@ -199,3 +199,11 @@ def test_deleted_model_from_exclude_list(settings):
 
     with pytest.raises(User.DoesNotExist):
         u.refresh_from_db()
+
+
+def test_child_model():
+    type_obj = models.ParentTypeSoftDeleteModel.objects.create(
+        name='type_name')
+    obj = models.ParentSoftDeleteModel.objects.create(
+        name='test', type_model=type_obj)
+    obj.delete()
