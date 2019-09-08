@@ -8,8 +8,6 @@ kombu>=4.2.1
 
 # Text normalization library
 cucco==2.2.1
-# Lexical Sortable UUID
-ulid-py==0.0.6
 
 # Other
 # Requests doesn't support newer urllib3
