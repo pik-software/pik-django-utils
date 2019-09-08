@@ -1,5 +1,8 @@
+from unittest.mock import patch
+
 import pytest
 from django.db.models import Q
+from django.test import TestCase
 from django.utils.crypto import get_random_string
 
 from pik.core.shortcuts import (
@@ -153,3 +156,19 @@ def test_update_or_create_object__no_update(test_model):
     assert not is_created
     assert name1 in res_obj.names.all()
     assert name2 in res_obj.names.all()
+
+
+class TestNotCallM2MUpdate(TestCase):
+    @staticmethod
+    @patch('pik.core.shortcuts.model_objects._update_m2m_fields')
+    def test_update_or_create_object(_update_m2m_fields):
+        model, factory = MySimpleModel, MySimpleModelFactory
+        obj = factory.create()
+        new_data = get_random_string()
+
+        res_obj, is_updated, is_created = update_or_create_object(
+            model, search_keys=dict(data=new_data), data=new_data)
+        assert res_obj.pk != obj.pk
+        assert not is_updated
+        assert is_created
+        _update_m2m_fields.assert_not_called()
