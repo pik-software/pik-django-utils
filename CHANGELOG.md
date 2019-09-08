@@ -1,10 +1,15 @@
+## ??? ##
+
+### FIX ###
+
+- requirements: remove `urllib3` version pinning
+
 ## 1.0.23 ##
 
 ### FIX ###
 
 - `pik.core.models.soft_deleted:` `SOFT_DELETE_EXCLUDE` now construct
 from `app_label.model_name`, because of problems with same model's name in different apps
-
 
 ## 1.0.22 ##
 
