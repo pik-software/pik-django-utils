@@ -8,8 +8,3 @@ kombu>=4.2.1
 
 # Text normalization library
 cucco==2.2.1
-
-# Other
-# Requests doesn't support newer urllib3
-# https://github.com/kennethreitz/requests/issues/5067
-urllib3<=1.24.2
