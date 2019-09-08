@@ -40,7 +40,7 @@ jobs:
           name: run tests
           command: |
             . .venv/bin/activate
-            set +x
+            set -x
             check-manifest
             python setup.py check -m -s
             pytest --doctest-modules --cov-report term-missing --durations=0 --cov pik -vvv
