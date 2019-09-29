@@ -21,8 +21,10 @@ def test_historical_protocol(historical_model):
     obj_first = model.objects.first()
     assert obj_first.pk == obj1.pk
     assert obj_last.pk == obj2.pk
-    assert obj_first.uid < obj_last.uid
-    assert obj_first.pk < obj_last.pk
+    assert obj_first.created < obj_last.created
+    assert obj_first.updated < obj_last.updated
+    assert obj_first.version == obj_last.version
+    assert obj_first.uid != obj_last.uid
 
 
 def test_historical_protocol_fields(historical_model):
