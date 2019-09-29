@@ -5,8 +5,12 @@ from django.db import models
 from django.utils.functional import cached_property
 
 
+def _new_uid():
+    return uuid4()
+
+
 class Uided(models.Model):
-    uid = models.UUIDField(unique=True, default=uuid4, editable=False)
+    uid = models.UUIDField(unique=True, default=_new_uid, editable=False)
 
     @property
     def suid(self) -> str:
@@ -27,7 +31,7 @@ class PUided(models.Model):
     """
     Primary Uided
     """
-    uid = models.UUIDField(primary_key=True, default=uuid4, editable=False)
+    uid = models.UUIDField(primary_key=True, default=_new_uid, editable=False)
 
     @property
     def suid(self) -> str:
