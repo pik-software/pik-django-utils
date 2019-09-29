@@ -1,5 +1,11 @@
 ## ??? ##
 
+## 2.0.0 ##
+
+### CHANGE ###
+
+ - **!!! incompatible !!!** `pik.core.models`: `Uided` and `PUided` use `uuid4` uid generation function instead `luid` lib
+
 ### FIX ###
 
 - requirements: remove `urllib3` version pinning
