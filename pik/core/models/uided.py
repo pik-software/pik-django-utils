@@ -25,7 +25,7 @@ class PUided(models.Model):
     """
     Primary Uided
     """
-    uid = models.UUIDField(primary_key=True, default=_new_uid, editable=False)
+    uid = models.UUIDField(primary_key=True, editable=False)
 
     @property
     def suid(self) -> str:
