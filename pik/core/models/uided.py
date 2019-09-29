@@ -1,15 +1,12 @@
-import ulid
+from uuid import uuid4
+
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.functional import cached_property
 
 
-def _new_uid():
-    return ulid.new().uuid
-
-
 class Uided(models.Model):
-    uid = models.UUIDField(unique=True, default=_new_uid, editable=False)
+    uid = models.UUIDField(unique=True, default=uuid4, editable=False)
 
     @property
     def suid(self) -> str:
@@ -23,7 +20,6 @@ class Uided(models.Model):
         return self.suid
 
     class Meta:
-        ordering = ['-uid']
         abstract = True
 
 
@@ -31,7 +27,7 @@ class PUided(models.Model):
     """
     Primary Uided
     """
-    uid = models.UUIDField(primary_key=True, default=_new_uid, editable=False)
+    uid = models.UUIDField(primary_key=True, default=uuid4, editable=False)
 
     @property
     def suid(self) -> str:
@@ -45,5 +41,4 @@ class PUided(models.Model):
         return self.suid
 
     class Meta:
-        ordering = ['-uid']
         abstract = True
