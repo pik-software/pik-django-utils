@@ -13,5 +13,4 @@ class Dated(models.Model):
     )
 
     class Meta:
-        ordering = ['-created']
         abstract = True
