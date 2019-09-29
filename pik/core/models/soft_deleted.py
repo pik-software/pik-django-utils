@@ -3,7 +3,7 @@ from collections import defaultdict
 from django.contrib.admin.utils import NestedObjects
 from django.core.exceptions import FieldDoesNotExist
 from django.db import models, router, transaction
-from django.db.models import Q, signals
+from django.db.models import Q
 from django.db.models.sql.where import WhereNode
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
@@ -90,9 +90,7 @@ def _delete_collected(collector):
         for model, instances in collector.soft_delete_objs.items():
             if not model._meta.auto_created:  # noqa: pylint=protected-access
                 for obj in instances:
-                    signals.post_delete.send(
-                        sender=model, instance=obj, using=collector.using
-                    )
+                    obj.save()
     return result
 
 
@@ -173,11 +171,22 @@ class AllObjectsQuerySet(_BaseSoftDeletedQuerySet):
         super().__init__(*args, **kwargs)
         self.query.where_class = _AllWhereNode
 
+    def is_deleted(self):
+        return self.filter(deleted__isnull=False)
+
+    def is_not_deleted(self):
+        return self.filter(deleted__isnull=True)
+
 
 class SoftDeleted(models.Model):
     """
     Soft deletable model. Inspired by:
     https://lucasroesler.com/2017/04/delete-or-not-to-delete/
+
+    If you want to use SoftDeleted with unique constraint there are
+    a problem because NULL != NULL.
+    You can use workaround with `UniqueConstraint in django>=2.2
+    https://docs.djangoproject.com/en/2.2/ref/models/constraints/#django.db.models.UniqueConstraint
     """
     deleted = models.DateTimeField(
         editable=False, null=True, blank=True, verbose_name=_('Deleted')
@@ -197,10 +206,6 @@ class SoftDeleted(models.Model):
         if self.deleted:
             return 0, {}  # short-circuit here to prevent lots of nesting
 
-        if not self._meta.auto_created:
-            signals.pre_delete.send(
-                sender=self.__class__, instance=self, using=using)
-
         collector = _cascade_soft_delete(self, using, keep_parents)
         return _delete_collected(collector)
 
@@ -211,7 +216,7 @@ class SoftDeleted(models.Model):
 
     def restore(self):
         self.deleted = None
-        self.save(update_fields=['deleted'])
+        self.save()
 
     class Meta:
         abstract = True

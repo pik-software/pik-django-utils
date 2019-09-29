@@ -1,6 +1,93 @@
+## ??? ##
+
+## 2.0.1 ##
+
+### CHANGE ###
+
+ - **!!! incompatible !!!** `pik.core.models`: `Uided` and `PUided` use `uuid4` uid generation function instead `luid` lib
+ - **!!! incompatible !!!** `pik.core.models`: `BaseHistorical` and `BasePHistorical` use ordering by `created` field
+ - remove `ulid-py` requirements
+
+### FIX ###
+
+- requirements: remove `urllib3` version pinning
+
+## 1.0.23 ##
+
+### FIX ###
+
+- `pik.core.models.soft_deleted:` `SOFT_DELETE_EXCLUDE` now construct
+from `app_label.model_name`, because of problems with same model's name in different apps
+
+## 1.0.22 ##
+
+### NEW ###
+
+- You can provide list of model's names in `SOFT_DELETE_EXCLUDE` to prevent soft delete logic on this models
+
+### FIX ###
+
+- `settings.SAFE_MODE` renamed to `settings.SOFT_DELETE_SAFE_MODE`
+
+## 1.0.21 ##
+
+### NEW ###
+
++ `pik.core.models.soft_deleted:` `AllObjectsQuerySet` now supports two queryset filters. It might be helpful
+if you want to add filtering in your API not by `deleted` field, but on custom property (like `is_deleted`):
+    + `is_deleted`. Example: `SomeModel.all_objects.is_deleted()`
+    + `is_not_deleted`. Example: `SomeModel.all_objects.is_not_deleted()`
+
+## 1.0.20 ##
+
+### FIX ###
+
+- `pik.core.models.soft_deleted:` made `SoftDeleted` model work correctly with history and auto_now fields
+
+### NEW ###
+
+- For now all not soft deletions are restricted by default. You can change it by setting `settings.SAFE_MODE` to `False`
+- SoftDeleted models don't send `pre_delete` and `post_delete` signals
+
+## 1.0.19 ##
+
+### FIX ###
+
+ - `pik.core.shortcuts.model_objects:` fix get m2m kwargs
+
+## 1.0.18 ##
+
+### FIX ###
+
+ - sqlite3 tests issue
+ - softdelete tests
+ - `№` symbol noramilzation issue
+ 
+ ### NEW ###
+ 
+ - `validate_and_update_object` `validate_and_create_object` m2m support
+
+## 1.0.17 ##
+
+### FIX ###
+
+ - `core.shortcuts`: get_object_or_none add QuerySet support
+ - `core.shortcuts`: validate_and_update_object return updated fields list
+ - `core.shortcuts`: update_or_create_object return updated fields list
+
+### NOTE ###
+
+ - validate_and_update_object, update_or_create_object -- changed return value !!
+
+## 1.0.16 ##
+
+ - django-simple-history>=2.4.0
+
 ## 1.0.15 ##
 
- - ??
+### NEW ###
+
+ - `pik.core.models.fields`: InheritPrimaryUidField
 
 ## 1.0.14 ##
 

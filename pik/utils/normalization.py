@@ -1,18 +1,11 @@
 import re
-
 from cucco import Cucco
 
 _CUCCO = Cucco()
 
-UNICODE_SYMBOL_SHORT_I = '̆'
-UNICODE_SYMBOL_E = '̈'
 
 NORMALIZATIONS = [
-    'remove_extra_white_spaces',
-    'replace_emojis',
-    ('remove_accent_marks', {'excluded': [
-        UNICODE_SYMBOL_SHORT_I, UNICODE_SYMBOL_E]}),
-    ('replace_symbols', {'form': 'NFKC'})]
+    'remove_extra_white_spaces']
 
 
 def normalize(text: str) -> str:
@@ -25,6 +18,8 @@ def normalize(text: str) -> str:
     'ЗАО "ЮВЕЛИРНЫЙ завод'
     >>> normalize("ОАО 'ЁЛКИ и ПАЛКИ' ")
     "ОАО 'ЁЛКИ и ПАЛКИ'"
+    >>> normalize('Столовая №1')
+    'Столовая №1'
 
     :param text: some hand typed text
     :return: normalized text
