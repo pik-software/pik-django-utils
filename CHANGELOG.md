@@ -5,6 +5,7 @@
 ### CHANGE ###
 
  - **!!! incompatible !!!** `pik.core.models`: `Uided` and `PUided` use `uuid4` uid generation function instead `luid` lib
+ - **!!! incompatible !!!** `pik.core.models`: `BaseHistorical` and `BasePHistorical` use ordering by `created` field
 
 ### FIX ###
 
