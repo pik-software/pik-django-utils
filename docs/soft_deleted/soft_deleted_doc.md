@@ -1,21 +1,22 @@
-## Дукоментация SoftDeleted 
+## SoftDeleted  docs
 
-### Установка
+### Installation
 
-- Обновить pik-django-utils `pip install pik-django-utils>=1.0.23`
+- Upgrade pik-django-utils `pip install pik-django-utils>=1.0.23`
+
 ### ВАЖНО
 
-Данная версия `pik-django-utils` гарантирует, что по умолчанию(!) сущности не SoftDeleted модели не могут быть удалены. Попытка удаления таких сущностей приведет к исключению.
-<br><br>В history событие на удаление будет отображаться как <b>"~"</b>, а не <b>"-"</b>. Эта информация может быть очень важна, если кто-то интегрировался с вашим сервисом.
+Current `pik-django-utils` guarantees (by default) all not SoftDeleted instances can't be deleted. Attempt to delete will raise an exception.
+<b>Important info about integrations</b>: `history_type` on delete event will be <b>"~"</b>, not <b>"-"</b>.
 
-### Настройка `settings.py`
+### Settings `settings.py`
 
-#### Безопасный режим `SOFT_DELETE_SAFE_MODE`
+#### Safe mode `SOFT_DELETE_SAFE_MODE`
 
-Значение по умолчанию: `True`<br><br>
-Если безопасный режим включен, то попытка удаления сущности не `SoftDeleted` модели приведет к исключению.
+Default value: `True`<br><br>
+If safe mode is on attempt to delete not SoftDeleted instance will raise an exception.
 <br>
-Если вы хотите, чтобы безопасный режим был включен, но при этом какие-то не SoftDeleted сущности можно было удалять, необходимо данные модель добавить в список исключений:
+If you want some not SoftDeleted instances can be delete, you should add not softdeleted models to exclude list:
 ```python
 SOFT_DELETE_EXCLUDE = (
     'auth.User',  # User model
@@ -23,7 +24,7 @@ SOFT_DELETE_EXCLUDE = (
 )
 ```
 
-### Использование
+### Using
 
 models.py
 
@@ -74,9 +75,9 @@ Out[6]: <SoftDeletedObjectsQuerySet [<Organization: АПИКА>]>
 In [7]: Organization.objects.create(name='АПИКА', inn='3562142312', kpp='447251097')  # no IntegrityError
 ```
 
-### Дополнительные настройки
+### Additional settings
 
-Если вы используете QuerySet.as_manager() в своих моделях, то для корретной работы необходимо сделать следующее:
+If you want to use `QuerySet.as_manager()` you should do something like this:
 
 #### Модели
 ```python
@@ -114,7 +115,7 @@ class Organization(BaseHistorical):
 
 #### API
 
-В API необходимо везде переопределить `get_queryset()` метод, чтобы там использовался `all_objects` менеджер. Пример:<br>
+##### ViewSets
 ```python
 class OrganizationViewSet(HistoryViewSetMixin, StandardizedModelViewSet):
     lookup_field = 'uid'
@@ -133,8 +134,7 @@ class OrganizationViewSet(HistoryViewSetMixin, StandardizedModelViewSet):
     def get_queryset(self):
         return Organization.all_objects.all()
 ```
-
-Также необходимо переопределить `queryset` в фильтрах. Пример:
+##### Filters
 ```python
 class EmploymentFilter(StandardizedFilterSet):
     organization = filters.RelatedFilter(
@@ -152,7 +152,7 @@ class EmploymentFilter(StandardizedFilterSet):
         }
 ```
 
-Если у вас есть `SoftDeleted` M2M, то вам необходимо убрать удаленные связи из отображения в связанных сущностях. Для этого необходимо использовать Prefetch. Пример:
+##### M2M
 ```python
 class UnitViewSet(HistoryViewSetMixin, StandardizedModelViewSet):
     lookup_field = 'uid'
@@ -181,7 +181,6 @@ class UnitViewSet(HistoryViewSetMixin, StandardizedModelViewSet):
             )
         )
 ```
-Также необходимо убрать удаленные M2M связи из фильтров. Пример:
 ```python
 class SimpleUnitFilter(StandardizedFilterSet):
     buildings_group = filters.RelatedFilter(
