@@ -14,3 +14,4 @@ prune tests
 exclude .prospector.yaml
 exclude release.sh
 exclude conftest.py
+recursive-exclude docs *.md
