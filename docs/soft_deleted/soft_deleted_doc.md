@@ -4,7 +4,7 @@
 
 - Upgrade pik-django-utils `pip install pik-django-utils>=1.0.23`
 
-### ВАЖНО
+### Important notes
 
 Current `pik-django-utils` guarantees (by default) all not SoftDeleted instances can't be deleted. Attempt to delete will raise an exception.
 <b>Important info about integrations</b>: `history_type` on delete event will be <b>"~"</b>, not <b>"-"</b>.
@@ -79,7 +79,7 @@ In [7]: Organization.objects.create(name='АПИКА', inn='3562142312', kpp='44
 
 If you want to use `QuerySet.as_manager()` you should do something like this:
 
-#### Модели
+#### Models
 ```python
 from pik.core.models.soft_deleted import SoftObjectsQuerySet, AllObjectsQuerySet
 
