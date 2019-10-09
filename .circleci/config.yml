@@ -8,7 +8,7 @@ jobs:
     docker:
       # specify the version you desire here
       # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
-      - image: quay.io/pik-software/base:v1.10
+      - image: quay.io/pik-software/base:v1.11
 
       - image: mdillon/postgis:9.6
         environment:
@@ -27,20 +27,30 @@ jobs:
     steps:
       - checkout
 
+      - type: cache-restore
+        key: pik-python-{{ arch }}-{{ .Branch }}-{{ checksum "requirements.txt" }}-{{ checksum "requirements.dev.txt" }}
+
       - run:
           name: install dependencies
           command: |
             python3 -m venv .venv
             . .venv/bin/activate
-            set +x
-            pip install -r requirements.txt
-            pip install -r requirements.dev.txt
+            pip install --upgrade pip
+            pip install --upgrade setuptools
+            pip install --exists-action w -r requirements.txt --progress-bar off
+            pip install --exists-action w -r requirements.dev.txt --progress-bar off            
+            pip check
+
+      - type: cache-save
+        key: pik-python-{{ arch }}-{{ .Branch }}-{{ checksum "requirements.txt" }}-{{ checksum "requirements.dev.txt" }}
+        paths:
+          - "~/repo/.venv"
 
       - run:
           name: run tests
           command: |
             . .venv/bin/activate
-            set +x
+            set -x
             check-manifest
             python setup.py check -m -s
             pytest --doctest-modules --cov-report term-missing --durations=0 --cov pik -vvv
