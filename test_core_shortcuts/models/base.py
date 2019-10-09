@@ -10,3 +10,9 @@ class TestNameModel(BasePHistorical):
 class MySimpleModel(BasePHistorical):
     data = models.CharField(max_length=255)
     names = models.ManyToManyField(TestNameModel, blank=True)
+
+
+class ModelWithOverriddenQueryset(BasePHistorical):
+    name = models.CharField(max_length=255)
+
+    test_objects = BasePHistorical.objects

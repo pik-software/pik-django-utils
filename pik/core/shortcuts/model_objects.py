@@ -101,13 +101,15 @@ def validate_and_update_object(obj: models.Model, **kwargs) \
 def update_or_create_object(
         model: Type[models.Model],
         search_keys: Optional[dict] = None,
+        queryset_or_manager: Union[models.QuerySet, models.Manager] = None,
         **kwargs) \
         -> Tuple[models.Model, List[str], bool]:
     """
     :raises ValueError
     :return obj, is_updated, is_created
     """
-    obj = get_object_or_none(model, **search_keys) if search_keys else None
+    source = queryset_or_manager or model
+    obj = get_object_or_none(source, **search_keys) if search_keys else None
     if obj:
         is_created = False
         obj, updates = validate_and_update_object(obj, **kwargs)

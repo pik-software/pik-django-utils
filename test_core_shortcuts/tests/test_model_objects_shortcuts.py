@@ -8,8 +8,10 @@ from django.utils.crypto import get_random_string
 from pik.core.shortcuts import (
     get_object_or_none, validate_and_create_object, validate_and_update_object,
     update_or_create_object)
-from .factories import MySimpleModelFactory, TestNameModelFactory
-from ..models import MySimpleModel
+from .factories import (
+    MySimpleModelFactory, TestNameModelFactory,
+    ModelWithOverriddenQuerysetFactory)
+from ..models import MySimpleModel, ModelWithOverriddenQueryset
 
 
 @pytest.fixture(params=[
@@ -156,6 +158,20 @@ def test_update_or_create_object__no_update(test_model):
     assert not is_created
     assert name1 in res_obj.names.all()
     assert name2 in res_obj.names.all()
+
+
+def test_update_or_create_object_with_queryset():
+    obj = ModelWithOverriddenQuerysetFactory(name='Test')
+
+    new_name = 'New Name'
+    res_obj, is_updated, is_created = update_or_create_object(
+        ModelWithOverriddenQueryset, queryset_or_manager=obj.test_objects,
+        search_keys=dict(name=obj.name), **{'name': new_name})
+
+    assert is_updated
+
+    obj.refresh_from_db()
+    assert obj.name == new_name
 
 
 class TestNotCallM2MUpdate(TestCase):
