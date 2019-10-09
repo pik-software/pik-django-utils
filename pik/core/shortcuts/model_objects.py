@@ -110,11 +110,10 @@ def update_or_create_object(
     assert (isinstance(source, (models.QuerySet, models.Manager))
             or issubclass(source, models.Model))
 
-    if not isinstance(source, (models.QuerySet, models.Manager)):
-        model = source
-        source = source.objects
-    else:
+    model = source
+    if isinstance(source, (models.QuerySet, models.Manager)):
         model = source.model
+
     obj = get_object_or_none(source, **search_keys) if search_keys else None
     if obj:
         is_created = False
