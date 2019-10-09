@@ -12,12 +12,11 @@ class MySimpleModel(BasePHistorical):
     names = models.ManyToManyField(TestNameModel, blank=True)
 
 
-class MyModelManager(models.Manager):
-    def get_queryset(self):
-        return super().get_queryset()
+class MyModelQuerySet(models.QuerySet):
+    pass
 
 
 class ModelWithOverriddenQueryset(BasePHistorical):
     name = models.CharField(max_length=255)
 
-    test_objects = MyModelManager()
+    test_objects = MyModelQuerySet().as_manager()

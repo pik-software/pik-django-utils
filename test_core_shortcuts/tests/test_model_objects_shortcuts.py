@@ -165,7 +165,7 @@ def test_update_or_create_object_with_queryset():
 
     new_name = 'New Name'
     res_obj, is_updated, is_created = update_or_create_object(
-        ModelWithOverriddenQueryset, queryset_or_manager=obj.test_objects,
+        ModelWithOverriddenQueryset, queryset=obj.test_objects,
         search_keys=dict(name=obj.name), **{'name': new_name})
 
     assert is_updated
