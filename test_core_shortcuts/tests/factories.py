@@ -1,7 +1,7 @@
 import factory
 from django.utils.crypto import get_random_string
 
-from test_core_shortcuts.models import ModelWithOverriddenQueryset
+from test_core_shortcuts.models import OverriddenQuerysetModel
 from ..models import MySimpleModel, TestNameModel
 
 
@@ -27,8 +27,8 @@ class TestNameModelFactory(factory.django.DjangoModelFactory):
         model = TestNameModel
 
 
-class ModelWithOverriddenQuerysetFactory(factory.django.DjangoModelFactory):
+class OverriddenQuerysetModelFactory(factory.django.DjangoModelFactory):
     name = factory.LazyFunction(get_random_string)
 
     class Meta:
-        model = ModelWithOverriddenQueryset
+        model = OverriddenQuerysetModel

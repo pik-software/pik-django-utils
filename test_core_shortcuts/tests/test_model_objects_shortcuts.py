@@ -10,8 +10,8 @@ from pik.core.shortcuts import (
     update_or_create_object)
 from .factories import (
     MySimpleModelFactory, TestNameModelFactory,
-    ModelWithOverriddenQuerysetFactory)
-from ..models import MySimpleModel, ModelWithOverriddenQueryset
+    OverriddenQuerysetModelFactory)
+from ..models import MySimpleModel, OverriddenQuerysetModel
 
 
 @pytest.fixture(params=[
@@ -161,11 +161,11 @@ def test_update_or_create_object__no_update(test_model):
 
 
 def test_update_or_create_object_with_queryset():
-    obj = ModelWithOverriddenQuerysetFactory(name='Test')
+    obj = OverriddenQuerysetModelFactory(name='Test')
 
     new_name = 'New Name'
     res_obj, is_updated, is_created = update_or_create_object(
-        ModelWithOverriddenQueryset, queryset=obj.test_objects,
+        OverriddenQuerysetModel.test_objects,
         search_keys=dict(name=obj.name), **{'name': new_name})
 
     assert is_updated

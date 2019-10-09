@@ -1,5 +1,11 @@
 ## ??? ##
 
+## 2.0.2 ##
+
+### CHANGE ###
+
+- `pik.core.shortcuts: update_or_create_object` function now support Model, QuerySet and Manager as first argument. It might be useful if you are trying to update deleted objects (SoftDeleted)  
+
 ## 2.0.1 ##
 
 ### CHANGE ###

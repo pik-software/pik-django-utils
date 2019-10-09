@@ -16,7 +16,7 @@ class MyModelQuerySet(models.QuerySet):
     pass
 
 
-class ModelWithOverriddenQueryset(BasePHistorical):
+class OverriddenQuerysetModel(BasePHistorical):
     name = models.CharField(max_length=255)
 
     test_objects = MyModelQuerySet().as_manager()

@@ -99,16 +99,22 @@ def validate_and_update_object(obj: models.Model, **kwargs) \
 
 
 def update_or_create_object(
-        model: Type[models.Model],
+        source: Union[Type[models.Model], models.QuerySet, models.Manager],
         search_keys: Optional[dict] = None,
-        queryset_or_manager: Union[models.QuerySet, models.Manager] = None,
         **kwargs) \
         -> Tuple[models.Model, List[str], bool]:
     """
     :raises ValueError
     :return obj, is_updated, is_created
     """
-    source = queryset_or_manager or model
+    assert (isinstance(source, (models.QuerySet, models.Manager))
+            or issubclass(source, models.Model))
+
+    if not isinstance(source, (models.QuerySet, models.Manager)):
+        model = source
+        source = source.objects
+    else:
+        model = source.model
     obj = get_object_or_none(source, **search_keys) if search_keys else None
     if obj:
         is_created = False
