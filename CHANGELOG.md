@@ -1,5 +1,9 @@
 ## ??? ##
 
+## 2.0.3 ##
+
+- Fix uuid library import in `pik.core.models`
+
 ## 2.0.2 ##
 
 ### CHANGE ###
