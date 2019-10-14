@@ -1,4 +1,4 @@
-from uuid import uuid4
+import uuid
 
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -6,7 +6,7 @@ from django.utils.functional import cached_property
 
 
 def _new_uid():
-    return uuid4()
+    return uuid.uuid4()
 
 
 class Uided(models.Model):
