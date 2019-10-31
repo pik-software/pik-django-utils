@@ -21,6 +21,13 @@ class MyRelatedSoftDeletedModel(SoftDeleted, _BaseBasePHistoricalTestModel):
         MySoftDeleteModel, on_delete=models.CASCADE)
 
 
+class MyRelatedNullableSoftDeletedModel(SoftDeleted,
+                                        _BaseBasePHistoricalTestModel):
+    name = models.CharField(max_length=255, blank=True, null=True)
+    soft_deleted_fk = models.ForeignKey(
+        MySoftDeleteModel, on_delete=models.SET_NULL, blank=True, null=True)
+
+
 class MyRelatedNotSoftDeletedModel(_BaseBasePHistoricalTestModel):
     name = models.CharField(max_length=255, blank=True, null=True)
     soft_deleted_fk = models.ForeignKey(

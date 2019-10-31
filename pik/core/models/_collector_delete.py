@@ -1,5 +1,4 @@
 from collections import Counter
-from django.db.models.expressions import Col
 from django.utils.timezone import now
 from operator import attrgetter
 
@@ -63,10 +62,10 @@ def _delete(self):
         # fast deletes
         for qs in self.fast_deletes:
             if issubclass(qs.model, SoftDeleted):
-                pk_list = [obj.pk for obj in qs]
-                qs = sql.UpdateQuery(qs.model)
-                qs.update_batch(pk_list, {FIELD: time}, self.using)
-                count = len(pk_list)
+                for obj in qs:
+                    setattr(obj, FIELD, time)
+                    obj.save()
+                count = qs.count()
             else:
                 count = qs._raw_delete(using=self.using)
             deleted_counter[qs.model._meta.label] += count
@@ -74,9 +73,9 @@ def _delete(self):
         # update fields
         for model, instances_for_fieldvalues in six.iteritems(self.field_updates):
             for (field, value), instances in six.iteritems(instances_for_fieldvalues):
-                query = sql.UpdateQuery(model)
-                query.update_batch([obj.pk for obj in instances],
-                                   {field.name: value}, self.using)
+                for obj in instances:
+                    setattr(obj, field.attname, value)
+                    obj.save()
 
         # reverse instance collections
         for instances in six.itervalues(self.data):
@@ -85,13 +84,13 @@ def _delete(self):
         # delete instances
         for model, instances in six.iteritems(self.data):
             if issubclass(model, SoftDeleted):
-                query = sql.UpdateQuery(model)
-                pk_list = [obj.pk for obj in instances]
-                query.update_batch(pk_list, {FIELD: time}, self.using)
+                count = len(instances)
+
                 for instance in instances:
                     setattr(instance, FIELD, time)
-                count = len(pk_list)
+                    instance.save()
             else:
+
                 query = sql.DeleteQuery(model)
                 pk_list = [obj.pk for obj in instances]
                 count = query.delete_batch(pk_list, self.using)
@@ -101,16 +100,14 @@ def _delete(self):
                         signals.post_delete.send(
                             sender=model, instance=obj, using=self.using
                         )
-            deleted_counter[model._meta.label] += count
 
-    # update collected instances
-    for model, instances_for_fieldvalues in six.iteritems(self.field_updates):
-        for (field, value), instances in six.iteritems(instances_for_fieldvalues):
-            for obj in instances:
-                setattr(obj, field.attname, value)
-    for model, instances in six.iteritems(self.data):
-        for instance in instances:
-            setattr(instance, model._meta.pk.attname, None)
+                # Set PK to None for non SoftDeleted models.
+                # PK must be set to None AFTER sending `post_delete signal`
+                # like in original `Collector.delete` method
+                for obj in instances:
+                    setattr(obj, model._meta.pk.attname, None)
+
+            deleted_counter[model._meta.label] += count
     return sum(deleted_counter.values()), dict(deleted_counter)
 
 
