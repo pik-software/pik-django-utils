@@ -178,8 +178,12 @@ class SoftDeleted(models.Model):
 
     delete.alters_data = True  # type: ignore
 
-    def hard_delete(self, *args, **kwargs):
-        return models.Model.delete(self, *args, **kwargs)
+    def hard_delete(self):
+        using = router.db_for_write(self.__class__, instance=self)
+        delete_query = DeleteQuery(self._meta.model)
+        result = delete_query.delete_batch([self.pk], using)
+        self.pk = None  # noqa: pylint=invalid-name
+        return result
 
     def restore(self):
         self.deleted = None
