@@ -10,7 +10,8 @@ from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
 
-FIELD = 'deleted'
+
+DELETED = 'deleted'
 
 
 class DeleteNotSoftDeletedModel(Exception):
@@ -59,11 +60,14 @@ def _delete(self):
                     sender=model, instance=obj, using=self.using
                 )
 
+                # Do not send pre_delete signals because
+                # we are using `.save()` for soft deletion.
+
         # fast deletes
         for qs in self.fast_deletes:
             if issubclass(qs.model, SoftDeleted):
                 for obj in qs:
-                    setattr(obj, FIELD, time)
+                    setattr(obj, DELETED, time)
                     obj.save()
                 count = qs.count()
             else:
@@ -74,7 +78,7 @@ def _delete(self):
         for model, instances_for_fieldvalues in six.iteritems(self.field_updates):
             for (field, value), instances in six.iteritems(instances_for_fieldvalues):
                 for obj in instances:
-                    setattr(obj, field.attname, value)
+                    setattr(obj, field.name, value)
                     obj.save()
 
         # reverse instance collections
@@ -87,8 +91,11 @@ def _delete(self):
                 count = len(instances)
 
                 for instance in instances:
-                    setattr(instance, FIELD, time)
+                    setattr(instance, DELETED, time)
                     instance.save()
+
+                    # Do not send post_delete signal to prevent simple history
+                    # from creating two records (change and deletion).
             else:
 
                 query = sql.DeleteQuery(model)
@@ -120,7 +127,7 @@ def get_extra_restriction_patch(func):
             return cond
 
         cond = cond or where_class()
-        field = self.model._meta.get_field(FIELD)
+        field = self.model._meta.get_field(DELETED)
         lookup = field.get_lookup('isnull')(field.get_col(related_alias), True)
         cond.add(lookup, 'AND')
 
