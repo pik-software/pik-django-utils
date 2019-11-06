@@ -11,7 +11,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
 
 
-DELETED = 'deleted'
+FIELD = 'deleted'
 
 
 class DeleteNotSoftDeletedModel(Exception):
@@ -67,7 +67,7 @@ def _delete(self):
         for qs in self.fast_deletes:
             if issubclass(qs.model, SoftDeleted):
                 for obj in qs:
-                    setattr(obj, DELETED, time)
+                    setattr(obj, FIELD, time)
                     obj.save()
                 count = qs.count()
             else:
@@ -91,7 +91,7 @@ def _delete(self):
                 count = len(instances)
 
                 for instance in instances:
-                    setattr(instance, DELETED, time)
+                    setattr(instance, FIELD, time)
                     instance.save()
 
                     # Do not send post_delete signal to prevent simple history
@@ -127,7 +127,7 @@ def get_extra_restriction_patch(func):
             return cond
 
         cond = cond or where_class()
-        field = self.model._meta.get_field(DELETED)
+        field = self.model._meta.get_field(FIELD)
         lookup = field.get_lookup('isnull')(field.get_col(related_alias), True)
         cond.add(lookup, 'AND')
 
