@@ -1,7 +1,16 @@
 ## ??? ##
 
-## 2.0.3 ##
+## 2.1 ##
 
+### CHANGE ###
+
+- Use `.save()` instance method for soft deletion
+- Add documentation for Soft Delete
+
+### FIX ###
+
+- Fix `.hard_delete()`
+- Fix empty deletion result
 - Fix uuid library import in `pik.core.models`
 
 ## 2.0.2 ##
