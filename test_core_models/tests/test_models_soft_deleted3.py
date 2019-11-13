@@ -1,171 +1,160 @@
 import pytest
 from django.contrib.auth import get_user_model
-from django.db.utils import IntegrityError, OperationalError
 from django.utils.timezone import now
 
 from pik.core.models._collector_delete import DeleteNotSoftDeletedModel  # noqa: protected access
 from test_core_models import models
 
 
-def test_soft_deleted_version_bumps():
-    obj = models.MySoftDeleteModel.objects.create(name='test')
+class TestDeleteSoftDeletedModel:
 
-    assert obj.version == 1
+    model = models.MySoftDeleteModel
 
-    obj.delete()
+    def test_delete(self):
+        obj = self.model.objects.create(name='test')
+        old_updated = obj.updated
 
-    assert obj.version == 2
+        obj.delete()
 
+        assert obj.pk is not None
+        assert obj.version == 2
+        assert obj.deleted is not None
+        assert obj.updated > old_updated
 
-def test_soft_deleted_updated_changed():
-    obj = models.MySoftDeleteModel.objects.create(name='test')
+    def test_delete_historized(self):
+        obj = self.model.objects.create(name='test')
+        history = obj.history.all()
+        assert obj.history
+        assert obj.history.count() == 1
 
-    old_updated = obj.updated
+        obj.save()
+        assert obj.history.count() == 2
 
-    obj.delete()
+        obj.delete()
+        assert obj.history.count() == 3
+        assert history.count() == 3
 
-    assert obj.updated > old_updated
+        hist_obj1 = history.last()
+        hist_obj2 = history[1]
+        hist_obj3 = history.first()
+        assert isinstance(hist_obj3.history_id, int)
+        assert hist_obj3.pk == hist_obj3.history_id
+        assert hist_obj3.history_change_reason is None
+        assert hist_obj3.history_id > hist_obj1.history_id
 
+        assert hist_obj1.history_type == '+'
+        assert hist_obj2.history_type == '~'
+        assert hist_obj3.history_type == '~'
 
-def test_historized_soft_deleted():
-    obj = models.MySoftDeleteModel.objects.create(name='test')
-    history = obj.history.all()
-    assert obj.history
-    assert obj.history.count() == 1
+    def test_restore(self):
+        obj = self.model.objects.create(name='test', deleted=now())
+        old_updated = obj.updated
 
-    obj.save()
-    assert obj.history.count() == 2
+        obj.restore()
 
-    obj.delete()
-    assert obj.history.count() == 3
-    assert history.count() == 3
+        assert obj.deleted is None
+        assert obj.version == 2
+        assert old_updated < obj.updated
 
-    hist_obj1 = history.last()
-    hist_obj2 = history[1]
-    hist_obj3 = history.first()
-    assert isinstance(hist_obj3.history_id, int)
-    assert hist_obj3.pk == hist_obj3.history_id
-    assert hist_obj3.history_change_reason is None
-    assert hist_obj3.history_id > hist_obj1.history_id
+    @pytest.mark.parametrize('safe_mode', [True, False])
+    def test_hard_delete_instance(self, settings, safe_mode):
+        settings.SOFT_DELETE_SAFE_MODE = safe_mode
+        obj = self.model.objects.create(name="i'm gone")
+        uid = obj.uid
 
-    assert hist_obj1.history_type == '+'
-    assert hist_obj2.history_type == '~'
-    assert hist_obj3.history_type == '~'
+        obj.hard_delete()
 
-
-def test_delete_soft_deleted_model_with_reverse_relation():
-    obj = models.MySoftDeleteModel.objects.create(name='test')
-    obj_with_rel = models.MyRelatedSoftDeletedModel.objects.create(
-        name='super test', soft_deleted_fk=obj)
-
-    old_obj_updated = obj.updated
-    old_obj_with_rel_updated = obj_with_rel.updated
-
-    obj.delete()
-    obj_with_rel.refresh_from_db()
-
-    assert obj.version == 2
-    assert obj_with_rel.version == 2
-
-    assert obj.deleted
-    assert obj_with_rel.deleted
-
-    assert obj.updated > old_obj_updated
-    assert obj_with_rel.updated > old_obj_with_rel_updated
+        assert self.model.all_objects.filter(uid=uid).exists() is False
+        assert obj.pk is None
 
 
-def test_restore_soft_deleted_model():
-    obj = models.MySoftDeleteModel.objects.create(name='test')
+class TestDeletedRelatedModel:
 
-    assert obj.version == 1
+    not_soft_deleted_model = models.MyNotSoftDeletedModel
 
-    obj.delete()
+    model = models.MySoftDeleteModel
+    related_model = models.MyRelatedSoftDeletedModel
+    nullable_related_model = models.MyRelatedNullableSoftDeletedModel
 
-    updated_on_delete = obj.updated
+    def test_cascade_delete(self):
+        obj = self.model.objects.create(name='test')
+        related_obj = self.related_model.objects.create(
+            name='test_related', soft_deleted_fk=obj)
+        obj_pk = obj.pk
+        related_obj_pk = related_obj.pk
 
-    assert obj.deleted
-    assert obj.version == 2
+        obj.delete()
+        related_obj.refresh_from_db()
 
-    obj.restore()
+        assert obj.pk is not None
+        assert obj.deleted is not None
+        assert related_obj.pk is not None
+        assert related_obj.deleted is not None
+        assert obj.version == 2
+        assert related_obj.version == 2
+        assert self.model.all_objects.filter(pk=obj_pk).exists() is True
+        assert self.related_model.all_objects.filter(
+            pk=related_obj_pk).exists() is True
 
-    assert not obj.deleted
-    assert obj.version == 3
-    assert obj.updated != updated_on_delete
+    def test_set_null_delete(self):
+        obj = self.model.objects.create(name='test')
+        related_obj = self.nullable_related_model.objects.create(
+            name='test_related', soft_deleted_fk=obj)
+        obj_pk = obj.pk
+        related_obj_pk = related_obj.pk
 
+        obj.delete()
+        related_obj.refresh_from_db()
 
-def test_cascade_delete_with_fk_to_not_soft_deleted_model(settings):
-    settings.SOFT_DELETE_SAFE_MODE = False
-    not_soft_del_obj = models.MyNotSoftDeletedModel.objects.create(name='test')
-    models.MySoftDeletedModelWithFK.objects.create(
-        name='test soft', not_soft_deleted_fk=not_soft_del_obj)
+        assert obj.pk is not None
+        assert obj.deleted is not None
+        assert related_obj.pk is not None
+        assert related_obj.deleted is None
+        assert related_obj.soft_deleted_fk is None
+        assert obj.version == 2
+        assert related_obj.version == 2
+        assert self.model.all_objects.filter(pk=obj_pk).exists() is True
+        assert self.nullable_related_model.objects.filter(
+            pk=related_obj_pk).exists() is True
 
-    with pytest.raises(IntegrityError):
-        not_soft_del_obj.delete()
+    def test_cascade_with_already_deleted(self):
+        soft_del_obj = self.model.objects.create(name='test soft')
+        soft_del_obj_with_rel = self.related_model.objects.create(
+            name='test soft', soft_deleted_fk=soft_del_obj, deleted=now())
+        old_updated = soft_del_obj_with_rel.updated
 
+        soft_del_obj.delete()
+        soft_del_obj_with_rel.refresh_from_db()
 
-def test_cascade_delete_with_fk_to_soft_deleted_model_failed(settings):
-    settings.SOFT_DELETE_SAFE_MODE = True
-    soft_del_obj = models.MySoftDeleteModel.objects.create(
-        name='test soft')
-    models.MyRelatedNotSoftDeletedModel.objects.create(
-        name='test not soft', soft_deleted_fk=soft_del_obj)
+        assert old_updated == soft_del_obj_with_rel.updated
 
-    with pytest.raises(DeleteNotSoftDeletedModel):
+    def test_delete_cascade_not_soft_deleted_forbidden(self, settings):
+        settings.SOFT_DELETE_SAFE_MODE = True
+        soft_del_obj = self.model.objects.create(
+            name='test soft')
+        models.MyRelatedNotSoftDeletedModel.objects.create(
+            name='test not soft', soft_deleted_fk=soft_del_obj)
+
+        with pytest.raises(DeleteNotSoftDeletedModel):
+            soft_del_obj.delete()
+
+    def test_delete_cascade_not_soft_deleted(self, settings):
+        settings.SOFT_DELETE_SAFE_MODE = False
+        soft_del_obj = self.model.objects.create(
+            name='test soft')
+        not_soft_del_obj = models.MyRelatedNotSoftDeletedModel.objects.create(
+            name='test not soft', soft_deleted_fk=soft_del_obj)
+        not_soft_del_uid = not_soft_del_obj.pk
+
         soft_del_obj.delete()
 
-
-def test_cascade_delete_with_fk_to_soft_deleted_model_success(settings):
-    settings.SOFT_DELETE_SAFE_MODE = False
-    soft_del_obj = models.MySoftDeleteModel.objects.create(
-        name='test soft')
-    not_soft_del_obj = models.MyRelatedNotSoftDeletedModel.objects.create(
-        name='test not soft', soft_deleted_fk=soft_del_obj)
-
-    soft_del_obj.delete()
-
-    with pytest.raises(models.MyRelatedNotSoftDeletedModel.DoesNotExist):
-        not_soft_del_obj.refresh_from_db()
-
-
-def test_cascade_soft_delete_with_already_deleted_model():
-    soft_del_obj = models.MySoftDeleteModel.objects.create(
-        name='test soft')
-    soft_del_obj_with_rel = models.MyRelatedSoftDeletedModel.objects.create(
-        name='test soft', soft_deleted_fk=soft_del_obj, deleted=now())
-
-    old_updated = soft_del_obj_with_rel.updated
-
-    soft_del_obj.delete()
-
-    soft_del_obj_with_rel.refresh_from_db()
-
-    assert old_updated == soft_del_obj_with_rel.updated
-
-
-def test_not_soft_delete_without_safe_mode(settings):
-    settings.SOFT_DELETE_SAFE_MODE = False
-    obj = models.MyNotSoftDeletedModel.objects.create(
-        name='test soft')
-
-    obj.delete()
-
-
-def test_hard_delete_with_safe_mode(settings):
-    settings.SOFT_DELETE_SAFE_MODE = True
-    obj = models.MySoftDeleteModel.objects.create(name="i'm gone")
-    obj.hard_delete()
-
-    with pytest.raises(models.MySoftDeleteModel.DoesNotExist):
-        obj.refresh_from_db()
-
-
-def test_hard_delete_without_safe_mode(settings):
-    settings.SOFT_DELETE_SAFE_MODE = False
-    obj = models.MySoftDeleteModel.objects.create(name="I'm gone too")
-    obj.hard_delete()
-
-    with pytest.raises(models.MySoftDeleteModel.DoesNotExist):
-        obj.refresh_from_db()
+        assert soft_del_obj.pk is not None
+        assert soft_del_obj.deleted is not None
+        assert soft_del_obj.version == 2
+        assert self.model.all_objects.filter(
+            pk=soft_del_obj.pk).exists() is True
+        assert models.MyRelatedNotSoftDeletedModel.objects.filter(
+            pk=not_soft_del_uid).exists() is False
 
 
 def test_all_objects_is_deleted_filter(settings):
@@ -194,11 +183,24 @@ def test_deleted_model_from_exclude_list(settings):
     settings.SOFT_DELETE_EXCLUDE = ['auth.User']
 
     User = get_user_model()
-    u = User.objects.create(username='test_user')
-    u.delete()
+    user = User.objects.create(username='test_user')
+    pk = user.pk
+    user.delete()
 
-    with pytest.raises(User.DoesNotExist):
-        u.refresh_from_db()
+    assert user.pk is None
+    assert User.objects.filter(pk=pk).exists() is False
+
+
+def test_delete_not_soft_deleted(settings):
+    settings.SOFT_DELETE_SAFE_MODE = False
+    obj = models.MyNotSoftDeletedModel.objects.create(name='test')
+    obj_pk = obj.pk
+
+    obj.delete()
+
+    assert obj.pk is None
+    assert models.MyNotSoftDeletedModel.objects.filter(
+        pk=obj_pk).exists() is False
 
 
 def test_child_model():

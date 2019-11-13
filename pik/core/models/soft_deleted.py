@@ -1,11 +1,9 @@
-from collections import defaultdict
-
 from django.contrib.admin.utils import NestedObjects
 from django.core.exceptions import FieldDoesNotExist
 from django.db import models, router, transaction
 from django.db.models import Q
+from django.db.models.sql import DeleteQuery
 from django.db.models.sql.where import WhereNode
-from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
 from ._collector_delete import Collector
 
@@ -46,8 +44,6 @@ def _cascade_soft_delete(inst_or_qs, using, keep_parents=False):
     else:
         instances = inst_or_qs
 
-    deleted = now()
-
     # The collector will iteratively crawl the relationships and
     # create a list of models and instances that are connected to
     # this instance.
@@ -56,42 +52,13 @@ def _cascade_soft_delete(inst_or_qs, using, keep_parents=False):
     if collector.protected:
         raise models.ProtectedError("Delete protected", collector.protected)
     collector.sort()
-    soft_delete_objs = collector.soft_delete_objs = defaultdict(set)
-
-    for model, instances in list(collector.data.items()):
-        # remove archive mixin models from the delete list and put
-        # them in the update list.  If we do this, we can just call
-        # the collector.delete method.
-        if _has_field(model, 'deleted'):
-            inst_list = [x for x in instances if x.deleted is None]
-            deleted_on_field = _get_field_by_name(model, 'deleted')
-            collector.add_field_update(deleted_on_field, deleted, inst_list)
-            soft_delete_objs[model].update(inst_list)
-            del collector.data[model]
-
-    # If we use the NestedObjects collector instead models.deletion.Collector,
-    # then the `collector.fast_deletes` will always be empty
-    for i, q_set in enumerate(collector.fast_deletes):
-        # make sure that we do archive on fast deletable models as
-        # well.
-        model = q_set.model
-        if _has_field(model, 'deleted'):
-            inst_list = [x for x in instances if x.deleted is None]
-            deleted_on_field = _get_field_by_name(model, 'deleted')
-            collector.add_field_update(deleted_on_field, deleted, inst_list)
-            collector.fast_deletes[i] = q_set.none()
 
     return collector
 
 
 def _delete_collected(collector):
     with transaction.atomic(using=collector.using, savepoint=False):
-        result = collector.delete()
-        for model, instances in collector.soft_delete_objs.items():
-            if not model._meta.auto_created:  # noqa: pylint=protected-access
-                for obj in instances:
-                    obj.save()
-    return result
+        return collector.delete()
 
 
 class _BaseSoftDeletedQuerySet(models.QuerySet):
@@ -211,8 +178,12 @@ class SoftDeleted(models.Model):
 
     delete.alters_data = True  # type: ignore
 
-    def hard_delete(self, *args, **kwargs):
-        return models.Model.delete(self, *args, **kwargs)
+    def hard_delete(self):
+        using = router.db_for_write(self.__class__, instance=self)
+        delete_query = DeleteQuery(self._meta.model)
+        result = delete_query.delete_batch([self.pk], using)
+        self.pk = None  # noqa: pylint=invalid-name
+        return result
 
     def restore(self):
         self.deleted = None

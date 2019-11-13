@@ -1,10 +1,42 @@
+## ??? ##
+
+## 2.0.3 ##
+
+### CHANGE ###
+
+- Use `.save()` instance method for soft deletion
+- Add documentation for Soft Delete
+
+### FIX ###
+
+- Fix `.hard_delete()`
+- Fix empty deletion result
+- Fix uuid library import in `pik.core.models`
+
+## 2.0.2 ##
+
+### CHANGE ###
+
+- `pik.core.shortcuts: update_or_create_object` function now support Model, QuerySet and Manager as first argument. It might be useful if you are trying to update deleted objects (SoftDeleted)  
+
+## 2.0.1 ##
+
+### CHANGE ###
+
+ - **!!! incompatible !!!** `pik.core.models`: `Uided` and `PUided` use `uuid4` uid generation function instead `luid` lib
+ - **!!! incompatible !!!** `pik.core.models`: `BaseHistorical` and `BasePHistorical` use ordering by `created` field
+ - remove `ulid-py` requirements
+
+### FIX ###
+
+- requirements: remove `urllib3` version pinning
+
 ## 1.0.23 ##
 
 ### FIX ###
 
 - `pik.core.models.soft_deleted:` `SOFT_DELETE_EXCLUDE` now construct
 from `app_label.model_name`, because of problems with same model's name in different apps
-
 
 ## 1.0.22 ##
 
