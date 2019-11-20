@@ -2,6 +2,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
 from pik.core.models import SoftDeleted, BasePHistorical
+from pik.core.models.fields import InheritPrimaryUidField
 
 
 class _BaseBasePHistoricalTestModel(BasePHistorical):
@@ -45,12 +46,6 @@ class MySoftDeletedModelWithFK(SoftDeleted, _BaseBasePHistoricalTestModel):
         MyNotSoftDeletedModel, on_delete=models.CASCADE)
 
 
-class MultiTableParentField(models.OneToOneField):
-    def __init__(self, to, **kwargs):
-        kwargs.update(dict(on_delete=models.CASCADE, parent_link=True))
-        super().__init__(to, **kwargs)
-
-
 class TypeModel(models.Model):
     content_type = models.ForeignKey(
         ContentType, blank=True, null=True, on_delete=models.DO_NOTHING)
@@ -59,8 +54,8 @@ class TypeModel(models.Model):
         abstract = True
 
 
-class ParentTypeSoftDeleteModel(TypeModel, SoftDeleted,
-                               _BaseBasePHistoricalTestModel):
+class ParentTypeSoftDeleteModel(
+        TypeModel, SoftDeleted, _BaseBasePHistoricalTestModel):
     name = models.CharField(max_length=255, blank=True, null=True)
 
 
@@ -93,4 +88,4 @@ class ChildModel(models.Model):
 
 
 class ChildMySoftDeleteModel(ParentSoftDeleteModel, ChildModel):
-    parent_model = MultiTableParentField(ParentSoftDeleteModel)
+    parent_model = InheritPrimaryUidField(ParentSoftDeleteModel)
