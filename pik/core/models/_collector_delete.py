@@ -123,12 +123,12 @@ def get_extra_restriction_patch(func):
         cond = func(self, where_class, alias, related_alias)
 
         from .soft_deleted import SoftDeleted, _AllWhereNode
-        from pik.core.models.fields import InheritPrimaryUidField
 
         if not issubclass(self.model, SoftDeleted) or issubclass(where_class, _AllWhereNode):
             return cond
         for field in self.model._meta.fields:
-            if isinstance(field, InheritPrimaryUidField):
+            if field.remote_field and issubclass(
+                    self.model, field.remote_field.model):
                 return cond
 
         cond = cond or where_class()
