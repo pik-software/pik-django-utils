@@ -26,14 +26,6 @@ def _is_soft_excluded(model):
     return False
 
 
-def _is_multitable_child(obj, field):
-    if (field.remote_field and
-            issubclass(obj.model, field.remote_field.model) and
-            field.primary_key):
-        return True
-    return False
-
-
 def _delete(self):
     from .soft_deleted import SoftDeleted
     safe_mode = getattr(settings, 'SOFT_DELETE_SAFE_MODE', True)
@@ -135,7 +127,11 @@ def get_extra_restriction_patch(func):
         if not issubclass(self.model, SoftDeleted) or issubclass(where_class, _AllWhereNode):
             return cond
         for field in self.model._meta.fields:
-            if _is_multitable_child(self, field):
+            is_multitable_child = (
+                    field.remote_field and field.primary_key and
+                    issubclass(self.model, field.remote_field.model))
+
+            if is_multitable_child:
                 return cond
 
         cond = cond or where_class()
