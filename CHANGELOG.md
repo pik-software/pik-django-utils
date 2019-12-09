@@ -1,5 +1,11 @@
 ## ??? ##
 
+## 2.0.4 ##
+
+### FIX ###
+
+- Fix multitable inheritance soft deleted models
+
 ## 2.0.3 ##
 
 ### CHANGE ###
