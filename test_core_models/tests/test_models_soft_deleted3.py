@@ -1,5 +1,6 @@
 import pytest
 from django.contrib.auth import get_user_model
+from django.contrib.contenttypes.models import ContentType
 from django.utils.timezone import now
 
 from pik.core.models._collector_delete import DeleteNotSoftDeletedModel  # noqa: protected access
@@ -201,3 +202,30 @@ def test_delete_not_soft_deleted(settings):
     assert obj.pk is None
     assert models.MyNotSoftDeletedModel.objects.filter(
         pk=obj_pk).exists() is False
+
+
+def test_delete_parent_soft_deleted():
+    type_obj = models.ParentTypeSoftDeleteModel.objects.create(
+        name='type_name')
+    obj = models.ParentSoftDeleteModel.objects.create(
+        name='test', type_model=type_obj)
+    obj.delete()
+
+    assert 1 == models.ParentSoftDeleteModel.all_objects.count()
+    assert 0 == models.ParentSoftDeleteModel.objects.count()
+
+
+def test_delete_child_soft_deleted():
+    content_type = ContentType.objects.get_for_model(
+        models.ChildMySoftDeleteModel)
+    type_obj = models.ParentTypeSoftDeleteModel.objects.create(
+        name='type_name')
+    type_obj.content_type = content_type
+    type_obj.save()
+    obj = models.ChildMySoftDeleteModel.objects.create(name='child name')
+    obj.delete()
+
+    assert 1 == models.ParentSoftDeleteModel.all_objects.count()
+    assert 0 == models.ParentSoftDeleteModel.objects.count()
+    assert 1 == models.ChildMySoftDeleteModel.all_objects.count()
+    assert 0 == models.ChildMySoftDeleteModel.objects.count()

@@ -123,8 +123,16 @@ def get_extra_restriction_patch(func):
         cond = func(self, where_class, alias, related_alias)
 
         from .soft_deleted import SoftDeleted, _AllWhereNode
+
         if not issubclass(self.model, SoftDeleted) or issubclass(where_class, _AllWhereNode):
             return cond
+        for field in self.model._meta.fields:
+            is_multitable_child = (
+                    field.remote_field and field.primary_key and
+                    issubclass(self.model, field.remote_field.model))
+
+            if is_multitable_child:
+                return cond
 
         cond = cond or where_class()
         field = self.model._meta.get_field(FIELD)
