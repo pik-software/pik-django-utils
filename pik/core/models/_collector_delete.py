@@ -6,7 +6,6 @@ from django.db import transaction
 from django.db.models import signals, sql
 from django.db.models.deletion import Collector
 from django.db.models.fields.related import ForeignObject
-from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
 
@@ -75,18 +74,18 @@ def _delete(self):
             deleted_counter[qs.model._meta.label] += count
 
         # update fields
-        for model, instances_for_fieldvalues in six.iteritems(self.field_updates):
-            for (field, value), instances in six.iteritems(instances_for_fieldvalues):
+        for model, instances_for_fieldvalues in self.field_updates.items():
+            for (field, value), instances in instances_for_fieldvalues.items():
                 for obj in instances:
                     setattr(obj, field.name, value)
                     obj.save()
 
         # reverse instance collections
-        for instances in six.itervalues(self.data):
+        for instances in self.data.values():
             instances.reverse()
 
         # delete instances
-        for model, instances in six.iteritems(self.data):
+        for model, instances in self.data.items():
             if issubclass(model, SoftDeleted):
                 count = len(instances)
 
