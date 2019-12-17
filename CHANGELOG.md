@@ -1,5 +1,11 @@
 ## ??? ##
 
+## 2.0.5 ##
+
+### FIX ###
+
+- Remove django.six usage
+
 ## 2.0.4 ##
 
 ### FIX ###
