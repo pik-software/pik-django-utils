@@ -4,7 +4,7 @@ from django.db import models, router, transaction
 from django.db.models import Q
 from django.db.models.sql import DeleteQuery
 from django.db.models.sql.where import WhereNode
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from ._collector_delete import Collector
 
 assert Collector.delete

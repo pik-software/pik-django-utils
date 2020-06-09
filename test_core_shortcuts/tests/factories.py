@@ -21,6 +21,8 @@ class MySimpleModelFactory(factory.django.DjangoModelFactory):
 
 
 class TestNameModelFactory(factory.django.DjangoModelFactory):
+    __test__ = False  # prevent PytestCollectionWarning
+
     name = factory.LazyFunction(get_random_string)
 
     class Meta:

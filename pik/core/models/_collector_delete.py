@@ -1,15 +1,14 @@
 from collections import Counter
-from django.utils.timezone import now
 from operator import attrgetter
 
+import six
+from django.conf import settings
 from django.db import transaction
 from django.db.models import signals, sql
 from django.db.models.deletion import Collector
 from django.db.models.fields.related import ForeignObject
-from django.utils import six
-from django.utils.translation import ugettext_lazy as _
-from django.conf import settings
-
+from django.utils.timezone import now
+from django.utils.translation import gettext_lazy as _
 
 FIELD = 'deleted'
 
