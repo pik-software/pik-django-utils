@@ -1,7 +1,7 @@
 # db
-redis==2.10.6
-psycopg2==2.7.4
-django-redis==4.9.0
+redis==3.5.3
+psycopg2==2.8.5
+django-redis==4.12.1
 
 # tests
 astroid==2.0.4

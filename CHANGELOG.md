@@ -1,5 +1,11 @@
 ## ??? ##
 
+## 2.0.5 ##
+
+### CHANGE ###
+
+- Compatibility fixes for using with Django>=3.0
+
 ## 2.0.4 ##
 
 ### FIX ###
