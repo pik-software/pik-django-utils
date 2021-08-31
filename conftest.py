@@ -1,5 +1,4 @@
 from contextlib import contextmanager
-
 import pytest
 from celery.contrib.testing import worker, tasks  # noqa: pylint=unused-import
 from django.test.utils import CaptureQueriesContext

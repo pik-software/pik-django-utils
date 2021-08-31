@@ -25,7 +25,7 @@ def test_get_object_or_none(test_model):
     model, factory = test_model
     objs = factory.create_batch(10)
 
-    obj = get_object_or_none(model, data=get_random_string())
+    obj = get_object_or_none(model, data=get_random_string(12))
     assert obj is None
 
     obj = get_object_or_none(model, data=objs[-1].data)
@@ -36,7 +36,7 @@ def test_get_object_or_none_queryset(test_model):
     model, factory = test_model
     objs = factory.create_batch(10)
 
-    obj = get_object_or_none(model.objects.filter(data=get_random_string()))
+    obj = get_object_or_none(model.objects.filter(data=get_random_string(12)))
     assert obj is None
 
     obj = get_object_or_none(model.objects.filter(data=objs[-1].data))
@@ -47,7 +47,7 @@ def test_get_object_or_none_manager(test_model):
     model, factory = test_model
     objs = factory.create_batch(10)
 
-    obj = get_object_or_none(model.objects, data=get_random_string())
+    obj = get_object_or_none(model.objects, data=get_random_string(12))
     assert obj is None
 
     obj = get_object_or_none(model.objects, data=objs[-1].data)
@@ -58,7 +58,7 @@ def test_get_object_or_none_args(test_model):
     model, factory = test_model
     objs = factory.create_batch(10)
 
-    obj = get_object_or_none(model, Q(data=get_random_string()))
+    obj = get_object_or_none(model, Q(data=get_random_string(12)))
     assert obj is None
 
     obj = get_object_or_none(model, Q(data=objs[-1].data))
@@ -70,7 +70,7 @@ def test_validate_and_create_object(test_model):
     name2 = TestNameModelFactory.create()
     model, _ = test_model
 
-    kwargs = {'data': get_random_string(), 'names': [name1, name2]}
+    kwargs = {'data': get_random_string(12), 'names': [name1, name2]}
     obj = validate_and_create_object(model, **kwargs)
     assert obj.pk
     assert name1 in obj.names.all()
@@ -83,7 +83,7 @@ def test_validate_and_update_object__update(test_model):
     name2 = TestNameModelFactory.create()
 
     obj = factory.create()
-    new_data = get_random_string()
+    new_data = get_random_string(12)
     kwargs = {'data': new_data, 'names': [name1, name2]}
 
     res_obj, is_updated = validate_and_update_object(obj, **kwargs)
@@ -112,7 +112,7 @@ def test_validate_and_update_object__no_update(test_model):
 
 def test_update_or_create_object__create_without_search(test_model):
     model, _ = test_model
-    new_data = get_random_string()
+    new_data = get_random_string(12)
     name1 = TestNameModelFactory.create()
     name2 = TestNameModelFactory.create()
     kwargs = {'data': new_data, 'names': [name1, name2]}
@@ -129,7 +129,7 @@ def test_update_or_create_object__create_without_search(test_model):
 def test_update_or_create_object__create(test_model):
     model, factory = test_model
     obj = factory.create()
-    new_data = get_random_string()
+    new_data = get_random_string(12)
     name1 = TestNameModelFactory.create()
     name2 = TestNameModelFactory.create()
     kwargs = {'data': new_data, 'names': [name1, name2]}
@@ -180,7 +180,7 @@ class TestNotCallM2MUpdate(TestCase):
     def test_update_or_create_object(_update_m2m_fields):
         model, factory = MySimpleModel, MySimpleModelFactory
         obj = factory.create()
-        new_data = get_random_string()
+        new_data = get_random_string(12)
 
         res_obj, is_updated, is_created = update_or_create_object(
             model, search_keys=dict(data=new_data), data=new_data)

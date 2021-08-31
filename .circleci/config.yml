@@ -53,7 +53,11 @@ jobs:
             set -x
             check-manifest
             python setup.py check -m -s
-            pytest --doctest-modules --cov-report term-missing --durations=0 --cov pik -vvv
+            python -m pytest . --junitxml=~/reports/report.xml
             prospector --profile-path . --profile prospector.yaml pik
             mypy pik --ignore-missing-imports
             pip check
+      - store_test_results:
+          path: ~/reports
+      - store_artifacts:
+          path: ~/report
