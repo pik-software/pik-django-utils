@@ -4,6 +4,8 @@ include README.md
 include CHANGELOG.md
 include requirements.txt
 include requirements.dev.txt
+include .coveragerc
+include pytest.ini
 
 # Include the data files
 recursive-include data *
