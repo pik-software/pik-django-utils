@@ -1,17 +1,37 @@
 test-warnings: true
 strictness: veryhigh
 
+uses:
+  - django
+  - celery
+
 ignore-paths:
   - docs
   - migrations
+  - templates
+  - codegen_templates
   - .venv
+  - _project_/settings_local.py
+  - _project_/templates
+  - _project_/static
   - README.md
-  - core/models/_collector_delete.py
+  - __data__
+  - .circleci
+  - lib/codegen/tests/testcases
+
+ignore-patterns:
+  - .*/abstract_schema_models.py
+  - .*/api_v1/base_filters.py
+  - .*/api_v1/base_serializers.py
+  - .*/api_v1/base_viewsets.py
+  - .*/site-packages/.*
 
 pylint:
+  options:
+    django-settings-module: test_project.settings
   disable:
     - unused-argument
     - too-few-public-methods
-    - too-many-arguments
     - too-many-ancestors
-    - redefined-outer-name
+    - abstract-method
+    - cyclic-import

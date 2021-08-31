@@ -1,10 +1,10 @@
 import pytest
 
 
-@pytest.fixture(params=[
+@pytest.fixture(name='pik_module', params=[
     'core', 'libs', 'utils'
 ])
-def pik_module(request):
+def pik_module_fixture(request):
     return request.param
 
 

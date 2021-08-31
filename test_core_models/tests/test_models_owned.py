@@ -6,22 +6,22 @@ from ..models import MyOwned, MyNullOwned
 from .factories import MyOwnedFactory, MyNullOwnedFactory
 
 
-@pytest.fixture(params=[
+@pytest.fixture(name='owned_model', params=[
     (MyOwned, MyOwnedFactory),
 ])
-def owned_model(request):
+def owned_model_fixture(request):
     return request.param
 
 
-@pytest.fixture(params=[
+@pytest.fixture(name='null_owned_model', params=[
     (MyNullOwned, MyNullOwnedFactory),
 ])
-def null_owned_model(request):
+def null_owned_model_fixture(request):
     return request.param
 
 
 def test_owned_protocol(owned_model):
-    model, factory = owned_model
+    _, factory = owned_model
     user = create_user()
 
     obj = factory.create(user=user)
@@ -29,13 +29,13 @@ def test_owned_protocol(owned_model):
 
 
 def test_owned_protocol_no_user_problem(owned_model):
-    model, factory = owned_model
+    _, factory = owned_model
     with pytest.raises(IntegrityError):
         factory.create(user=None)
 
 
 def test_null_owned_protocol(null_owned_model):
-    model, factory = null_owned_model
+    _, factory = null_owned_model
     user = create_user()
 
     obj = factory.create(user=user)
@@ -43,6 +43,6 @@ def test_null_owned_protocol(null_owned_model):
 
 
 def test_null_owned_protocol_on_user_ok(null_owned_model):
-    model, factory = null_owned_model
+    _, factory = null_owned_model
     obj = factory.create(user=None)
     assert obj.user is None

@@ -4,11 +4,11 @@ from .factories import MyBasePHistoricalFactory, MyBaseHistoricalFactory
 from ..models import MyBasePHistorical, MyBaseHistorical
 
 
-@pytest.fixture(params=[
+@pytest.fixture(name='historical_model', params=[
     (MyBasePHistorical, MyBasePHistoricalFactory),
     (MyBaseHistorical, MyBaseHistoricalFactory),
 ])
-def historical_model(request):
+def historical_model_fixture(request):
     return request.param
 
 

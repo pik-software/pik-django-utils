@@ -25,8 +25,8 @@ def _is_soft_excluded(model):
     return False
 
 
-def _delete(self):
-    from .soft_deleted import SoftDeleted
+def _delete(self):  # noqa: too complex
+    from .soft_deleted import SoftDeleted  # noqa: circular import
     safe_mode = getattr(settings, 'SOFT_DELETE_SAFE_MODE', True)
 
     time = now()
@@ -49,12 +49,13 @@ def _delete(self):
                     model, SoftDeleted):
 
                 if safe_mode and not _is_soft_excluded(model):
-                    raise DeleteNotSoftDeletedModel(
-                        _(f'You are trying to delete {model._meta.object_name} instance,'
-                          f' but {model._meta.object_name} is not subclass of '
-                          f'{SoftDeleted._meta.object_name}. You need to inherit your '
-                          f'model from {SoftDeleted._meta.object_name}'
-                          f' or set settings.SOFT_DELETE_SAFE_MODE to False'))
+                    raise DeleteNotSoftDeletedModel(_(
+                        f'You are trying to delete {model._meta.object_name} '
+                        f'instance, but {model._meta.object_name} is not '
+                        f'subclass of {SoftDeleted._meta.object_name}. You '
+                        f'need to inherit your model from '
+                        f'{SoftDeleted._meta.object_name} or set '
+                        f'settings.SOFT_DELETE_SAFE_MODE to False'))
                 signals.pre_delete.send(
                     sender=model, instance=obj, using=self.using
                 )
@@ -70,12 +71,14 @@ def _delete(self):
                     obj.save()
                 count = qs.count()
             else:
-                count = qs._raw_delete(using=self.using)
+                count = qs._raw_delete(using=self.using)  # noqa: as original
             deleted_counter[qs.model._meta.label] += count
 
         # update fields
-        for model, instances_for_fieldvalues in six.iteritems(self.field_updates):
-            for (field, value), instances in six.iteritems(instances_for_fieldvalues):
+        for model, instances_for_fieldvalues in six.iteritems(
+                self.field_updates):
+            for (field, value), instances in six.iteritems(
+                    instances_for_fieldvalues):
                 for obj in instances:
                     setattr(obj, field.name, value)
                     obj.save()
@@ -121,14 +124,15 @@ def get_extra_restriction_patch(func):
     def wrapper(self, where_class, alias, related_alias):
         cond = func(self, where_class, alias, related_alias)
 
-        from .soft_deleted import SoftDeleted, _AllWhereNode
+        from .soft_deleted import SoftDeleted, _AllWhereNode  # noqa: circular import
 
-        if not issubclass(self.model, SoftDeleted) or issubclass(where_class, _AllWhereNode):
+        if not issubclass(self.model, SoftDeleted) or issubclass(
+                where_class, _AllWhereNode):
             return cond
         for field in self.model._meta.fields:
             is_multitable_child = (
-                    field.remote_field and field.primary_key and
-                    issubclass(self.model, field.remote_field.model))
+                field.remote_field and field.primary_key and
+                issubclass(self.model, field.remote_field.model))
 
             if is_multitable_child:
                 return cond
@@ -147,4 +151,5 @@ def get_extra_restriction_patch(func):
 # we want to prevent hard delete for SoftDeleted models
 Collector.delete = _delete
 # we want to remove objects from related QS
-ForeignObject.get_extra_restriction = get_extra_restriction_patch(ForeignObject.get_extra_restriction)
+ForeignObject.get_extra_restriction = get_extra_restriction_patch(
+    ForeignObject.get_extra_restriction)

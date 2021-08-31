@@ -14,10 +14,10 @@ from .factories import (
 from ..models import MySimpleModel, OverriddenQuerysetModel
 
 
-@pytest.fixture(params=[
+@pytest.fixture(name='test_model', params=[
     (MySimpleModel, MySimpleModelFactory),
 ])
-def test_model(request):
+def test_model_fixture(request):
     return request.param
 
 
@@ -68,7 +68,7 @@ def test_get_object_or_none_args(test_model):
 def test_validate_and_create_object(test_model):
     name1 = TestNameModelFactory.create()
     name2 = TestNameModelFactory.create()
-    model, factory = test_model
+    model, _ = test_model
 
     kwargs = {'data': get_random_string(), 'names': [name1, name2]}
     obj = validate_and_create_object(model, **kwargs)
@@ -78,7 +78,7 @@ def test_validate_and_create_object(test_model):
 
 
 def test_validate_and_update_object__update(test_model):
-    model, factory = test_model
+    _, factory = test_model
     name1 = TestNameModelFactory.create()
     name2 = TestNameModelFactory.create()
 
@@ -95,7 +95,7 @@ def test_validate_and_update_object__update(test_model):
 
 
 def test_validate_and_update_object__no_update(test_model):
-    model, factory = test_model
+    _, factory = test_model
     name1 = TestNameModelFactory.create()
     name2 = TestNameModelFactory.create()
 
@@ -115,7 +115,7 @@ def test_update_or_create_object__create_without_search(test_model):
     new_data = get_random_string()
     name1 = TestNameModelFactory.create()
     name2 = TestNameModelFactory.create()
-    kwargs = {'data':new_data, 'names': [name1, name2]}
+    kwargs = {'data': new_data, 'names': [name1, name2]}
 
     res_obj, is_updated, is_created = update_or_create_object(
         model, **kwargs)
@@ -132,7 +132,7 @@ def test_update_or_create_object__create(test_model):
     new_data = get_random_string()
     name1 = TestNameModelFactory.create()
     name2 = TestNameModelFactory.create()
-    kwargs = {'data':new_data, 'names': [name1, name2]}
+    kwargs = {'data': new_data, 'names': [name1, name2]}
 
     res_obj, is_updated, is_created = update_or_create_object(
         model, search_keys=dict(data=new_data), **kwargs)
@@ -164,7 +164,7 @@ def test_update_or_create_object_with_queryset():
     obj = OverriddenQuerysetModelFactory(name='Test')
 
     new_name = 'New Name'
-    res_obj, is_updated, is_created = update_or_create_object(
+    _, is_updated, _ = update_or_create_object(
         OverriddenQuerysetModel.test_objects,
         search_keys=dict(name=obj.name), **{'name': new_name})
 

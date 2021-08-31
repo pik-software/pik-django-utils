@@ -22,7 +22,7 @@ REDIS_URL = 'redis://@127.0.0.1:6379'
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '+!1n5nglwv!@i^od9f9+srz$0*u_*(k0k)ann3@3uc$f#1*b6i'
+SECRET_KEY = '+!1n5nglwv!@i^od9f9+srz$0*u_*(k0k)ann3@3uc$f#1*b6i'  # noqa: dodgy - secret
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False

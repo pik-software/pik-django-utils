@@ -1,16 +1,10 @@
 from contextlib import contextmanager
-import os
 
 import pytest
-import django
 from celery.contrib.testing import worker, tasks  # noqa: pylint=unused-import
+from django.test.utils import CaptureQueriesContext
 
 from test_project import celery_app as django_celery_app
-
-
-def pytest_configure():
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "test_project.settings")
-    django.setup()
 
 
 @pytest.fixture(scope='session')
@@ -20,8 +14,8 @@ def base_url(live_server):
 
 # CELERY
 
-@pytest.fixture(scope='session')
-def celery_session_app(request):
+@pytest.fixture(name='celery_session_app', scope='session')
+def celery_session_app_fixture(request):
     """Session Fixture: Return app for session fixtures."""
     yield django_celery_app
 
@@ -47,8 +41,7 @@ def _skip_sensitive(request):
 
 @pytest.fixture(scope='function')
 def assert_num_queries_lte(pytestconfig):
-    from django.db import connection
-    from django.test.utils import CaptureQueriesContext
+    from django.db import connection  # noqa: django should be initiated
 
     @contextmanager
     def _assert_num_queries(num):
