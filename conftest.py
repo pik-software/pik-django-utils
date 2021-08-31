@@ -1,4 +1,3 @@
-import warnings
 from contextlib import contextmanager
 import pytest
 from celery.contrib.testing import worker, tasks  # noqa: pylint=unused-import
@@ -6,8 +5,6 @@ from django.test.utils import CaptureQueriesContext
 
 from test_project import celery_app as django_celery_app
 
-# noqa:  https://github.com/celery/kombu/issues/1339
-warnings.filterwarnings('ignore', 'SelectableGroups dict interface')
 
 @pytest.fixture(scope='session')
 def base_url(live_server):
