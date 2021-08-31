@@ -55,7 +55,7 @@ jobs:
             check-manifest
             python setup.py check -m -s
             python -m pytest . --junitxml=~/reports/report.xml
-            prospector --profile-path . --profile prospector.yaml pik
+            prospector --profile-path . --profile .prospector.yaml pik
             mypy pik --ignore-missing-imports
             pip check
       - store_test_results:
