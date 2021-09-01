@@ -106,7 +106,7 @@ class StandardizedFilterSet(FilterSet):
 
     class Meta:
         model = None
-        fields = {}
+        fields: dict = {}
 
 
 class SoftDeletedStandardizedFilterSet(StandardizedFilterSet):

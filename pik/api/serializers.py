@@ -176,7 +176,7 @@ class DynamicModelSerializerMixIn:
     """
 
     def get_field_names(self, declared_fields, info) -> str:
-        field_names = super().get_field_names(
+        field_names = super().get_field_names(  # type: ignore
             declared_fields, info)
         if self.dynamic_fields is not None:
             # Drop any fields that are not specified in the `fields` argument.

@@ -10,7 +10,7 @@ from rest_framework.utils.encoders import JSONEncoder
 
 class CachedRenderer(BaseRenderer):
     """ BaseRenderer with pre-rendered files support """
-    extension = None
+    extension = 'txt'
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         name = renderer_context['request'].path.replace('/', '_')
