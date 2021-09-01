@@ -1,6 +1,13 @@
 # Django
 Django>=1.11.15
 django-simple-history>=2.4.0
+djangorestframework
+django-restql
+djangorestframework-camel-case
+django-filter
+djangorestframework-filters==1.0.0.dev0
+django-model-utils
+drf-yasg
 
 # Celery
 celery>=4.2.1
