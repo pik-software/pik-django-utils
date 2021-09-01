@@ -29,4 +29,3 @@ check_manifest
 
 # typing
 mypy
-djangorestframework-stubs
