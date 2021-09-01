@@ -11,6 +11,10 @@ include pytest.ini
 recursive-include data *
 recursive-include docs *.md
 
+# Include the pik files
+recursive-include pik *.html
+recursive-include pik *.md
+
 # EXCLUDE
 prune .circleci
 prune tests
