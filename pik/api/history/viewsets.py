@@ -37,7 +37,7 @@ def get_history_viewset(viewset):
         model_name, serializer_class)
     filter_class = get_history_filter_class(model_name, viewset)
 
-    select_related_fields = viewset.select_related_fields
+    select_related_fields = getattr(viewset, 'select_related_fields', None)
     if select_related_fields:
         select_related_fields = filter(
             lambda r: '__' not in r, select_related_fields)
