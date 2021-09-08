@@ -41,6 +41,9 @@ def replace_keys(field, replacer, **kwargs):
 def replace_struct_keys(data, **options):  # noqa: Too many branches
     """
     Replaces `guid` with keys with `_uid`
+    >>> replace_struct_keys( \
+        {'foo_type': 1}, replacer=to_deprecated_fields)
+    OrderedDict([('foo_type', 1)])
 
     >>> replace_struct_keys( \
         {'guid': 1, 'type': 2}, replacer=to_deprecated_fields)
@@ -118,6 +121,11 @@ def replace_struct_keys(data, **options):  # noqa: Too many branches
 
 class KeysReplacer:
     """ Rules based field/key replacer
+
+    >>> replacer = KeysReplacer(rules={'type': '_type'})
+
+    >>> replacer.replace('foo_type')
+    'foo_type'
 
     >>> replacer = KeysReplacer(rules={'foo': 'bar'})
 
@@ -202,17 +210,17 @@ class KeysReplacer:
         symbols = '\'":{}&!,.= '
         return re.compile(
             r'('
-            f'(^{fields}$)'  # Excat match
+            f'^({fields})$'  # Excat match
             r'|'
-            f'((?<=[{symbols}])({fields})$)'  # Starting
+            f'((?<=[{symbols}])({fields}))$'  # Starting
             r'|'
-            f'(^({fields})(?=[_{symbols}]))'  # Ending
+            f'^(({fields})(?=[_{symbols}]))'  # Ending
             r'|'
             f'((?<=[{symbols}])({fields})(?=[_{symbols}]))'  # Surounded
             r'|'
             f'((?<=__)({fields})(?=[_{symbols}]))'  # Subfield
             r'|'
-            f'((?<=__)({fields})$)'  # Subfield
+            f'((?<=__)({fields}))$'  # Subfield
             r')')
 
 
