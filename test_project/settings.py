@@ -117,3 +117,7 @@ STATIC_URL = '/static/'
 # when SOFT_DELETE_SAFE_MODE is True - not soft deletion restricted
 SOFT_DELETE_SAFE_MODE = True
 SOFT_DELETE_EXCLUDE = []
+
+
+ONLY_LAST_VERSION_ALLOWED_DAYS_RANGE = os.environ.get(
+    'ONLY_LAST_VERSION_ALLOWED_DAYS_RANGE', 1)
