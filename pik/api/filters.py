@@ -16,6 +16,7 @@ STRING_LOOKUPS = (
 DATE_LOOKUPS = ('exact', 'gt', 'gte', 'lt', 'lte', 'in', 'isnull')
 BOOLEAN_LOOKUPS = ('exact', 'in', 'isnull')
 ARRAY_LOOKUPS = ['contains', 'contained_by', 'overlap', 'len', 'isnull']
+NUMBER_LOOKUPS = ('exact', 'gt', 'gte', 'lt', 'lte', 'in', 'isnull')
 
 
 class StandardizedFieldFilters(RestFrameworkFilterBackend):
@@ -64,6 +65,14 @@ class ArrayFilter(BaseCSVFilter, AutoFilter):
     def __init__(self, *args, **kwargs):
         kwargs.setdefault('lookups', self.DEFAULT_LOOKUPS)
         super().__init__(*args, **kwargs)
+
+
+class NamedFilterMixIn:
+    name = AutoFilter(lookups=STRING_LOOKUPS)
+
+
+class DeletedFilterMixIn(FilterSet):
+    deleted = AutoFilter(lookups=DATE_LOOKUPS)
 
 
 class BooleanQuerySetFilter(BooleanFilter):
