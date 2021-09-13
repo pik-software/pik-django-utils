@@ -70,7 +70,7 @@ def _delete(self):  # noqa: too complex
                     obj.save()
                 count = query_set.count()
             else:
-                count = qs._raw_delete(using=self.using)  # noqa: as original
+                count = query_set._raw_delete(using=self.using)  # noqa: as original
             deleted_counter[query_set.model._meta.label] += count
 
         # update fields
