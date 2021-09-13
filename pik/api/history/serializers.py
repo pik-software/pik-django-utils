@@ -1,5 +1,7 @@
 from collections import OrderedDict
 
+from django.conf import settings
+from django.core.cache import cache
 from rest_framework import fields as rest_fields
 from rest_framework.serializers import Serializer
 
@@ -37,6 +39,40 @@ class HistorySerializerMixIn(Serializer):
                 ret[field.field_name] = None
 
         return ret
+
+
+class CachedHistorySerializerMixin:
+    SERIALIZER_CACHE_TTL_SEC = settings.HISTORY_SERIALIZER_CACHE_TTL_SEC
+    SERIALIZER_CACHE_KEY_FORMAT = (
+        '{serializer.__class__.__name__}'
+        '.{instance.uid}.{instance.version}.{request.method}')
+
+    def _get_cache_key(self, instance):
+        """Get cache key of instance"""
+        params = {'instance': instance,
+                  'request': self.context['request'],
+                  'serializer': self}
+        return self.SERIALIZER_CACHE_KEY_FORMAT.format(**params)
+
+    def to_representation(self, instance):
+        """
+        Checks if the representation of instance is cached and adds to cache
+        if is not.
+        """
+
+        # Skipping nested serializers caching
+        is_nested = self.parent and self.parent.parent
+        if is_nested:
+            return super().to_representation(instance)
+
+        key = self._get_cache_key(instance)
+        cached = cache.get(key)
+        if cached:
+            return cached
+
+        result = super().to_representation(instance)
+        cache.set(key, result, self.SERIALIZER_CACHE_TTL_SEC)
+        return result
 
 
 def simplify_nested_serializer(serializer):

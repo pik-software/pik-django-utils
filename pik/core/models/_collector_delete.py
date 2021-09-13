@@ -63,15 +63,15 @@ def _delete(self):  # noqa: too complex
                 # we are using `.save()` for soft deletion.
 
         # fast deletes
-        for qs in self.fast_deletes:
-            if issubclass(qs.model, SoftDeleted):
-                for obj in qs:
+        for query_set in self.fast_deletes:
+            if issubclass(query_set.model, SoftDeleted):
+                for obj in query_set:
                     setattr(obj, FIELD, time)
                     obj.save()
-                count = qs.count()
+                count = query_set.count()
             else:
                 count = qs._raw_delete(using=self.using)  # noqa: as original
-            deleted_counter[qs.model._meta.label] += count
+            deleted_counter[query_set.model._meta.label] += count
 
         # update fields
         for model, instances_for_fieldvalues in self.field_updates.items():
