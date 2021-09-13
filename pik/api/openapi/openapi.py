@@ -18,8 +18,8 @@ from drf_yasg.inspectors.field import (
 from drf_yasg.utils import (
     force_real_str, field_value_to_representation, filter_none, )
 
-from .utils import deepmerge
 from pik.api.openapi.reference import ReferenceAutoSchema
+from .utils import deepmerge
 
 
 FIELD_MAPPING = (

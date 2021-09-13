@@ -1,4 +1,3 @@
-from rest_framework.schemas.openapi import SchemaGenerator
 from rest_framework.schemas.openapi import AutoSchema
 # TODO: klimenkoas: Drop `drf_yasg` dependency
 from drf_yasg.utils import get_serializer_ref_name
