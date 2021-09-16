@@ -59,6 +59,10 @@ class StandardizedSearchFilter(SearchFilter):
     pass
 
 
+class StandardizedOrderingFilter(OrderingFilter):
+    pass
+
+
 class ArrayFilter(BaseCSVFilter, AutoFilter):
     DEFAULT_LOOKUPS = ARRAY_LOOKUPS
 

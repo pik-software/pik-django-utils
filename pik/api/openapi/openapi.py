@@ -17,6 +17,8 @@ from drf_yasg.inspectors.field import (
     get_basic_type_info_from_hint, typing, inspect_signature, )
 from drf_yasg.utils import (
     force_real_str, field_value_to_representation, filter_none, )
+from pik.api.openapi.reference import (
+    ReferenceAutoSchema, ReferenceSchemaGenerator)
 
 from pik.api.openapi.reference import ReferenceAutoSchema
 from .utils import deepmerge
@@ -415,4 +417,28 @@ class OpenIDSchemaGenerator(SchemaGenerator):
 class PIKSchemaGenerator(
         OpenIDSchemaGenerator,
         EntitiesViewSchemaGenerator):
+    pass
+
+
+class StandardizedSchemaGenerator(EntitiesViewSchemaGenerator,
+                                  ReferenceSchemaGenerator):
+    pass
+
+
+class StandardizedAutoSchema(CustomizableSerializerAutoSchema,
+                             JSONFieldAutoSchema,
+                             ListFieldAutoSchema,
+                             BooleanFieldAutoSchema,
+                             ReferenceAutoSchema,
+                             TypedSerializerAutoSchema,
+                             OriginalChoicesFieldTypeSchema,
+                             EnumNamesAutoSchema,
+                             DeprecatedFieldAutoSchema,
+                             DeprecatedSerializerAutoSchema,
+                             ModelSerializerFieldsAutoSchema,
+                             FieldMappingAutoSchema,
+                             ListFiltersOnlyAutoSchema,
+                             OperationSummaryAutoSchema,
+                             OperationSerializerDescriptionAutoSchema,
+                             SerializerMethodFieldAutoSchema):
     pass
