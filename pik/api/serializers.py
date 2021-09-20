@@ -251,10 +251,8 @@ class StandardizedModelSerializer(
         SettableNestedSerializerMixIn,
         ValidatedModelSerializerMixIn,
         DynamicModelSerializerMixIn,
-        StandardizedProtocolSerializer,
-        # *((PermittedFieldsSerializerMixIn,)
-        #   if PermittedFieldsSerializerMixIn else tuple())
         PermittedFieldsSerializerMixIn,
+        StandardizedProtocolSerializer,
 ):
 
     # we pass soft deleted logic here because drf-yasg can't find type of

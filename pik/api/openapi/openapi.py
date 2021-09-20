@@ -416,29 +416,6 @@ class OpenIDSchemaGenerator(SchemaGenerator):
 
 class PIKSchemaGenerator(
         OpenIDSchemaGenerator,
-        EntitiesViewSchemaGenerator):
-    pass
-
-
-class StandardizedSchemaGenerator(EntitiesViewSchemaGenerator,
-                                  ReferenceSchemaGenerator):
-    pass
-
-
-class StandardizedAutoSchema(CustomizableSerializerAutoSchema,
-                             JSONFieldAutoSchema,
-                             ListFieldAutoSchema,
-                             BooleanFieldAutoSchema,
-                             ReferenceAutoSchema,
-                             TypedSerializerAutoSchema,
-                             OriginalChoicesFieldTypeSchema,
-                             EnumNamesAutoSchema,
-                             DeprecatedFieldAutoSchema,
-                             DeprecatedSerializerAutoSchema,
-                             ModelSerializerFieldsAutoSchema,
-                             FieldMappingAutoSchema,
-                             ListFiltersOnlyAutoSchema,
-                             OperationSummaryAutoSchema,
-                             OperationSerializerDescriptionAutoSchema,
-                             SerializerMethodFieldAutoSchema):
+        EntitiesViewSchemaGenerator,
+        ReferenceSchemaGenerator):
     pass
