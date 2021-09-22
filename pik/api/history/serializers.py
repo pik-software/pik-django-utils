@@ -41,25 +41,6 @@ class HistorySerializerMixIn(Serializer):
         return ret
 
 
-def simplify_nested_serializer(serializer):
-    if isinstance(serializer, StandardizedModelSerializer):
-        for _name, _field in list(serializer.fields.items()):
-            if _name not in ('_uid', '_type'):
-                serializer.fields.pop(_name)
-
-
-def get_history_serializer_class(model_name, serializer_class):
-    name = f'{model_name}Serializer'
-    _model = serializer_class.Meta.model.history.model
-    fields = HistorySerializerMixIn.Meta.fields + serializer_class.Meta.fields
-    _meta = type(
-        'Meta', (HistorySerializerMixIn.Meta, serializer_class.Meta), {
-            'model': _model,
-            'fields': fields})
-    bases = HistorySerializerMixIn, serializer_class
-    return type(name, bases, {'Meta': _meta})
-
-
 class CachedHistorySerializerMixin:
     SERIALIZER_CACHE_TTL_SEC = settings.HISTORY_SERIALIZER_CACHE_TTL_SEC
     SERIALIZER_CACHE_KEY_FORMAT = (
@@ -92,3 +73,22 @@ class CachedHistorySerializerMixin:
         result = super().to_representation(instance)
         cache.set(key, result, self.SERIALIZER_CACHE_TTL_SEC)
         return result
+
+
+def simplify_nested_serializer(serializer):
+    if isinstance(serializer, StandardizedModelSerializer):
+        for _name, _field in list(serializer.fields.items()):
+            if _name not in ('_uid', '_type'):
+                serializer.fields.pop(_name)
+
+
+def get_history_serializer_class(model_name, serializer_class):
+    name = f'{model_name}Serializer'
+    _model = serializer_class.Meta.model.history.model
+    fields = HistorySerializerMixIn.Meta.fields + serializer_class.Meta.fields
+    _meta = type(
+        'Meta', (HistorySerializerMixIn.Meta, serializer_class.Meta), {
+            'model': _model,
+            'fields': fields})
+    bases = HistorySerializerMixIn, serializer_class
+    return type(name, bases, {'Meta': _meta})

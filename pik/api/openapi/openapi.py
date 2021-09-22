@@ -9,7 +9,7 @@ from rest_framework import serializers
 from rest_framework.fields import (
     ChoiceField, JSONField, MultipleChoiceField, SerializerMethodField,
     NullBooleanField, _UnvalidatedField, )
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer, Serializer
 from rest_framework.schemas.openapi import AutoSchema, SchemaGenerator
 from djangorestframework_camel_case.util import camelize, underscore_to_camel
 # TODO: klimenkoas: Drop `drf_yasg` dependency
@@ -17,8 +17,11 @@ from drf_yasg.inspectors.field import (
     get_basic_type_info_from_hint, typing, inspect_signature, )
 from drf_yasg.utils import (
     force_real_str, field_value_to_representation, filter_none, )
+from pik.api.openapi.reference import (
+    ReferenceAutoSchema, ReferenceSchemaGenerator)
 
 from .utils import deepmerge
+
 
 FIELD_MAPPING = (
     ('title', 'label', lambda x: force_real_str(x).strip().capitalize()),
@@ -85,6 +88,32 @@ class ListFieldAutoSchema(AutoSchema):
                 mapping['items'] = self.map_field(field.child)
             return mapping
         return super().map_field(field)
+
+
+class OriginalChoicesFieldTypeSchema(AutoSchema):
+    """ Injecting original field schema into the drf.ChoiceField schema.
+
+        DRF replaces all fields got choices with ChoiceField, so they get
+        output schema type `any`. That is not actually true. So we
+        introspecting original field without choices to get original schema
+        and join it with default.
+    """
+
+    def _map_field(self, field):
+        schema = super()._map_field(field)
+        is_flat_choice_field = (isinstance(field, ChoiceField)
+                                and isinstance(field.parent, Serializer))
+        if is_flat_choice_field:
+            parent = field.parent
+            model_field = parent.Meta.model._meta.get_field(field.field_name)
+            _, _, _, kwargs = model_field.deconstruct()
+            del kwargs['choices']
+            orig_model_field = model_field.__class__(**kwargs)
+            orig_field_class, orig_field_kwargs = parent.build_standard_field(
+                field.field_name, orig_model_field)
+            orig_field = orig_field_class(**orig_field_kwargs)
+            schema = {**super()._map_field(orig_field), **schema}
+        return schema
 
 
 class EnumNamesAutoSchema(AutoSchema):
@@ -288,7 +317,9 @@ class PIKAutoSchema(
         JSONFieldAutoSchema,
         ListFieldAutoSchema,
         BooleanFieldAutoSchema,
+        ReferenceAutoSchema,
         TypedSerializerAutoSchema,
+        OriginalChoicesFieldTypeSchema,
         EnumNamesAutoSchema,
         DeprecatedFieldAutoSchema,
         DeprecatedSerializerAutoSchema,
@@ -384,5 +415,6 @@ class OpenIDSchemaGenerator(SchemaGenerator):
 
 class PIKSchemaGenerator(
         OpenIDSchemaGenerator,
-        EntitiesViewSchemaGenerator):
+        EntitiesViewSchemaGenerator,
+        ReferenceSchemaGenerator):
     pass
