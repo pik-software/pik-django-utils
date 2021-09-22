@@ -9,7 +9,7 @@ from rest_framework import serializers
 from rest_framework.fields import (
     ChoiceField, JSONField, MultipleChoiceField, SerializerMethodField,
     NullBooleanField, _UnvalidatedField, )
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer, Serializer
 from rest_framework.schemas.openapi import AutoSchema, SchemaGenerator
 from djangorestframework_camel_case.util import camelize, underscore_to_camel
 # TODO: klimenkoas: Drop `drf_yasg` dependency
@@ -17,8 +17,11 @@ from drf_yasg.inspectors.field import (
     get_basic_type_info_from_hint, typing, inspect_signature, )
 from drf_yasg.utils import (
     force_real_str, field_value_to_representation, filter_none, )
+from pik.api.openapi.reference import (
+    ReferenceAutoSchema, ReferenceSchemaGenerator)
 
 from .utils import deepmerge
+
 
 FIELD_MAPPING = (
     ('title', 'label', lambda x: force_real_str(x).strip().capitalize()),
@@ -288,6 +291,7 @@ class PIKAutoSchema(
         JSONFieldAutoSchema,
         ListFieldAutoSchema,
         BooleanFieldAutoSchema,
+        ReferenceAutoSchema,
         TypedSerializerAutoSchema,
         EnumNamesAutoSchema,
         DeprecatedFieldAutoSchema,
@@ -384,5 +388,6 @@ class OpenIDSchemaGenerator(SchemaGenerator):
 
 class PIKSchemaGenerator(
         OpenIDSchemaGenerator,
-        EntitiesViewSchemaGenerator):
+        EntitiesViewSchemaGenerator,
+        ReferenceSchemaGenerator):
     pass
