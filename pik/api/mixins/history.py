@@ -23,6 +23,10 @@ from pik.api.serializers import StandardizedModelSerializer
 class HistoryQueryParamsValidator:
 
     HISTORY_DATE_PARAMS = ('gt', 'lt')
+    ONLY_LAST_VERSION_ERROR_MSG = _(
+        'Вы можете использовать only_last_version параметр, '
+        'только с history_date, указывающий временной промежуток не больше чем'
+        f' {settings.ONLY_LAST_VERSION_ALLOWED_DAYS_RANGE} сутки')
 
     def __init__(
             self, query_params, lookup_url_kwarg,

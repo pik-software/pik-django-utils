@@ -117,7 +117,3 @@ STATIC_URL = '/static/'
 # when SOFT_DELETE_SAFE_MODE is True - not soft deletion restricted
 SOFT_DELETE_SAFE_MODE = True
 SOFT_DELETE_EXCLUDE = []
-
-
-HISTORY_SERIALIZER_CACHE_TTL_SEC = int(os.environ.get(
-    'HISTORY_SERIALIZER_CACHE_TTL_SEC', 24 * 3600))
