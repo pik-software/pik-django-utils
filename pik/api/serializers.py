@@ -27,9 +27,9 @@ class SettableNestedSerializerMixIn:
     default_error_messages = {
         'required': _('This field is required.'),
         'does_not_exist':
-            _('Недопустимый uid "{uid_value}" - объект не существует.'),
+            _('Недопустимый guid "{uid_value}" - объект не существует.'),
         'incorrect_uid_type':
-            _('Недопустимый uid. Ожидался uid, получен "{data_type}".'),
+            _('Недопустимый guid. Ожидался uuid, получен "{data_type}".'),
         'incorrect_type':
             _('Некорректный тип объекта. Ожидался "{expected_object_type}". '
               'Получен "{object_type}".'),
