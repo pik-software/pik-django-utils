@@ -48,7 +48,6 @@ class HistoricalSerializerBase(Serializer):
         return ret
 
 
-
 class CachedHistorySerializerMixin:
     SERIALIZER_CACHE_TTL_SEC = getattr(
         settings, 'HISTORY_SERIALIZER_CACHE_TTL_SEC', 600)

@@ -34,9 +34,9 @@ def check_search_config_consistency(model, search_fields):
             ['search_index', 'name'])
     Traceback (most recent call last):
         ...
-    pik.core.search.utils.SearchIndexRedundantFieldsException: SearchIndexField \
-can't be used with other fields in `search_fields`! Multiple found: \
-(search_index, name). To add more fields use \
+    pik.core.search.utils.SearchIndexRedundantFieldsException: \
+SearchIndexField can't be used with other fields in `search_fields`! \
+Multiple found: (search_index, name). To add more fields use \
 `SearchIndexField.search_fields` arg!
 
     >>> check_search_config_consistency( \
@@ -45,9 +45,9 @@ can't be used with other fields in `search_fields`! Multiple found: \
             ['search_index', 'custom_search_index'])
     Traceback (most recent call last):
         ...
-    pik.core.search.utils.SearchIndexRedundantFieldsException: SearchIndexField \
-can't be used with other fields in `search_fields`! Multiple found: \
-(search_index, custom_search_index). To add more fields use \
+    pik.core.search.utils.SearchIndexRedundantFieldsException: \
+SearchIndexField can't be used with other fields in `search_fields`! \
+Multiple found: (search_index, custom_search_index). To add more fields use \
 `SearchIndexField.search_fields` arg!
 
     """

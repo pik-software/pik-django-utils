@@ -287,11 +287,11 @@ class StandardizedSnapshotLinkSerializer(BaseSnapshotLinkSerializer,
 
 
 class StandardizedDocumentedModelLinkSerializer(
-    BaseDocumentedModelLinkSerializer, StandardizedModelSerializer):
+        BaseDocumentedModelLinkSerializer, StandardizedModelSerializer):
 
     class Meta(BaseDocumentedModelLinkSerializer.Meta):
         fields = (
-                BaseDocumentedModelLinkSerializer.Meta.fields + SOFT_DELETE_FIELDS)
+            BaseDocumentedModelLinkSerializer.Meta.fields + SOFT_DELETE_FIELDS)
 
 
 class StandardizedChangeAttachmentSerializer(BaseChangeAttachmentSerializer,
@@ -299,13 +299,13 @@ class StandardizedChangeAttachmentSerializer(BaseChangeAttachmentSerializer,
 
     class Meta(BaseChangeAttachmentSerializer.Meta):
         fields = (
-                BaseChangeAttachmentSerializer.Meta.fields + SOFT_DELETE_FIELDS)
+            BaseChangeAttachmentSerializer.Meta.fields + SOFT_DELETE_FIELDS)
 
 
 class StandardizedChangeAttachmentLinkSerializer(
-    BaseChangeAttachmentLinkSerializer, StandardizedModelSerializer):
+        BaseChangeAttachmentLinkSerializer, StandardizedModelSerializer):
 
     class Meta(BaseChangeAttachmentLinkSerializer.Meta):
         fields = (
-                BaseChangeAttachmentLinkSerializer.Meta.fields + ('file',)
-                + SOFT_DELETE_FIELDS)
+            BaseChangeAttachmentLinkSerializer.Meta.fields + ('file',)
+            + SOFT_DELETE_FIELDS)

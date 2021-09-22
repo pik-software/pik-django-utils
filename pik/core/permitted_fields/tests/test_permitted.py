@@ -5,8 +5,8 @@ import pytest
 from ..permitted import PermittedFieldsPermissionMixIn
 
 
-@pytest.fixture
-def model():
+@pytest.fixture(name='model')
+def model_fixture():
     return mock.Mock(
         permitted_fields={'{app_label}_can_change_{model_name}': ['a']},
         _meta=mock.Mock(

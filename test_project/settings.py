@@ -29,6 +29,10 @@ DEBUG = False
 
 ALLOWED_HOSTS = []
 
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
+
 
 # Application definition
 
@@ -116,7 +120,9 @@ STATIC_URL = '/static/'
 # SOFT DELETE
 # when SOFT_DELETE_SAFE_MODE is True - not soft deletion restricted
 SOFT_DELETE_SAFE_MODE = True
-SOFT_DELETE_EXCLUDE = []
+SOFT_DELETE_EXCLUDE = [
+    'sessions.Session'
+]
 
 
 HISTORY_SERIALIZER_CACHE_TTL_SEC = int(os.environ.get(
@@ -124,3 +130,7 @@ HISTORY_SERIALIZER_CACHE_TTL_SEC = int(os.environ.get(
 
 ONLY_LAST_VERSION_ALLOWED_DAYS_RANGE = os.environ.get(
     'ONLY_LAST_VERSION_ALLOWED_DAYS_RANGE', 1)
+
+
+from pik.oidc.settings import set_oidc_settings  # noqa: pylint=wrong-import-position
+set_oidc_settings(globals())

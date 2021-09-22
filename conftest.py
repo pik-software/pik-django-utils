@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 import pytest
 from celery.contrib.testing import worker, tasks  # noqa: pylint=unused-import
+from django.core.cache import caches
 from django.test.utils import CaptureQueriesContext
 
 from test_project import celery_app as django_celery_app
@@ -36,7 +37,31 @@ def _skip_sensitive(request):
     """Pytest-selenium patch: don't Skip destructive tests"""
 
 
+@pytest.fixture(autouse=True)
+def clear_caches():
+    for cache in caches.all():
+        cache.clear()
+
+
 # HELPERS
+@pytest.fixture(name='api_user')
+def api_user_fixture():
+    from django.contrib.auth import get_user_model  # noqa: import-outside-toplevel
+    user_model = get_user_model()
+    user = user_model(username='test', email='test@test.ru', is_active=True)
+    user.set_password('test_password')
+    user.save()
+    return user
+
+
+@pytest.fixture
+def api_client(api_user: object):
+    from rest_framework.test import APIClient  # noqa: import-outside-toplevel
+    client = APIClient()
+    client.force_login(api_user)
+    client.user = api_user
+    return client
+
 
 @pytest.fixture(scope='function')
 def assert_num_queries_lte(pytestconfig):

@@ -9,7 +9,7 @@ from rest_framework import serializers
 from rest_framework.fields import (
     ChoiceField, JSONField, MultipleChoiceField, SerializerMethodField,
     NullBooleanField, _UnvalidatedField, )
-from rest_framework.serializers import ModelSerializer, Serializer
+from rest_framework.serializers import ModelSerializer
 from rest_framework.schemas.openapi import AutoSchema, SchemaGenerator
 from djangorestframework_camel_case.util import camelize, underscore_to_camel
 # TODO: klimenkoas: Drop `drf_yasg` dependency

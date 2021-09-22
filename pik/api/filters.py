@@ -66,6 +66,7 @@ class ArrayFilter(BaseCSVFilter, AutoFilter):
         kwargs.setdefault('lookups', self.DEFAULT_LOOKUPS)
         super().__init__(*args, **kwargs)
 
+
 class NamedFilterMixIn:
     name = AutoFilter(lookups=STRING_LOOKUPS)
 

@@ -54,7 +54,9 @@ def _delete(self):  # noqa: too complex
                         f'subclass of {SoftDeleted._meta.object_name}. You '
                         f'need to inherit your model from '
                         f'{SoftDeleted._meta.object_name} or set '
-                        f'settings.SOFT_DELETE_SAFE_MODE to False'))
+                        f'settings.SOFT_DELETE_SAFE_MODE to False or add '
+                        f'"{model._meta.app_label}.{model._meta.object_name}" '
+                        f'to SOFT_DELETE_EXCLUDE'))
                 signals.pre_delete.send(
                     sender=model, instance=obj, using=self.using
                 )

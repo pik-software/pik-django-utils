@@ -11,6 +11,16 @@ drf-yasg
 django-private-storage
 django-documents-tools
 
+# OIDC
+social-auth-app-django
+django_cors_headers
+django-oauth-toolkit
+django-rest-framework-social-oauth2
+pyjwkest
+future
+social_auth_core
+python-jose
+
 # Celery
 celery
 kombu

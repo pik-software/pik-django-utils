@@ -36,4 +36,3 @@ class PermittedFieldsInlineAdminMixIn(PermittedFieldsAdminMixIn):
 
         return (self.has_view_permission(request, obj)
                 and not self.has_change_permission(request, obj))
-

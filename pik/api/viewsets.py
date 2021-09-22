@@ -169,7 +169,8 @@ class PrivateStorageAPIView(APIView):
 
         return self.serve_file(private_file)
 
-    def serve_file_not_found(self, private_file):
+    @staticmethod
+    def serve_file_not_found(private_file):
         """
         Display a response message telling that the file is not found.
         This can be overwritten to improve the customer experience.
@@ -222,7 +223,7 @@ class PrivateStorageAPIView(APIView):
         if 'WebKit' in user_agent:
             # Support available for UTF-8 encoded strings.
             # This also matches Edgee.
-            return u'filename={}'.format(filename).encode("utf-8")
+            return 'filename={}'.format(filename).encode("utf-8")
         if 'MSIE' in user_agent:
             # IE does not support RFC2231 for internationalized headers,
             # but somehow percent-decodes it so this can be used instead.
