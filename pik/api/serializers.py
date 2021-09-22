@@ -46,7 +46,7 @@ class SettableNestedSerializerMixIn:
 
         object_type = ""
         if hasattr(request_data, 'get'):  # request_data could be other types
-            object_type = request_data.get('_type', None)
+            object_type = request_data.get('type', None)
 
         model = self.Meta.model
         expected = [model._meta.model_name]  # noqa: protected-access
@@ -59,7 +59,7 @@ class SettableNestedSerializerMixIn:
             self.fail('incorrect_type',
                       expected_object_type=", ".join(expected),
                       object_type=object_type)
-        uid_value = request_data.get('_uid')
+        uid_value = request_data.get('guid')
         try:
             return model.objects.get(uid=uid_value)
         except model.DoesNotExist:
