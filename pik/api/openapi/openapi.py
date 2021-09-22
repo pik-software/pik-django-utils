@@ -90,32 +90,6 @@ class ListFieldAutoSchema(AutoSchema):
         return super().map_field(field)
 
 
-class OriginalChoicesFieldTypeSchema(AutoSchema):
-    """ Injecting original field schema into the drf.ChoiceField schema.
-
-        DRF replaces all fields got choices with ChoiceField, so they get
-        output schema type `any`. That is not actually true. So we
-        introspecting original field without choices to get original schema
-        and join it with default.
-    """
-
-    def _map_field(self, field):
-        schema = super()._map_field(field)
-        is_flat_choice_field = (isinstance(field, ChoiceField)
-                                and isinstance(field.parent, Serializer))
-        if is_flat_choice_field:
-            parent = field.parent
-            model_field = parent.Meta.model._meta.get_field(field.field_name)
-            _, _, _, kwargs = model_field.deconstruct()
-            del kwargs['choices']
-            orig_model_field = model_field.__class__(**kwargs)
-            orig_field_class, orig_field_kwargs = parent.build_standard_field(
-                field.field_name, orig_model_field)
-            orig_field = orig_field_class(**orig_field_kwargs)
-            schema = {**super()._map_field(orig_field), **schema}
-        return schema
-
-
 class EnumNamesAutoSchema(AutoSchema):
     """ Adds enumNames for choice fields """
 
@@ -319,7 +293,6 @@ class PIKAutoSchema(
         BooleanFieldAutoSchema,
         ReferenceAutoSchema,
         TypedSerializerAutoSchema,
-        OriginalChoicesFieldTypeSchema,
         EnumNamesAutoSchema,
         DeprecatedFieldAutoSchema,
         DeprecatedSerializerAutoSchema,
