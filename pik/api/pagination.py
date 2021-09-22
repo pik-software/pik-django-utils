@@ -20,7 +20,7 @@ class StandardizedPagination(PageNumberPagination):
         REST_FRAMEWORK = {
             ...
             'DEFAULT_PAGINATION_CLASS':
-                '..pagination.StandardizedPagination',
+                'pik.api.pagination.StandardizedPagination',
             ...
         }
     """

@@ -41,8 +41,8 @@ class DeprecatedMultiPartParser(MultiPartParser):
                 replace_struct_keys(files, replacer=to_actual_fields),
             )
         except MultiPartParserError as exc:
-            raise ParseError("Multipart form parse error - %s" % str(exc)
-                             ) from exc
+            raise ParseError(
+                "Multipart form parse error - %s" % str(exc)) from exc
 
 
 class DeprecatedJSONParser(JSONParser):

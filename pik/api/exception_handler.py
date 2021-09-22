@@ -21,7 +21,7 @@ def standardized_handler(exc, context):  # noqa
         REST_FRAMEWORK = {
             ...
             'EXCEPTION_HANDLER':
-                'pikdrf.exception_handler.standardized_handler',
+                'pik.api.exception_handler.standardized_handler',
             ...
         }
     """
