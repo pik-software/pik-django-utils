@@ -2,19 +2,19 @@ from typing import Optional, Union
 from uuid import UUID
 
 from django.utils.translation import gettext_lazy as _
+from django_documents_tools.api.serializers import (
+    BaseChangeSerializer, BaseSnapshotSerializer,
+    BaseDocumentedModelLinkSerializer, BaseChangeAttachmentSerializer,
+    BaseChangeAttachmentLinkSerializer, BaseSnapshotLinkSerializer, )
 from django_restql.mixins import DynamicFieldsMixin
 from model_utils.managers import InheritanceManager
-
 from rest_framework import serializers
-from rest_framework.serializers import ModelSerializer
 from rest_framework.exceptions import ValidationError
+from rest_framework.serializers import ModelSerializer
 
+from .constants import SOFT_DELETE_FIELDS
 from .lazy_field import LazyFieldHandlerMixIn
 from .restql import DefaultRequestQueryParserMixin
-# try:
-#     from pik.core.permitted_fields.api import PermittedFieldsSerializerMixIn
-# except ImportError:
-#     PermittedFieldsSerializerMixIn = None
 
 
 def _normalize_label(label):
@@ -262,3 +262,50 @@ class StandardizedModelSerializer(
     @staticmethod
     def get_is_deleted(obj) -> bool:
         return bool(obj.deleted)
+
+
+class StandardizedChangeSerializer(BaseChangeSerializer,
+                                   StandardizedModelSerializer):
+
+    class Meta(BaseChangeSerializer.Meta):
+        fields = BaseChangeSerializer.Meta.fields + SOFT_DELETE_FIELDS
+        extra_kwargs = {}
+
+
+class StandardizedSnapshotSerializer(BaseSnapshotSerializer,
+                                     StandardizedModelSerializer):
+
+    class Meta(BaseSnapshotSerializer.Meta):
+        fields = BaseSnapshotSerializer.Meta.fields + SOFT_DELETE_FIELDS
+
+
+class StandardizedSnapshotLinkSerializer(BaseSnapshotLinkSerializer,
+                                         StandardizedModelSerializer):
+
+    class Meta(BaseSnapshotLinkSerializer.Meta):
+        fields = BaseSnapshotLinkSerializer.Meta.fields + SOFT_DELETE_FIELDS
+
+
+class StandardizedDocumentedModelLinkSerializer(
+    BaseDocumentedModelLinkSerializer, StandardizedModelSerializer):
+
+    class Meta(BaseDocumentedModelLinkSerializer.Meta):
+        fields = (
+                BaseDocumentedModelLinkSerializer.Meta.fields + SOFT_DELETE_FIELDS)
+
+
+class StandardizedChangeAttachmentSerializer(BaseChangeAttachmentSerializer,
+                                             StandardizedModelSerializer):
+
+    class Meta(BaseChangeAttachmentSerializer.Meta):
+        fields = (
+                BaseChangeAttachmentSerializer.Meta.fields + SOFT_DELETE_FIELDS)
+
+
+class StandardizedChangeAttachmentLinkSerializer(
+    BaseChangeAttachmentLinkSerializer, StandardizedModelSerializer):
+
+    class Meta(BaseChangeAttachmentLinkSerializer.Meta):
+        fields = (
+                BaseChangeAttachmentLinkSerializer.Meta.fields + ('file',)
+                + SOFT_DELETE_FIELDS)
