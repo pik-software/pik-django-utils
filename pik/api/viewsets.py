@@ -3,7 +3,6 @@ from rest_framework import generics, mixins
 from rest_framework.viewsets import ViewSetMixin
 
 from .restql import DefaultRequestQueryParserMixin
-from .mixins import BulkCreateModelMixin
 
 
 class DeletedModelViewSetMixIn:
@@ -29,7 +28,6 @@ class StandardizedReadOnlyModelViewSet(
 
 class StandardizedModelViewSet(
     DeletedModelViewSetMixIn,
-    BulkCreateModelMixin,
     mixins.RetrieveModelMixin,
     mixins.UpdateModelMixin,
     mixins.DestroyModelMixin,

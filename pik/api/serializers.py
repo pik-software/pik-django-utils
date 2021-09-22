@@ -12,7 +12,7 @@ from rest_framework.exceptions import ValidationError
 from .lazy_field import LazyFieldHandlerMixIn
 from .restql import DefaultRequestQueryParserMixin
 # try:
-#     from core.permitted_fields.api import PermittedFieldsSerializerMixIn
+#     from pik.core.permitted_fields.api import PermittedFieldsSerializerMixIn
 # except ImportError:
 #     PermittedFieldsSerializerMixIn = None
 

@@ -1,13 +1,9 @@
-from django.contrib.postgres.search import SearchQuery
 from django.http import Http404
 from rest_framework import status
-from rest_framework.mixins import CreateModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from pik.api.permissions import CreateUpdateDjangoModelViewPermission
-
-from pik.api.consts import RUSSIAN_LANGUAGE_CONFIG
 
 
 class CreateOrUpdateMixin:
