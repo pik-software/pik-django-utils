@@ -16,8 +16,8 @@ class ReferenceAutoSchema(AutoSchema):
     """Marks nested serializer schemas with `x-ref` and `x-ref-source` which
     have to be processed later by `RefSchemaGenerator`"""
 
-    def _map_serializer(self, serializer):
-        schema = super()._map_serializer(serializer)
+    def map_serializer(self, serializer):
+        schema = super().map_serializer(serializer)
         schema['x-ref'] = get_serializer_ref_name(serializer)
 
         # Marking non-nested serializer
