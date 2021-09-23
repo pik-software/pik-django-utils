@@ -4,18 +4,16 @@ from rest_framework.exceptions import ValidationError
 
 class NonChangeableValidator:
     error_msg = _('Редактирование этого поля не разрешено.')
+    requires_context = True
 
     def __init__(self):
         self.serializer_field = None
 
-    def set_context(self, serializer_field):
-        self.serializer_field = serializer_field
-
-    def __call__(self, value):
-        instance = self.serializer_field.parent.instance
+    def __call__(self, value, serializer_field):
+        instance = serializer_field.parent.instance
 
         if instance:
-            old_value = getattr(instance, self.serializer_field.source)
+            old_value = getattr(instance, serializer_field.source)
 
             if old_value != value:
                 raise ValidationError(self.error_msg)
