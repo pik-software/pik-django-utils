@@ -18,7 +18,7 @@ class HistoryFilterBase(FilterSet):
             DateTimeField: {'filter_class': IsoDateTimeFilter}}
 
 
-def get_history_filter_class(model_name, viewset):
+def get_history_filterset_class(model_name, viewset):
     name = f'{model_name}FilterSet'
 
     lookup_filter_name = viewset.lookup_field

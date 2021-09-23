@@ -1,7 +1,7 @@
 import re
 from collections import OrderedDict
 
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.functional import Promise, cached_property
 from rest_framework.utils.serializer_helpers import ReturnDict
 
@@ -97,7 +97,7 @@ def replace_struct_keys(data, **options):  # noqa: Too many branches
     ignore_fields = options.get("ignore_fields") or ()
 
     if isinstance(data, Promise):
-        data = force_text(data)
+        data = force_str(data)
     if isinstance(data, dict):
         if isinstance(data, ReturnDict):
             new_dict = ReturnDict(serializer=data.serializer)
@@ -105,7 +105,7 @@ def replace_struct_keys(data, **options):  # noqa: Too many branches
             new_dict = OrderedDict()
         for key, value in data.items():
             if isinstance(key, Promise):
-                key = force_text(key)
+                key = force_str(key)
             new_key = replace_keys(key, **options)
             if key not in ignore_fields and new_key not in ignore_fields:
                 new_dict[new_key] = replace_struct_keys(value, **options)

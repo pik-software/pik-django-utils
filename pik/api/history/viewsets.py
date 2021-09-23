@@ -4,7 +4,7 @@ from rest_framework.viewsets import GenericViewSet
 from ..filters import StandardizedFieldFilters, StandardizedSearchFilter
 from ..pagination import StandardizedCursorPagination
 
-from .filters import get_history_filter_class
+from .filters import get_history_filterset_class
 from .serializers import get_history_serializer_class
 
 
@@ -35,7 +35,7 @@ def get_history_viewset(viewset):
 
     serializer_class = get_history_serializer_class(
         model_name, serializer_class)
-    filterset_class = get_history_filter_class(model_name, viewset)
+    filterset_class = get_history_filterset_class(model_name, viewset)
 
     select_related_fields = getattr(viewset, 'select_related_fields', None)
     if select_related_fields:
