@@ -193,12 +193,17 @@ class KeysReplacer:
     'bar: "bar"'
     >>> replacer.replace('some__foo')
     'some__bar'
+
+    >>> replacer.replace(None)
+
     """
 
     def __init__(self, rules):
         self._rules = rules
 
     def replace(self, value):
+        if value is None:
+            return value
         return self._pattern.sub(self._replacer, value)
 
     def _replacer(self, match):
