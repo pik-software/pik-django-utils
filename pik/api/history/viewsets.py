@@ -14,7 +14,7 @@ class HistoryViewSetBase(ListModelMixin, GenericViewSet):
     ordering_fields = ('updated', 'uid', )
 
     serializer_class = None
-    filter_class = None
+    filterset_class = None
 
     filter_backends = (
         StandardizedFieldFilters, StandardizedSearchFilter)
@@ -35,7 +35,7 @@ def get_history_viewset(viewset):
 
     serializer_class = get_history_serializer_class(
         model_name, serializer_class)
-    filter_class = get_history_filter_class(model_name, viewset)
+    filterset_class = get_history_filter_class(model_name, viewset)
 
     select_related_fields = getattr(viewset, 'select_related_fields', None)
     if select_related_fields:
@@ -45,6 +45,6 @@ def get_history_viewset(viewset):
     return type(name, (HistoryViewSetBase,), {
         'select_related_fields': select_related_fields,
         'serializer_class': serializer_class,
-        'filter_class': filter_class,
+        'filterset_class': filterset_class,
         'queryset': queryset
     })

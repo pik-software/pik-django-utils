@@ -26,7 +26,7 @@ class ModelViewSet(StandardizedModelViewSet):
     filter_backends = (
         StandardizedFieldFilters, StandardizedSearchFilter,
         StandardizedOrderingFilter)
-    filter_class = <ModelFilter>
+    filterset_class = <ModelFilter>
     search_fields = (...)
     ordering_fields = (...)
 ```

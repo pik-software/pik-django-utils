@@ -26,10 +26,10 @@ class StandardizedFieldFilters(RestFrameworkFilterBackend):
         # `MultiWidget`, where query params will be of
         # the format `<name>_0`, `<name>_1`, etc...
 
-        filter_class = getattr(view, 'filter_class', None)
-        if filter_class is None:
+        filterset_class = getattr(view, 'filter_class', None)
+        if filterset_class is None:
             try:
-                filter_class = self.get_filter_class(view, view.get_queryset())
+                filterset_class = self.get_filter_class(view, view.get_queryset())
             except Exception as exc:  # noqa
                 raise RuntimeError(
                     f"{view.__class__} is not compatible with "
@@ -38,7 +38,7 @@ class StandardizedFieldFilters(RestFrameworkFilterBackend):
 
         fields = []
 
-        return self.get_flatten_schema_fields('', fields, filter_class)
+        return self.get_flatten_schema_fields('', fields, filterset_class)
 
     def get_flatten_schema_fields(self, prefix, filters: list, filter_class):
         for field_name, field in filter_class.get_filters().items():
