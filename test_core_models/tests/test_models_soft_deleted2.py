@@ -1,6 +1,9 @@
+import pytest
+
 from test_core_models import models
 
 
+@pytest.mark.django_db
 def test_built_in_cascade(settings):
     """
     Verifies cascade deletion
@@ -14,6 +17,7 @@ def test_built_in_cascade(settings):
     assert not models.NullRelatedModel.objects.exists()
 
 
+@pytest.mark.django_db
 def test_cascade_delete(settings):
     """
     Verify that if we delete a model with the ArchiveMixin, then the
@@ -47,6 +51,7 @@ def test_cascade_delete(settings):
     assert cousin_archivable.deleted is not None
 
 
+@pytest.mark.django_db
 def test_cascade_delete_qs(settings):
     """
     Verify that if we delete a model with the ArchiveMixin, then the
@@ -74,6 +79,7 @@ def test_cascade_delete_qs(settings):
     assert models.RelatedCousinArchiveModel.all_objects.exists()
 
 
+@pytest.mark.django_db
 def test_cascade_nullable():
     """
     Verify that related models are deleted even if the relation is
@@ -98,6 +104,7 @@ def test_cascade_nullable():
     assert models.RelatedCousinArchiveModel.objects.count() == 1
 
 
+@pytest.mark.django_db
 def test_cascade_set_null():
     """
     Verify that related models are not deleted if on_delete is SET_NULL
@@ -118,6 +125,7 @@ def test_cascade_set_null():
         models.RelatedModel.objects.filter(pk=related.pk).exists())
 
 
+@pytest.mark.django_db
 def test_cascade_set_null_qs():
     """
     Verify that related models are not deleted if on_delete is SET_NULL
@@ -138,6 +146,7 @@ def test_cascade_set_null_qs():
         models.RelatedModel.objects.filter(pk=related.pk).exists())
 
 
+@pytest.mark.django_db
 def test_cascade_set_default():
     """
     Verify that related models are not deleted if on_delete is SET_DEFAULT

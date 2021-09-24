@@ -18,6 +18,7 @@ def strict_versioned_model_fixture(request):
     return request.param
 
 
+@pytest.mark.django_db
 def test_versioned_protocol(versioned_model):
     _, factory = versioned_model
     obj = factory.create()
@@ -30,6 +31,7 @@ def test_versioned_protocol(versioned_model):
     assert version2 > version1
 
 
+@pytest.mark.django_db
 def test_strict_versioned_protocol(strict_versioned_model):
     _, factory = strict_versioned_model
     obj = factory.create()
@@ -46,6 +48,7 @@ def test_strict_versioned_protocol(strict_versioned_model):
     assert obj.version > version1
 
 
+@pytest.mark.django_db
 def test_optimistic_concurrency_update(versioned_model):
     _, factory = versioned_model
     obj = factory.create()

@@ -9,6 +9,7 @@ from pik.core.models._collector_delete import DeleteNotSoftDeletedModel  # noqa:
 from test_core_models import models
 
 
+@pytest.mark.django_db
 class TestDeleteSoftDeletedModel:
 
     model = models.MySoftDeleteModel
@@ -71,6 +72,7 @@ class TestDeleteSoftDeletedModel:
             assert obj.pk is None
 
 
+@pytest.mark.django_db
 class TestDeletedRelatedModel:
 
     not_soft_deleted_model = models.MyNotSoftDeletedModel
@@ -161,6 +163,7 @@ class TestDeletedRelatedModel:
                 pk=not_soft_del_uid).exists() is False
 
 
+@pytest.mark.django_db
 def test_all_objects_is_deleted_filter():
     with override_settings(SOFT_DELETE_SAFE_MODE=True):
         obj1 = models.MySoftDeleteModel.objects.create(name="obj 1")
@@ -185,6 +188,7 @@ def test_all_objects_is_deleted_filter():
 
 @override_settings(SOFT_DELETE_SAFE_MODE=True)
 @override_settings(SOFT_DELETE_EXCLUDE=(settings.AUTH_USER_MODEL, ))
+@pytest.mark.django_db
 def test_deleted_model_from_exclude_list():
     user_class = get_user_model()
     user = user_class.objects.create(username='test_user')
@@ -196,6 +200,7 @@ def test_deleted_model_from_exclude_list():
 
 
 @override_settings(SOFT_DELETE_SAFE_MODE=False)
+@pytest.mark.django_db
 def test_delete_not_soft_deleted():
     obj = models.MyNotSoftDeletedModel.objects.create(name='test')
     obj_pk = obj.pk
@@ -207,6 +212,7 @@ def test_delete_not_soft_deleted():
         pk=obj_pk).exists() is False
 
 
+@pytest.mark.django_db
 def test_delete_parent_soft_deleted():
     type_obj = models.ParentTypeSoftDeleteModel.objects.create(
         name='type_name')
@@ -218,6 +224,7 @@ def test_delete_parent_soft_deleted():
     assert models.ParentSoftDeleteModel.objects.count() == 0
 
 
+@pytest.mark.django_db
 def test_delete_child_soft_deleted():
     content_type = ContentType.objects.get_for_model(
         models.ChildMySoftDeleteModel)

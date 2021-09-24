@@ -10,6 +10,7 @@ django-model-utils
 -e git+https://github.com/pik-software/drf-yasg.git@master#egg=drf-yasg
 django-private-storage
 django-documents-tools
+django-cors-headers
 
 # OIDC
 social-auth-app-django

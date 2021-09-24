@@ -20,6 +20,7 @@ def null_owned_model_fixture(request):
     return request.param
 
 
+@pytest.mark.django_db
 def test_owned_protocol(owned_model):
     _, factory = owned_model
     user = create_user()
@@ -28,12 +29,14 @@ def test_owned_protocol(owned_model):
     assert obj.user_id
 
 
+@pytest.mark.django_db
 def test_owned_protocol_no_user_problem(owned_model):
     _, factory = owned_model
     with pytest.raises(IntegrityError):
         factory.create(user=None)
 
 
+@pytest.mark.django_db
 def test_null_owned_protocol(null_owned_model):
     _, factory = null_owned_model
     user = create_user()
@@ -42,6 +45,7 @@ def test_null_owned_protocol(null_owned_model):
     assert obj.user_id
 
 
+@pytest.mark.django_db
 def test_null_owned_protocol_on_user_ok(null_owned_model):
     _, factory = null_owned_model
     obj = factory.create(user=None)

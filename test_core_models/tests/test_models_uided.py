@@ -18,6 +18,7 @@ def puided_model_fixture(request):
     return request.param
 
 
+@pytest.mark.django_db
 def test_uided_protocol(uided_model):
     model, factory = uided_model
     obj = factory.create()
@@ -27,6 +28,7 @@ def test_uided_protocol(uided_model):
     assert obj.stype == model._meta.model_name  # noqa
 
 
+@pytest.mark.django_db
 def test_puided_protocol(puided_model):
     model, factory = puided_model
     obj = factory.create()

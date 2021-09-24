@@ -44,12 +44,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'pik.cors',
     'test_core_models',
     'test_core_models_fields',
     'test_core_shortcuts',
 ]
 
 MIDDLEWARE = [
+    'pik.cors.middleware.CachedCorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',

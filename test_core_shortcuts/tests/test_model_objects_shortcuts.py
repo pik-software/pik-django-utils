@@ -17,10 +17,12 @@ from ..models import MySimpleModel, OverriddenQuerysetModel
 @pytest.fixture(name='test_model', params=[
     (MySimpleModel, MySimpleModelFactory),
 ])
+@pytest.mark.django_db
 def test_model_fixture(request):
     return request.param
 
 
+@pytest.mark.django_db
 def test_get_object_or_none(test_model):
     model, factory = test_model
     objs = factory.create_batch(10)
@@ -32,6 +34,7 @@ def test_get_object_or_none(test_model):
     assert obj is not None
 
 
+@pytest.mark.django_db
 def test_get_object_or_none_queryset(test_model):
     model, factory = test_model
     objs = factory.create_batch(10)
@@ -43,6 +46,7 @@ def test_get_object_or_none_queryset(test_model):
     assert obj is not None
 
 
+@pytest.mark.django_db
 def test_get_object_or_none_manager(test_model):
     model, factory = test_model
     objs = factory.create_batch(10)
@@ -54,6 +58,7 @@ def test_get_object_or_none_manager(test_model):
     assert obj is not None
 
 
+@pytest.mark.django_db
 def test_get_object_or_none_args(test_model):
     model, factory = test_model
     objs = factory.create_batch(10)
@@ -65,6 +70,7 @@ def test_get_object_or_none_args(test_model):
     assert obj is not None
 
 
+@pytest.mark.django_db
 def test_validate_and_create_object(test_model):
     name1 = TestNameModelFactory.create()
     name2 = TestNameModelFactory.create()
@@ -77,6 +83,7 @@ def test_validate_and_create_object(test_model):
     assert name2 in obj.names.all()
 
 
+@pytest.mark.django_db
 def test_validate_and_update_object__update(test_model):
     _, factory = test_model
     name1 = TestNameModelFactory.create()
@@ -94,6 +101,7 @@ def test_validate_and_update_object__update(test_model):
     assert name2 in res_obj.names.all()
 
 
+@pytest.mark.django_db
 def test_validate_and_update_object__no_update(test_model):
     _, factory = test_model
     name1 = TestNameModelFactory.create()
@@ -110,6 +118,7 @@ def test_validate_and_update_object__no_update(test_model):
     assert name2 in res_obj.names.all()
 
 
+@pytest.mark.django_db
 def test_update_or_create_object__create_without_search(test_model):
     model, _ = test_model
     new_data = get_random_string(12)
@@ -126,6 +135,7 @@ def test_update_or_create_object__create_without_search(test_model):
     assert name2 in res_obj.names.all()
 
 
+@pytest.mark.django_db
 def test_update_or_create_object__create(test_model):
     model, factory = test_model
     obj = factory.create()
@@ -143,6 +153,7 @@ def test_update_or_create_object__create(test_model):
     assert name2 in res_obj.names.all()
 
 
+@pytest.mark.django_db
 def test_update_or_create_object__no_update(test_model):
     model, factory = test_model
     name1 = TestNameModelFactory.create()
@@ -160,6 +171,7 @@ def test_update_or_create_object__no_update(test_model):
     assert name2 in res_obj.names.all()
 
 
+@pytest.mark.django_db
 def test_update_or_create_object_with_queryset():
     obj = OverriddenQuerysetModelFactory(name='Test')
 
@@ -174,6 +186,7 @@ def test_update_or_create_object_with_queryset():
     assert obj.name == new_name
 
 
+@pytest.mark.django_db
 class TestNotCallM2MUpdate(TestCase):
     @staticmethod
     @patch('pik.core.shortcuts.model_objects._update_m2m_fields')

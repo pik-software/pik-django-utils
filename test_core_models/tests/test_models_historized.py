@@ -11,6 +11,7 @@ def historized_model_fixture(request):
     return request.param
 
 
+@pytest.mark.django_db
 def test_historized_protocol(historized_model, settings):
     settings.SOFT_DELETE_SAFE_MODE = False
     _, factory = historized_model

@@ -1,8 +1,8 @@
 from django.contrib import admin
 
-from core.admin import SecuredVersionedModelAdmin
+from pik.admin import SecuredVersionedModelAdmin
 
-from .models import Cors
+from pik.cors.models import Cors
 
 
 @admin.register(Cors)

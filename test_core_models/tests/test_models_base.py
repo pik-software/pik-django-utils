@@ -12,6 +12,7 @@ def historical_model_fixture(request):
     return request.param
 
 
+@pytest.mark.django_db
 def test_historical_protocol(historical_model):
     model, factory = historical_model
 
@@ -27,6 +28,7 @@ def test_historical_protocol(historical_model):
     assert obj_first.uid != obj_last.uid
 
 
+@pytest.mark.django_db
 def test_historical_protocol_fields(historical_model):
     model, _ = historical_model
     fields = [f.name for f in model._meta.get_fields()]  # noqa: pylint=protected-access
@@ -37,6 +39,7 @@ def test_historical_protocol_fields(historical_model):
     assert 'updated' in fields
 
 
+@pytest.mark.django_db
 def test_historical_protocol_update(historical_model):
     _, factory = historical_model
     obj = factory.create()
@@ -56,6 +59,7 @@ def test_historical_protocol_update(historical_model):
     assert created1 == created2 == created3
 
 
+@pytest.mark.django_db
 def test_historical_protocol_history(historical_model, settings):
     settings.SOFT_DELETE_SAFE_MODE = False
     model, factory = historical_model

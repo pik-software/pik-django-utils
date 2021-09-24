@@ -1,3 +1,4 @@
+import pytest
 from django.db.models.signals import post_delete, post_save
 from django.test import TestCase
 from django.utils.timezone import now
@@ -19,6 +20,7 @@ from ..models import (
 # https://github.com/MnogoByte/django-permanent/blob/bdde297233eb7c83c862358854127c8654410aae/django_permanent/tests/cases.py
 
 
+@pytest.mark.django_db
 class TestDelete(TestCase):
     def setUp(self):
         self.permanent = MyPermanentModel.objects.create()
@@ -116,6 +118,7 @@ class TestDelete(TestCase):
             list(MyPermanentModel.objects.all()), [self.permanent])
 
 
+@pytest.mark.django_db
 class TestIntegration(TestCase):
     @staticmethod
     def test_prefetch_bug():
@@ -201,6 +204,7 @@ class TestIntegration(TestCase):
         self.assertEqual(M2MFrom.objects.filter(m2mto__id=_to.pk).count(), 0)
 
 
+@pytest.mark.django_db
 class TestCustomQSMethods(TestCase):
     def test_get_restore_or_create__get(self):
         MyPermanentModel.objects.create(name="old")
