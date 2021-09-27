@@ -7,7 +7,7 @@ djangorestframework-camel-case
 django-filter
 djangorestframework-filters==1.0.0.dev0
 django-model-utils
--e git+https://github.com/pik-software/drf-yasg.git@master#egg=drf-yasg
+drf-yasg
 django-private-storage
 django-documents-tools
 django-cors-headers
