@@ -31,5 +31,5 @@ class CamelCaseViewSetMixIn:
 
 def get_camelcase_viewset(view):
     return type(
-        f'CamelCase{view.__class__.__name__}',
+        f'CamelCase{view.__name__}',
         (CamelCaseViewSetMixIn, view), {})

@@ -34,5 +34,5 @@ class DeprecatedViewSetMixIn:
 
 def get_deprecated_viewset(view):
     return type(
-        f'Deprecated{view.__class__.__name__}',
+        f'Deprecated{view.__name__}',
         (DeprecatedViewSetMixIn, view), {})
