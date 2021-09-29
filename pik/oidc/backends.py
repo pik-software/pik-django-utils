@@ -4,9 +4,7 @@ from importlib import import_module
 from typing import Any, Tuple
 
 from jose import jwk, jwt
-from jose.exceptions import JWTClaimsError, ExpiredSignatureError, JWTError
-from jwkest.jws import JWS
-from jwkest import JWKESTException
+from jose.exceptions import JWTClaimsError, JWTError
 
 from django.conf import settings
 from django.contrib.auth import logout
