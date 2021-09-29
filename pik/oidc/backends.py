@@ -3,6 +3,8 @@ from calendar import timegm
 from importlib import import_module
 from typing import Any, Tuple
 
+from jose import jwk, jwt
+from jose.exceptions import JWTClaimsError, ExpiredSignatureError, JWTError
 from jwkest.jws import JWS
 from jwkest import JWKESTException
 
@@ -72,17 +74,32 @@ class PIKOpenIdConnectAuth(OpenIdConnectAuth):  # noqa: abstract-method
 
     def validate_and_return_logout_token(self, jws: str) -> dict:  # noqa invalid-name
         """ Validated logout_token """
+        client_id, client_secret = self.get_key_and_secret()
+
+        key = self.find_valid_key(jws)
+
+        if not key:
+            raise AuthTokenError(self, 'Signature verification failed')
+
+        rsakey = jwk.construct(key)
+
         try:
-            # Decode the JWT and raise an error if the sig is invalid
-            id_token = JWS().verify_compact(jws.encode('utf-8'),
-                                            self.get_jwks_keys())
-        except JWKESTException as exc:
-            raise AuthTokenError(
-                self, 'Signature verification failed') from exc
+            claims = jwt.decode(
+                jws,
+                rsakey.to_pem().decode('utf-8'),
+                algorithms=self.JWT_ALGORITHMS,
+                audience=client_id,
+                issuer=self.id_token_issuer(),
+                options={**self.JWT_DECODE_OPTIONS, 'verify_at_hash': False},
+            )
+        except JWTClaimsError as error:
+            raise AuthTokenError(self, str(error))
+        except JWTError:
+            raise AuthTokenError(self, 'Invalid signature')
 
-        self.validate_logout_claims(id_token)
+        self.validate_logout_claims(claims)
 
-        return id_token
+        return claims
 
     def validate_logout_claims(self, id_token: dict) -> None:
         """ Validated logout_token claims
