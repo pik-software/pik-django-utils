@@ -18,6 +18,8 @@ class DeprecatedViewSetMixIn:
 
     schema = DeprecatedAutoSchema()
 
+    lookup_url_kwarg = 'uid'
+
     def dispatch(self, request, *args, **kwargs):
         request.GET = replace_struct_keys(
             request.GET, replacer=to_actual_filters,

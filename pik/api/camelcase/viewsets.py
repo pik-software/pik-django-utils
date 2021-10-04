@@ -15,11 +15,11 @@ class CamelCaseViewSetMixIn:
         CamelCaseJSONRenderer]
 
     parser_classes = [
-        CamelCaseFormParser,
-        CamelCaseMultiPartParser,
         CamelCaseJSONParser]
 
     schema = PIKCamelCaseAutoSchema()
+
+    lookup_url_kwarg = 'guid'
 
     def dispatch(self, request, *args, **kwargs):
         request.GET = underscoreize(request.GET)
