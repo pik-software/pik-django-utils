@@ -1,6 +1,6 @@
 import re
 
-from pik.api.camelcase.utils import camelize, underscore_to_camel
+from djangorestframework_camel_case.util import camelize, underscore_to_camel
 from rest_framework.schemas import AutoSchema
 
 from pik.api.openapi.openapi import PIKAutoSchema
@@ -11,8 +11,8 @@ class CamelCaseAutoSchema(AutoSchema):
         r'(((?=[^_])[a-z0-9])_[a-z0-9])' r'|(^_[a-z0-9])' r'|(\W_[a-z0-9])')
 
     def map_serializer(self, serializer):
-        parent_result = super().map_serializer(serializer)
-        result = camelize(parent_result)
+        result = camelize(super().map_serializer(
+            serializer))
         return result
 
     def camelize(self, value):

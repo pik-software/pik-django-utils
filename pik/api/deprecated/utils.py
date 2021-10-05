@@ -11,21 +11,6 @@ from .consts import (
     TO_DEPRECATED_FILTER_RULES, TO_ACTUAL_FILTER_RULES, )
 
 
-JSONSCHEMA_TYPES = (
-    'string',
-    'number',
-    'integer',
-    'object',
-    'array',
-    'boolean',
-    'null',
-)
-
-
-def is_jsonschema_type(key, value) -> bool:
-    return key == 'type' and value in JSONSCHEMA_TYPES
-
-
 def replace_keys(field, replacer, **kwargs):
     """
     >>> replace_keys('version', KeysReplacer(TO_DEPRECATED_FIELD_RULES))
@@ -50,6 +35,7 @@ def replace_keys(field, replacer, **kwargs):
     if isinstance(field, str):
         return replacer.replace(field)
     return field
+
 
 
 def replace_struct_keys(data, **options):  # noqa: Too many branches
@@ -118,9 +104,6 @@ def replace_struct_keys(data, **options):  # noqa: Too many branches
         else:
             new_dict = OrderedDict()
         for key, value in data.items():
-            if is_jsonschema_type(key, value):
-                new_dict[key] = value
-                continue
             if isinstance(key, Promise):
                 key = force_str(key)
             new_key = replace_keys(key, **options)
