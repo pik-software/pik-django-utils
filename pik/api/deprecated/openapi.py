@@ -8,9 +8,10 @@ class DeprecatedAutoSchema(PIKAutoSchema):
     def map_serializer(self, serializer):
         """ Deprecating response schema """
 
-        return replace_struct_keys(
-            super().map_serializer(serializer),
-            replacer=to_deprecated_fields)
+        parent_result = super().map_serializer(serializer)
+        result = replace_struct_keys(
+            parent_result, replacer=to_deprecated_fields)
+        return result
 
     def get_operation(self, path, method):
         """ Deprecating url params """
