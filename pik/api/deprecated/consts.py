@@ -32,3 +32,14 @@ TO_DEPRECATED_FILTER_RULES = {
 TO_ACTUAL_FILTER_RULES = {
     'uid': 'guid',
 }
+
+
+JSONSCHEMA_TYPE_DICT_ELEMS = (
+    ('type', 'string', ),
+    ('type', 'number', ),
+    ('type', 'integer', ),
+    ('type', 'object', ),
+    ('type', 'array', ),
+    ('type', 'boolean', ),
+    ('type', 'null', ),
+)

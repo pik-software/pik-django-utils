@@ -1,6 +1,6 @@
 import re
 
-from pik.api.camelcase.utils import camelize, underscore_to_camel
+from djangorestframework_camel_case.util import camelize, underscore_to_camel
 from rest_framework.schemas import AutoSchema
 
 from pik.api.openapi.openapi import PIKAutoSchema

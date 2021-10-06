@@ -11,21 +11,6 @@ from .consts import (
     TO_DEPRECATED_FILTER_RULES, TO_ACTUAL_FILTER_RULES, )
 
 
-JSONSCHEMA_TYPES = (
-    'string',
-    'number',
-    'integer',
-    'object',
-    'array',
-    'boolean',
-    'null',
-)
-
-
-def is_jsonschema_type(key, value) -> bool:
-    return key == 'type' and value in JSONSCHEMA_TYPES
-
-
 def replace_keys(field, replacer, **kwargs):
     """
     >>> replace_keys('version', KeysReplacer(TO_DEPRECATED_FIELD_RULES))
@@ -107,8 +92,19 @@ def replace_struct_keys(data, **options):  # noqa: Too many branches
 
     >>> replace_struct_keys('some__uid', replacer=to_actual_filters)
     'some__guid'
+
+    >>> replace_struct_keys( \
+        {'guid': 1, 'type': 'string'}, replacer=to_deprecated_fields, \
+        ignore_dict_items=(('type', 'string'), ))
+    OrderedDict([('_uid', 1), ('type', 'string')])
+
+    >>> replace_struct_keys( \
+        {'guid': 1, 'type': 'string'}, replacer=to_deprecated_fields, \
+        ignore_dict_elems=(('type', 'string'), ))
+    OrderedDict([('_uid', 1), ('type', 'string')])
     """
     ignore_fields = options.get("ignore_fields") or ()
+    ignore_dict_elems = options.get("ignore_dict_elems") or ()
 
     if isinstance(data, Promise):
         data = force_str(data)
@@ -118,7 +114,7 @@ def replace_struct_keys(data, **options):  # noqa: Too many branches
         else:
             new_dict = OrderedDict()
         for key, value in data.items():
-            if is_jsonschema_type(key, value):
+            if (key, value) in ignore_dict_elems:
                 new_dict[key] = value
                 continue
             if isinstance(key, Promise):

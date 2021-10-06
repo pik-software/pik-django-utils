@@ -3,6 +3,8 @@ from .utils import (
     replace_struct_keys, to_actual_filters, to_actual_fields,
     to_deprecated_fields, )
 
+from .consts import JSONSCHEMA_TYPE_DICT_ELEMS
+
 
 class DeprecatedAutoSchema(PIKAutoSchema):
     def map_serializer(self, serializer):
@@ -10,7 +12,12 @@ class DeprecatedAutoSchema(PIKAutoSchema):
 
         parent_result = super().map_serializer(serializer)
         result = replace_struct_keys(
-            parent_result, replacer=to_deprecated_fields)
+            parent_result,
+            replacer=to_deprecated_fields,
+            ignore_fields=['ordering', 'query'],
+            ignore_dict_elems=JSONSCHEMA_TYPE_DICT_ELEMS
+        )
+
         return result
 
     def get_operation(self, path, method):
