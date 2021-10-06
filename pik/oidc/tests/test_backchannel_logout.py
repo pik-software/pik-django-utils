@@ -1,7 +1,7 @@
 from importlib import import_module
 from unittest.mock import patch, Mock
 
-from jwkest import JWKESTException
+from jose import JWTError
 import pytest
 
 import django.test
@@ -47,10 +47,11 @@ def test_success(backchannel_logout_url, session_store):
 
 
 @pytest.mark.django_db
-@patch('social_core.backends.open_id_connect.OpenIdConnectAuth.get_jwks_keys',
-       Mock())
-@patch('jwkest.jws.JWS.verify_compact',
-       Mock(side_effect=JWKESTException('Signature verification failed')))
+@patch('social_core.backends.open_id_connect.OpenIdConnectAuth.find_valid_key',
+       Mock)
+@patch('jose.jwk.construct', Mock)
+@patch('jose.jwt.decode',
+       Mock(side_effect=JWTError('Signature verification failed')))
 def test_wrong_sign(backchannel_logout_url):
     client = django.test.Client()
     response = client.post(backchannel_logout_url)
@@ -58,10 +59,11 @@ def test_wrong_sign(backchannel_logout_url):
 
 
 @pytest.mark.django_db
-@patch('pik.oidc.backends.JWS.verify_compact',
+@patch('jose.jwk.construct', Mock)
+@patch('jose.jwt.decode',
        Mock(return_value={'aud': '24', 'iss': 'test_provider'}))
-@patch('pik.oidc.backends.PIKOpenIdConnectAuth.get_jwks_keys',
-       Mock())
+@patch('pik.oidc.backends.PIKOpenIdConnectAuth.find_valid_key',
+       Mock)
 @patch('pik.oidc.backends.PIKOpenIdConnectAuth.id_token_issuer',
        Mock(return_value="test_provider"))
 @patch('pik.oidc.backends.PIKOpenIdConnectAuth.get_key_and_secret',
@@ -76,8 +78,8 @@ def test_wrong_client(backchannel_logout_url):
 
 
 @pytest.mark.django_db
-@patch('social_core.backends.open_id_connect.OpenIdConnectAuth.get_jwks_keys',
-       Mock)
+@patch('social_core.backends.open_id_connect.OpenIdConnectAuth.find_valid_key',
+       Mock(return_value=None))
 def test_missing_token(backchannel_logout_url):
     cache.set('oidc_userdata_test_token', 'testuserinfo')
     client = django.test.Client()
