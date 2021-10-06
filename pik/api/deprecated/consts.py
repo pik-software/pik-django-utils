@@ -34,7 +34,7 @@ TO_ACTUAL_FILTER_RULES = {
 }
 
 
-JSONSCHEMA_TYPE_DICT_ELEMS = (
+JSONSCHEMA_TYPE_DICT_ITEMS = (
     ('type', 'string', ),
     ('type', 'number', ),
     ('type', 'integer', ),

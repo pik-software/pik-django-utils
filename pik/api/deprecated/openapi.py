@@ -3,7 +3,7 @@ from .utils import (
     replace_struct_keys, to_actual_filters, to_actual_fields,
     to_deprecated_fields, )
 
-from .consts import JSONSCHEMA_TYPE_DICT_ELEMS
+from .consts import JSONSCHEMA_TYPE_DICT_ITEMS
 
 
 class DeprecatedAutoSchema(PIKAutoSchema):
@@ -14,8 +14,7 @@ class DeprecatedAutoSchema(PIKAutoSchema):
         result = replace_struct_keys(
             parent_result,
             replacer=to_deprecated_fields,
-            ignore_fields=['ordering', 'query'],
-            ignore_dict_elems=JSONSCHEMA_TYPE_DICT_ELEMS
+            ignore_dict_items=JSONSCHEMA_TYPE_DICT_ITEMS
         )
 
         return result

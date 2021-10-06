@@ -1,5 +1,3 @@
-# v1
-
 # Django
 Django
 django-simple-history
@@ -29,6 +27,7 @@ python-jose
 # Celery
 celery
 kombu
+importlib-metadata==3.6
 
 # Text normalization library
 cucco
