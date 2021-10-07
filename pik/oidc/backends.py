@@ -133,8 +133,9 @@ class PIKOpenIdConnectAuth(OpenIdConnectAuth):  # noqa: abstract-method
     def backchannel_logout(self, logout_token: str) -> HttpResponse:
         """ Process backchannel logout """
 
-        logout_token = self.validate_and_return_logout_token(logout_token)
-        sid = logout_token.get('sid')
+        valid_logout_token = self.validate_and_return_logout_token(
+            logout_token)
+        sid = valid_logout_token.get('sid')
 
         if sid:
             cache_key = self.SID_TOKENS_KEY.format(sid=sid)
@@ -146,7 +147,7 @@ class PIKOpenIdConnectAuth(OpenIdConnectAuth):  # noqa: abstract-method
             cache_key = self.SID_SESSIONS_KEY.format(sid=sid)
             for session in cache.get(cache_key, ()):
                 engine = import_module(settings.SESSION_ENGINE)
-                engine.SessionStore(session).delete(session)
+                engine.SessionStore(session).delete(session)  # type: ignore
             cache.delete(cache_key)
 
         return HttpResponse()

@@ -269,7 +269,7 @@ class StandardizedChangeSerializer(BaseChangeSerializer,
 
     class Meta(BaseChangeSerializer.Meta):
         fields = BaseChangeSerializer.Meta.fields + SOFT_DELETE_FIELDS
-        extra_kwargs = {}
+        extra_kwargs: dict = {}
 
 
 class StandardizedSnapshotSerializer(BaseSnapshotSerializer,

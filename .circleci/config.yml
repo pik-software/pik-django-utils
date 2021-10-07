@@ -56,7 +56,7 @@ jobs:
             python setup.py check -m -s
             python -m pytest --cov . --junitxml=~/reports/report.xml
             prospector --profile-path . --profile .prospector.yaml pik
-            mypy pik --ignore-missing-imports
+            mypy pik --ignore-missing-imports --install-types --non-interactive
             pip check
       - store_test_results:
           path: ~/reports

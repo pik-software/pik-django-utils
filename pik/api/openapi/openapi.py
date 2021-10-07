@@ -351,8 +351,8 @@ class EntitiesViewSchemaGenerator(SchemaGenerator):
             for tag in operation.get('tags', ())
         )
 
-    def get_schema(self, request=None, public=False):
-        schema = super().get_schema(request, public)
+    def get_schema(self, *args, **kwargs):
+        schema = super().get_schema(*args, **kwargs)
         if schema is not None:
             schema['x-tagGroups'] = [
                 {'name': gettext('Сущности'),
@@ -362,8 +362,8 @@ class EntitiesViewSchemaGenerator(SchemaGenerator):
 
 
 class OpenIDSchemaGenerator(SchemaGenerator):
-    def get_schema(self, request=None, public=False):
-        schema = super().get_schema(request, public)
+    def get_schema(self, *args, **kwargs):
+        schema = super().get_schema(*args, **kwargs)
 
         endpoint = getattr(settings, 'OIDC_PIK_ENDPOINT', None)
         if not endpoint:
