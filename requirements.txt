@@ -27,7 +27,7 @@ python-jose
 # Celery
 celery
 kombu
-importlib-metadata==3.6
+importlib-metadata
 
 # Text normalization library
 cucco

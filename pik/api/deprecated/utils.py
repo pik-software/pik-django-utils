@@ -99,7 +99,7 @@ def replace_struct_keys(data, **options):  # noqa: Too many branches
     OrderedDict([('_uid', 1), ('type', 'string')])
     """
     ignore_fields = options.get("ignore_fields") or ()
-    ignore_dict_itemes = options.get("ignore_dict_itemes") or ()
+    ignore_dict_items = options.get("ignore_dict_items") or ()
 
     if isinstance(data, Promise):
         data = force_str(data)
@@ -109,7 +109,7 @@ def replace_struct_keys(data, **options):  # noqa: Too many branches
         else:
             new_dict = OrderedDict()
         for key, value in data.items():
-            if (key, value) in ignore_dict_itemes:
+            if (key, value) in ignore_dict_items:
                 new_dict[key] = value
                 continue
             if isinstance(key, Promise):
