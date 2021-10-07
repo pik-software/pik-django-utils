@@ -13,6 +13,14 @@ class CamelCaseAutoSchema(AutoSchema):
     def map_serializer(self, serializer):
         parent_result = super().map_serializer(serializer)
         result = camelize(parent_result)
+
+        if 'required' in result:
+            result['required'] = [
+                self.camelize(required)
+                for required in
+                result['required']
+            ]
+
         return result
 
     def camelize(self, value):
@@ -32,16 +40,6 @@ class CamelCaseAutoSchema(AutoSchema):
         for param in schema['parameters']:
             param['name'] = self.camelize(param['name'])
         return schema
-
-    def get_components(self, path, method):
-        components = super().get_components(path, method)
-        for key in components.keys():
-            if 'required' in components[key]:
-                components[key]['required'] = [
-                    self.camelize(required)
-                    for required in
-                    components[key]['required']]
-        return components
 
 
 class PIKCamelCaseAutoSchema(
