@@ -35,12 +35,13 @@ class CamelCaseAutoSchema(AutoSchema):
 
     def get_components(self, path, method):
         components = super().get_components(path, method)
+
         for key in components.keys():
             if 'required' in components[key]:
-                requires = []
-                for required in components[key]['required']:
-                    requires.append(self.camelize(required))
-                components[key]['required'] = requires
+                components[key]['required'] = [
+                    self.camelize(required)
+                    for required in
+                    components[key]['required']]
         return components
 
 
