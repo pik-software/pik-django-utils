@@ -166,9 +166,9 @@ class SoftDeleted(models.Model):
     def delete(self, using=None, keep_parents=False):
         using = using or router.db_for_write(self.__class__, instance=self)
 
-        assert self._get_pk_val() is not None, \
-            "%s object can't be deleted because its %s attribute " \
-            "is set to None." % (self._meta.object_name, self._meta.pk.attname)
+        assert self._get_pk_val() is not None,\
+            f"{self._meta.object_name} object can't be deleted because its " \
+            f"{self._meta.pk.attname} attribute is set to None."
 
         if self.deleted:
             return 0, {}  # short-circuit here to prevent lots of nesting

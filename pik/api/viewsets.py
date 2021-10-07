@@ -223,7 +223,7 @@ class PrivateStorageAPIView(APIView):
         if 'WebKit' in user_agent:
             # Support available for UTF-8 encoded strings.
             # This also matches Edgee.
-            return 'filename={}'.format(filename).encode("utf-8")
+            return f'filename={filename}'.encode("utf-8")
         if 'MSIE' in user_agent:
             # IE does not support RFC2231 for internationalized headers,
             # but somehow percent-decodes it so this can be used instead.
@@ -231,9 +231,9 @@ class PrivateStorageAPIView(APIView):
             # overrides an inline content-disposition.
             url_encoded = quote(filename.encode('utf-8'))
             url_encoded = url_encoded.replace('attachment', 'a%74tachment')
-            return 'filename={}'.format(url_encoded).encode('utf-8')
+            return f'filename={url_encoded}'.encode('utf-8')
 
         # For others like Firefox, we follow RFC2231
         # (encoding extension in HTTP headers).
         rfc2231_filename = quote(filename.encode('utf-8'))
-        return "filename*=UTF-8''{}".format(rfc2231_filename).encode('utf-8')
+        return f"filename*=UTF-8''{rfc2231_filename}".encode('utf-8')

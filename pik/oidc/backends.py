@@ -72,7 +72,7 @@ class PIKOpenIdConnectAuth(OpenIdConnectAuth):  # noqa: abstract-method
 
     def validate_and_return_logout_token(self, jws: str) -> dict:  # noqa invalid-name
         """ Validated logout_token """
-        client_id, client_secret = self.get_key_and_secret()
+        client_id, _ = self.get_key_and_secret()
 
         key = self.find_valid_key(jws)
 
@@ -90,10 +90,10 @@ class PIKOpenIdConnectAuth(OpenIdConnectAuth):  # noqa: abstract-method
                 issuer=self.id_token_issuer(),
                 options={**self.JWT_DECODE_OPTIONS, 'verify_at_hash': False},
             )
-        except JWTClaimsError as error:
-            raise AuthTokenError(self, str(error))
-        except JWTError:
-            raise AuthTokenError(self, 'Invalid signature')
+        except JWTClaimsError as exc:
+            raise AuthTokenError(self, str(exc)) from exc
+        except JWTError as exc:
+            raise AuthTokenError(self, 'Invalid signature') from exc
 
         self.validate_logout_claims(claims)
 
@@ -133,8 +133,9 @@ class PIKOpenIdConnectAuth(OpenIdConnectAuth):  # noqa: abstract-method
     def backchannel_logout(self, logout_token: str) -> HttpResponse:
         """ Process backchannel logout """
 
-        logout_token = self.validate_and_return_logout_token(logout_token)
-        sid = logout_token.get('sid')
+        valid_logout_token = self.validate_and_return_logout_token(
+            logout_token)
+        sid = valid_logout_token.get('sid')
 
         if sid:
             cache_key = self.SID_TOKENS_KEY.format(sid=sid)
@@ -146,7 +147,7 @@ class PIKOpenIdConnectAuth(OpenIdConnectAuth):  # noqa: abstract-method
             cache_key = self.SID_SESSIONS_KEY.format(sid=sid)
             for session in cache.get(cache_key, ()):
                 engine = import_module(settings.SESSION_ENGINE)
-                engine.SessionStore(session).delete(session)
+                engine.SessionStore(session).delete(session)  # type: ignore
             cache.delete(cache_key)
 
         return HttpResponse()

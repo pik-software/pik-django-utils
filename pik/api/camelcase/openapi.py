@@ -11,8 +11,16 @@ class CamelCaseAutoSchema(AutoSchema):
         r'(((?=[^_])[a-z0-9])_[a-z0-9])' r'|(^_[a-z0-9])' r'|(\W_[a-z0-9])')
 
     def map_serializer(self, serializer):
-        result = camelize(super().map_serializer(
-            serializer))
+        parent_result = super().map_serializer(serializer)
+        result = camelize(parent_result)
+
+        if 'required' in result:
+            result['required'] = [
+                self.camelize(required)
+                for required in
+                result['required']
+            ]
+
         return result
 
     def camelize(self, value):

@@ -37,7 +37,6 @@ def replace_keys(field, replacer, **kwargs):
     return field
 
 
-
 def replace_struct_keys(data, **options):  # noqa: Too many branches
     """
     Replaces `guid` with keys with `_uid`
@@ -93,8 +92,14 @@ def replace_struct_keys(data, **options):  # noqa: Too many branches
 
     >>> replace_struct_keys('some__uid', replacer=to_actual_filters)
     'some__guid'
+
+    >>> replace_struct_keys( \
+        {'guid': 1, 'type': 'string'}, replacer=to_deprecated_fields, \
+        ignore_dict_items=(('type', 'string'), ))
+    OrderedDict([('_uid', 1), ('type', 'string')])
     """
     ignore_fields = options.get("ignore_fields") or ()
+    ignore_dict_items = options.get("ignore_dict_items") or ()
 
     if isinstance(data, Promise):
         data = force_str(data)
@@ -104,6 +109,9 @@ def replace_struct_keys(data, **options):  # noqa: Too many branches
         else:
             new_dict = OrderedDict()
         for key, value in data.items():
+            if (key, value) in ignore_dict_items:
+                new_dict[key] = value
+                continue
             if isinstance(key, Promise):
                 key = force_str(key)
             new_key = replace_keys(key, **options)

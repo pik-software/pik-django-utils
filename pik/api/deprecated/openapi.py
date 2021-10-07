@@ -3,14 +3,21 @@ from .utils import (
     replace_struct_keys, to_actual_filters, to_actual_fields,
     to_deprecated_fields, )
 
+from .consts import JSONSCHEMA_TYPE_DICT_ITEMS
+
 
 class DeprecatedAutoSchema(PIKAutoSchema):
     def map_serializer(self, serializer):
         """ Deprecating response schema """
 
-        return replace_struct_keys(
-            super().map_serializer(serializer),
-            replacer=to_deprecated_fields)
+        parent_result = super().map_serializer(serializer)
+        result = replace_struct_keys(
+            parent_result,
+            replacer=to_deprecated_fields,
+            ignore_dict_items=JSONSCHEMA_TYPE_DICT_ITEMS
+        )
+
+        return result
 
     def get_operation(self, path, method):
         """ Deprecating url params """
