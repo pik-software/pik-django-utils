@@ -1,6 +1,7 @@
 import pytest
 import rest_framework.test
 from corsheaders.middleware import ACCESS_CONTROL_ALLOW_ORIGIN
+from pik.cors.models import Cors
 
 
 CORS_HEADERS = {
@@ -26,7 +27,6 @@ def test_cors_preflight_missing():
 
 @pytest.mark.django_db
 def test_cors_preflight():
-    from pik.cors.models import Cors
     Cors.objects.create(cors='allien')
     client = rest_framework.test.APIClient()
     response = client.options("/login/", **PREFLIGHT_HEADERS)
@@ -45,7 +45,6 @@ def test_cors_missing():
 
 @pytest.mark.django_db
 def test_cors():
-    from pik.cors.models import Cors
     Cors.objects.create(cors='allien')
     client = rest_framework.test.APIClient()
 

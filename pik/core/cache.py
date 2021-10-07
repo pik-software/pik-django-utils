@@ -95,8 +95,8 @@ def cachedmethod(key: str, ttl: int = 5 * 60, cachename: str = 'default') \
         def decorator(*args, **kwargs) -> Any:
             positional = dict(zip(spec.args, args))
             if set(positional) & set(kwargs):
-                msg = '{name}() got multiple values for some argument'.format(
-                    name=method.__name__)
+                msg = f'{method.__name__}()' \
+                      f' got multiple values for some argument'
                 raise TypeError(msg)
             merged_kwargs = {**defaults, **positional, **kwargs}
             cachekey = key.format(**merged_kwargs)

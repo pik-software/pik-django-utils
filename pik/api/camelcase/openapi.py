@@ -35,7 +35,6 @@ class CamelCaseAutoSchema(AutoSchema):
 
     def get_components(self, path, method):
         components = super().get_components(path, method)
-
         for key in components.keys():
             if 'required' in components[key]:
                 components[key]['required'] = [

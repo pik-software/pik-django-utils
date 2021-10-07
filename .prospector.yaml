@@ -18,6 +18,7 @@ ignore-paths:
   - __data__
   - .circleci
   - lib/codegen/tests/testcases
+  - venv3.7.1
 
 ignore-patterns:
   - .*/abstract_schema_models.py

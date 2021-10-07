@@ -42,7 +42,7 @@ class DeprecatedMultiPartParser(MultiPartParser):
             )
         except MultiPartParserError as exc:
             raise ParseError(
-                "Multipart form parse error - %s" % str(exc)) from exc
+                f"Multipart form parse error - {str(exc)}") from exc
 
 
 class DeprecatedJSONParser(JSONParser):
@@ -55,4 +55,4 @@ class DeprecatedJSONParser(JSONParser):
             return replace_struct_keys(
                 json.loads(data), replacer=to_actual_fields)
         except ValueError as exc:
-            raise ParseError("JSON parse error - %s" % str(exc)) from exc
+            raise ParseError(f"JSON parse error - {str(exc)}") from exc

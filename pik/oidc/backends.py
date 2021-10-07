@@ -72,7 +72,7 @@ class PIKOpenIdConnectAuth(OpenIdConnectAuth):  # noqa: abstract-method
 
     def validate_and_return_logout_token(self, jws: str) -> dict:  # noqa invalid-name
         """ Validated logout_token """
-        client_id, client_secret = self.get_key_and_secret()
+        client_id, _ = self.get_key_and_secret()
 
         key = self.find_valid_key(jws)
 
@@ -90,10 +90,10 @@ class PIKOpenIdConnectAuth(OpenIdConnectAuth):  # noqa: abstract-method
                 issuer=self.id_token_issuer(),
                 options={**self.JWT_DECODE_OPTIONS, 'verify_at_hash': False},
             )
-        except JWTClaimsError as error:
-            raise AuthTokenError(self, str(error))
-        except JWTError:
-            raise AuthTokenError(self, 'Invalid signature')
+        except JWTClaimsError as exc:
+            raise AuthTokenError(self, str(exc)) from exc
+        except JWTError as exc:
+            raise AuthTokenError(self, 'Invalid signature') from exc
 
         self.validate_logout_claims(claims)
 

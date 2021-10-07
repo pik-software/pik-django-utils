@@ -77,7 +77,8 @@ def assert_num_queries_lte(pytestconfig):
                       f" but {queries} were done"
                 if pytestconfig.getoption('verbose') > 0:
                     sqls = (q['sql'] for q in context.captured_queries)
-                    msg += '\n\nQueries:\n========\n\n%s' % '\n\n'.join(sqls)
+                    sqls_formatted = '\n\n'.join(sqls)
+                    msg += f'\n\nQueries:\n========\n\n{sqls_formatted}'
                 else:
                     msg += " (add -v option to show queries)"
                 pytest.fail(msg)
