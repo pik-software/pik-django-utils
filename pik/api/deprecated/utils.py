@@ -95,7 +95,7 @@ def replace_struct_keys(data, **options):  # noqa: Too many branches
 
     >>> replace_struct_keys( \
         {'guid': 1, 'type': 'string'}, replacer=to_deprecated_fields, \
-        ignore_dict_itemes=(('type', 'string'), ))
+        ignore_dict_items=(('type', 'string'), ))
     OrderedDict([('_uid', 1), ('type', 'string')])
     """
     ignore_fields = options.get("ignore_fields") or ()
