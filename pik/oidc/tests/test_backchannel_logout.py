@@ -49,7 +49,7 @@ def test_success(backchannel_logout_url, session_store):
 @pytest.mark.django_db
 @patch('social_core.backends.open_id_connect.OpenIdConnectAuth.find_valid_key',
        Mock)
-@patch('jose.jwk.construct', Mock)
+@patch('jose.jwk.construct', Mock())
 @patch('jose.jwt.decode',
        Mock(side_effect=JWTError('Signature verification failed')))
 def test_wrong_sign(backchannel_logout_url):
@@ -59,7 +59,7 @@ def test_wrong_sign(backchannel_logout_url):
 
 
 @pytest.mark.django_db
-@patch('jose.jwk.construct', Mock)
+@patch('jose.jwk.construct', Mock())
 @patch('jose.jwt.decode',
        Mock(return_value={'aud': '24', 'iss': 'test_provider'}))
 @patch('pik.oidc.backends.PIKOpenIdConnectAuth.find_valid_key',
