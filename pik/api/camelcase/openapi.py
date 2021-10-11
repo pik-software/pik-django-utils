@@ -29,6 +29,9 @@ class CamelCaseAutoSchema(AutoSchema):
         >>> dict(camelize({'_with__filter': ''}))
         {'With_Filter': ''}
 
+        >>> camelize('_with__filter')
+        '_with__filter'
+
         >>> CamelCaseAutoSchema().camelize('_with__filter')
         'With__filter'
         """

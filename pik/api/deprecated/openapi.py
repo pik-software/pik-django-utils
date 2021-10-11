@@ -1,7 +1,6 @@
 from pik.api.openapi.openapi import PIKAutoSchema
 from .utils import (
-    replace_struct_keys, to_actual_filters, to_actual_fields,
-    to_deprecated_fields, )
+    replace_struct_keys, to_deprecated_fields, to_deprecated_filters, )
 
 from .consts import JSONSCHEMA_TYPE_DICT_ITEMS
 
@@ -17,6 +16,12 @@ class DeprecatedAutoSchema(PIKAutoSchema):
             ignore_dict_items=JSONSCHEMA_TYPE_DICT_ITEMS
         )
 
+        if 'required' in result:
+            result['required'] = [
+                to_deprecated_filters.replace(required)
+                for required in result['required']
+            ]
+
         return result
 
     def get_operation(self, path, method):
@@ -24,10 +29,10 @@ class DeprecatedAutoSchema(PIKAutoSchema):
 
         schema = super().get_operation(path, method)
         for param in schema['parameters']:
-            param['name'] = to_actual_filters.replace(param['name'])
+            param['name'] = to_deprecated_filters.replace(param['name'])
 
             if 'enum' in param['schema']:
                 param['schema']['enum'] = [
-                    to_actual_fields.replace(item)
+                    to_deprecated_filters.replace(item)
                     for item in param['schema']['enum']]
         return schema
