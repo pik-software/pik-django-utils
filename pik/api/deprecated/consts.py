@@ -25,12 +25,12 @@ TO_ACTUAL_FIELD_RULES = {
 
 
 TO_DEPRECATED_FILTER_RULES = {
-    'guid': '_uid',
+    'guid': 'uid',
 }
 
 
 TO_ACTUAL_FILTER_RULES = {
-    '_uid': 'guid',
+    'uid': 'guid',
 }
 
 

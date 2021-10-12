@@ -18,7 +18,7 @@ class DeprecatedAutoSchema(PIKAutoSchema):
 
         if 'required' in result:
             result['required'] = [
-                to_deprecated_filters.replace(required)
+                to_deprecated_fields.replace(required)
                 for required in result['required']
             ]
 
