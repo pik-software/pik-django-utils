@@ -15,4 +15,6 @@ def get_pik_schema_view(**kwargs):
         PIKOpenAPIRenderer))
     kwargs.setdefault('generator_class', PIKSchemaGenerator)
     kwargs.setdefault('version', settings.SERVICE_RELEASE)
-    return get_schema_view(**kwargs)
+
+    schema_view = get_schema_view(**kwargs)
+    return schema_view

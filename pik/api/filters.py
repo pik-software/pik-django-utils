@@ -3,7 +3,8 @@ from django.contrib.postgres.fields import ArrayField
 from django.db.models import DateTimeField
 from django_filters import OrderingFilter
 from rest_framework_filters import (
-    FilterSet, BaseCSVFilter, AutoFilter, IsoDateTimeFilter, BooleanFilter)
+    RelatedFilter, FilterSet, BaseCSVFilter, AutoFilter, IsoDateTimeFilter,
+    BooleanFilter, )
 from rest_framework_filters.backends import RestFrameworkFilterBackend
 from rest_framework.filters import SearchFilter
 
@@ -43,13 +44,22 @@ class StandardizedFieldFilters(RestFrameworkFilterBackend):
     def get_flatten_schema_fields(
             self, prefix, filters: list, filterset_class):
         for field_name, field in filterset_class.get_filters().items():
-            # Don't include recursive filter.
             filters.append(coreapi.Field(
                 name=prefix + field_name,
                 required=False,
                 location='query',
                 schema=self.get_coreschema_field(field)
             ))
+            # if isinstance(field, RelatedFilter):
+            #     self.get_flatten_schema_fields(
+            #         prefix + field_name + '__', filters, field.filterset)
+            # else:
+            #     filters.append(coreapi.Field(
+            #         name=prefix + field_name,
+            #         required=False,
+            #         location='query',
+            #         schema=self.get_coreschema_field(field)
+            #     ))
         return filters
 
 

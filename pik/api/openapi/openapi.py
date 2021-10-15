@@ -259,6 +259,13 @@ class OperationSerializerDescriptionAutoSchema(AutoSchema):
         return operation
 
 
+# class DeprecatedSchemaHookMixin(AutoSchema):
+#     def get_operation(self, path, method):
+#         operation = super().get_operation(path, method)
+#         # hook self.view
+#         return operation
+
+
 class RESTQLOperationParametersAutoSchema(AutoSchema):
     """Limit response properties documentation"""
 

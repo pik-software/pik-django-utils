@@ -2,6 +2,8 @@ import re
 
 from djangorestframework_camel_case.util import camelize, underscore_to_camel
 from rest_framework.schemas import AutoSchema
+from django.utils.encoding import force_str
+from django.utils.functional import Promise
 
 from pik.api.openapi.openapi import PIKAutoSchema
 
@@ -40,7 +42,12 @@ class CamelCaseAutoSchema(AutoSchema):
         """ Camelizing url params escaping `__` construction """
         schema = super().get_operation(path, method)
         for param in schema['parameters']:
-            param['name'] = self.camelize(param['name'])
+            items = ('name', 'description')
+            for item in items:
+                value = param[item]
+                if isinstance(value, Promise):
+                    value = force_str(value)
+                param[item] = self.camelize(value)
         return schema
 
 
