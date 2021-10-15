@@ -29,6 +29,10 @@ class DeprecatedAutoSchema(PIKAutoSchema):
     def get_operation(self, path, method):
         """ Deprecating url params """
 
+        if path == '/api/v1/rosreestrobject-list/':
+            q = 1
+            # [i['name'] for i in operation['parameters']]
+
         schema = super().get_operation(path, method)
         for param in schema['parameters']:
             param['name'] = to_deprecated_filters.replace(param['name'])
