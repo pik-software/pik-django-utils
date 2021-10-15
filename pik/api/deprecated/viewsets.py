@@ -25,16 +25,21 @@ class DeprecatedViewSetMixIn:
             request.GET, replacer=to_actual_filters,
             ignore_fields=['ordering', 'query'])
 
+        if hasattr(self, 'deprecated_filters_render_hook'):
+            request.GET = self.deprecated_filters_render_hook(request.GET)
+
         if 'ordering' in request.GET:
             request.GET['ordering'] = to_actual_ordering.replace(
                 request.GET['ordering'])
         if 'query' in request.GET:
             request.GET['query'] = to_actual_fields.replace(
                 request.GET['query'])
-        return super().dispatch(request, *args, **kwargs)
+        result = super().dispatch(request, *args, **kwargs)
+        return result
 
 
-def get_deprecated_viewset(view):
-    return type(
-        f'Deprecated{view.__name__}',
-        (DeprecatedViewSetMixIn, view), {})
+def get_deprecated_viewset(viewset):
+    deprecated_viewset = type(
+        f'Deprecated{viewset.__name__}',
+        (DeprecatedViewSetMixIn, viewset), {})
+    return deprecated_viewset

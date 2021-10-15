@@ -42,9 +42,10 @@ def get_history_viewset(viewset):
         select_related_fields = filter(
             lambda r: '__' not in r, select_related_fields)
 
-    return type(name, (HistoryViewSetBase,), {
+    history_viewset = type(name, (HistoryViewSetBase, ), {
         'select_related_fields': select_related_fields,
         'serializer_class': serializer_class,
         'filterset_class': filterset_class,
         'queryset': queryset
     })
+    return history_viewset

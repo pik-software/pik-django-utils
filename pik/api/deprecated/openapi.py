@@ -9,20 +9,22 @@ class DeprecatedAutoSchema(PIKAutoSchema):
     def map_serializer(self, serializer):
         """ Deprecating response schema """
 
-        parent_result = super().map_serializer(serializer)
-        result = replace_struct_keys(
-            parent_result,
+        schema = replace_struct_keys(
+            super().map_serializer(serializer),
             replacer=to_deprecated_fields,
             ignore_dict_items=JSONSCHEMA_TYPE_DICT_ITEMS
         )
 
-        if 'required' in result:
-            result['required'] = [
+        if 'required' in schema:
+            schema['required'] = [
                 to_deprecated_fields.replace(required)
-                for required in result['required']
+                for required in schema['required']
             ]
 
-        return result
+        if hasattr(self.view, 'deprecated_fields_render_hook'):
+            schema = self.view.deprecated_fields_render_hook(schema)
+
+        return schema
 
     def get_operation(self, path, method):
         """ Deprecating url params """
@@ -35,4 +37,8 @@ class DeprecatedAutoSchema(PIKAutoSchema):
                 param['schema']['enum'] = [
                     to_deprecated_filters.replace(item)
                     for item in param['schema']['enum']]
+
+        if hasattr(self.view, 'deprecated_fields_render_hook'):
+            schema = self.view.deprecated_fields_render_hook(schema)
+
         return schema
