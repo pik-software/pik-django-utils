@@ -42,7 +42,9 @@ def get_history_viewset(viewset):
         select_related_fields = filter(
             lambda r: '__' not in r, select_related_fields)
 
-    history_viewset = type(name, (HistoryViewSetBase, ), {
+    mixins = getattr(viewset, 'history_viewset_mixins', ())
+
+    history_viewset = type(name, (HistoryViewSetBase, *mixins), {
         'select_related_fields': select_related_fields,
         'serializer_class': serializer_class,
         'filterset_class': filterset_class,

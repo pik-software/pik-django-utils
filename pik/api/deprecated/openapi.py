@@ -41,4 +41,15 @@ class DeprecatedAutoSchema(PIKAutoSchema):
         if hasattr(self.view, 'deprecated_fields_render_hook'):
             schema = self.view.deprecated_fields_render_hook(schema)
 
+        # Remove duplicate params building__uid for rosreestr-back.
+        # Duplicate is been created in FilterSetMetaclass when field
+        # building__uid = AutoFilter(lookups=UD_LOOKUPS)
+        # exist in class RosreestrObjectFilter.
+        # TODO: fix duplicate error.
+        names = []
+        for param in schema['parameters']:
+            if param['name'] in names:
+                schema['parameters'].remove(param)
+            names += [param['name']]
+
         return schema

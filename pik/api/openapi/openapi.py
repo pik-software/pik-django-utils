@@ -259,13 +259,6 @@ class OperationSerializerDescriptionAutoSchema(AutoSchema):
         return operation
 
 
-# class DeprecatedSchemaHookMixin(AutoSchema):
-#     def get_operation(self, path, method):
-#         operation = super().get_operation(path, method)
-#         # hook self.view
-#         return operation
-
-
 class RESTQLOperationParametersAutoSchema(AutoSchema):
     """Limit response properties documentation"""
 
@@ -391,6 +384,12 @@ class OpenIDSchemaGenerator(SchemaGenerator):
                 operation['security'] = ({'OpenIDConnect': ()},)
 
         return schema
+
+
+# class UniqParametersSchemaGenerator(SchemaGenerator):
+#     def get_schema(self, *args, **kwargs):
+#         schema = super().get_schema(*args, **kwargs)
+#         return schema
 
 
 class PIKSchemaGenerator(
