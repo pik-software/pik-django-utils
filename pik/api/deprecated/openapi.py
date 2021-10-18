@@ -43,7 +43,9 @@ class DeprecatedAutoSchema(PIKAutoSchema):
 
         # Remove duplicate params building__uid for rosreestr-back.
         # Duplicate is been created in FilterSetMetaclass when field
-        # building__uid = AutoFilter(lookups=UD_LOOKUPS)
+        # guid = AutoFilter('uid', lookups=UID_LOOKUPS)
+        # in processing, and field
+        # building__uid = AutoFilter(lookups=UID_LOOKUPS)
         # exist in class RosreestrObjectFilter.
         # TODO: fix duplicate error.
         names = []

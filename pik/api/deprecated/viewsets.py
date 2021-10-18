@@ -1,7 +1,7 @@
 from .openapi import DeprecatedAutoSchema
 from .parsers import (
     DeprecatedFormParser, DeprecatedMultiPartParser, DeprecatedJSONParser, )
-from .renderer import DeprecatedJSONRenderer
+from .renderers import DeprecatedJSONRenderer
 from .utils import (
     replace_struct_keys, to_actual_filters, to_actual_fields,
     to_actual_ordering, )

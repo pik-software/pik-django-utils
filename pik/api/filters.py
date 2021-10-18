@@ -50,6 +50,7 @@ class StandardizedFieldFilters(RestFrameworkFilterBackend):
                 location='query',
                 schema=self.get_coreschema_field(field)
             ))
+            # TODO: fix recursive filter generation.
             # if isinstance(field, RelatedFilter):
             #     self.get_flatten_schema_fields(
             #         prefix + field_name + '__', filters, field.filterset)
