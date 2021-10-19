@@ -21,8 +21,9 @@ class DeprecatedAutoSchema(PIKAutoSchema):
                 for required in schema['required']
             ]
 
-        if hasattr(self.view, 'deprecated_fields_render_hook'):
-            schema = self.view.deprecated_fields_render_hook(schema)
+        if hasattr(self.view, 'rename_response_params_to_deprecation_version'):
+            schema = self.view.rename_response_params_to_deprecation_version(
+                schema)
 
         return schema
 
@@ -38,8 +39,9 @@ class DeprecatedAutoSchema(PIKAutoSchema):
                     to_deprecated_filters.replace(item)
                     for item in param['schema']['enum']]
 
-        if hasattr(self.view, 'deprecated_fields_render_hook'):
-            schema = self.view.deprecated_fields_render_hook(schema)
+        if hasattr(self.view, 'rename_response_params_to_deprecation_version'):
+            schema = self.view.rename_response_params_to_deprecation_version(
+                schema)
 
         # Remove duplicate params building__uid for rosreestr-back.
         # Duplicate is been created in FilterSetMetaclass when field

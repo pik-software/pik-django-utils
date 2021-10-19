@@ -25,8 +25,9 @@ class DeprecatedViewSetMixIn:
             request.GET, replacer=to_actual_filters,
             ignore_fields=['ordering', 'query'])
 
-        if hasattr(self, 'deprecated_filters_render_hook'):
-            request.GET = self.deprecated_filters_render_hook(request.GET)
+        if hasattr(self, 'rename_request_params_to_deprecation_version'):
+            request.GET = self.rename_request_params_to_deprecation_version(
+                request.GET)
 
         if 'ordering' in request.GET:
             request.GET['ordering'] = to_actual_ordering.replace(

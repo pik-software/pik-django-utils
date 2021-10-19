@@ -8,8 +8,8 @@ class DeprecatedJSONRenderer(JSONRenderer):
         data = replace_struct_keys(data, replacer=to_deprecated_fields)
 
         view = renderer_context['view']
-        if hasattr(view, 'deprecated_fields_render_hook'):
-            data = view.deprecated_fields_render_hook(data)
+        if hasattr(view, 'rename_response_params_to_deprecation_version'):
+            data = view.rename_response_params_to_deprecation_version(data)
 
         result = super().render(data, accepted_media_type, renderer_context)
         return result

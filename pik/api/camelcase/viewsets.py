@@ -1,5 +1,5 @@
 from djangorestframework_camel_case.parser import CamelCaseJSONParser
-from .renderers import CamelcaseJSONRenderer
+from djangorestframework_camel_case.render import CamelCaseJSONRenderer
 from djangorestframework_camel_case.util import (
     underscoreize,
     camel_to_underscore, )
@@ -10,7 +10,7 @@ from .openapi import PIKCamelCaseAutoSchema
 class CamelCaseViewSetMixIn:
 
     renderer_classes = [
-        CamelcaseJSONRenderer]
+        CamelCaseJSONRenderer]
 
     parser_classes = [
         CamelCaseJSONParser]
