@@ -386,12 +386,6 @@ class OpenIDSchemaGenerator(SchemaGenerator):
         return schema
 
 
-# class UniqParametersSchemaGenerator(SchemaGenerator):
-#     def get_schema(self, *args, **kwargs):
-#         schema = super().get_schema(*args, **kwargs)
-#         return schema
-
-
 class PIKSchemaGenerator(
         OpenIDSchemaGenerator,
         EntitiesViewSchemaGenerator,

@@ -2,6 +2,6 @@ from .renderers import *
 
 import warnings
 warnings.warn(
-    "the renders module is deprecated because renamed to renderers",
+    "`renders` module is deprecated use `renderers` instead",
     DeprecationWarning,
     stacklevel=2)

@@ -305,7 +305,7 @@ def set_oidc_settings(settings):
         'pik.oidc.pipeline.associate_by_username',
         'social_core.pipeline.user.get_username',
 
-        *((  # Customer users are replicated from permitions-back
+        *((  # Custom users are replicated from permission-back
             'social_core.pipeline.user.create_user', )
             if settings['AUTH_USER_MODEL'] != DEFAULT_USER_MODEL else ()),
 
