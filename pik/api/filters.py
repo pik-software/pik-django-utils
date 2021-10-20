@@ -15,7 +15,7 @@ STRING_LOOKUPS = (
     'isnull')
 DATE_LOOKUPS = ('exact', 'gt', 'gte', 'lt', 'lte', 'in', 'isnull')
 BOOLEAN_LOOKUPS = ('exact', 'in', 'isnull')
-ARRAY_LOOKUPS = ['contains', 'contained_by', 'overlap', 'len', 'isnull']
+ARRAY_LOOKUPS = ('contains', 'contained_by', 'overlap', 'len', 'isnull')
 NUMBER_LOOKUPS = ('exact', 'gt', 'gte', 'lt', 'lte', 'in', 'isnull')
 
 
@@ -44,23 +44,16 @@ class StandardizedFieldFilters(RestFrameworkFilterBackend):
     def get_flatten_schema_fields(
             self, prefix, filters: list, filterset_class):
         for field_name, field in filterset_class.get_filters().items():
-            filters.append(coreapi.Field(
-                name=prefix + field_name,
-                required=False,
-                location='query',
-                schema=self.get_coreschema_field(field)
-            ))
-            # TODO: fix recursive filter generation.
-            # if isinstance(field, RelatedFilter):
-            #     self.get_flatten_schema_fields(
-            #         prefix + field_name + '__', filters, field.filterset)
-            # else:
-            #     filters.append(coreapi.Field(
-            #         name=prefix + field_name,
-            #         required=False,
-            #         location='query',
-            #         schema=self.get_coreschema_field(field)
-            #     ))
+            if isinstance(field, RelatedFilter):
+                self.get_flatten_schema_fields(
+                    prefix + field_name + '__', filters, field.filterset)
+            else:
+                filters.append(coreapi.Field(
+                    name=prefix + field_name,
+                    required=False,
+                    location='query',
+                    schema=self.get_coreschema_field(field)
+                ))
         return filters
 
 

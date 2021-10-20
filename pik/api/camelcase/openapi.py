@@ -42,8 +42,7 @@ class CamelCaseAutoSchema(AutoSchema):
         """ Camelizing url params escaping `__` construction """
         schema = super().get_operation(path, method)
         for param in schema['parameters']:
-            items = ('name', 'description')
-            for item in items:
+            for item in ('name', 'description'):
                 value = param[item]
                 if isinstance(value, Promise):
                     value = force_str(value)

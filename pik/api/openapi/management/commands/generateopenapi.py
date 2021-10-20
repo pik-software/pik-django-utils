@@ -7,7 +7,7 @@ from rest_framework.renderers import JSONOpenAPIRenderer
 from rest_framework.settings import perform_import
 
 from pik.api.openapi.openapi import PIKSchemaGenerator
-from pik.api.openapi.renders import JSONOpenPrettyRenderer
+from pik.api.openapi.renderers import JSONOpenPrettyRenderer
 
 
 class Command(DRFCommand):

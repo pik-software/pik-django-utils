@@ -1,16 +1,15 @@
 from djangorestframework_camel_case.parser import CamelCaseJSONParser
-from djangorestframework_camel_case.render import CamelCaseJSONRenderer
 from djangorestframework_camel_case.util import (
-    underscoreize,
-    camel_to_underscore, )
+    underscoreize, camel_to_underscore, )
 
+from .renderers import CalemizeJSONRenderer
 from .openapi import PIKCamelCaseAutoSchema
 
 
 class CamelCaseViewSetMixIn:
 
     renderer_classes = [
-        CamelCaseJSONRenderer]
+        CalemizeJSONRenderer]
 
     parser_classes = [
         CamelCaseJSONParser]
@@ -24,8 +23,7 @@ class CamelCaseViewSetMixIn:
         for param in ['query', 'ordering']:
             if param in request.GET:
                 request.GET[param] = camel_to_underscore(request.GET[param])
-        result = super().dispatch(request, *args, **kwargs)
-        return result
+        return super().dispatch(request, *args, **kwargs)
 
 
 def get_camelcase_viewset(viewset):

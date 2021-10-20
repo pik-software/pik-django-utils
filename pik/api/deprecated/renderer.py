@@ -1,7 +1,8 @@
-from .renderers import *
-
 import warnings
+from .renderers import *  # noqa
+
+
 warnings.warn(
-    "the renderer module is deprecated because renamed to renderers",
+    "`renderer` module is deprecated use `renderers` instead",
     DeprecationWarning,
     stacklevel=2)
