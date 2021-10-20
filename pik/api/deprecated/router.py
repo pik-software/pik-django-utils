@@ -9,9 +9,8 @@ class DeprecatedRouterMixIn:
 
     # @staticmethod
     def get_history_viewset(self, viewset):
-        history_viewset = get_deprecated_viewset(
+        return get_deprecated_viewset(
             super().get_history_viewset(viewset))
-        return history_viewset
 
 
 class DeprecatedRouter(DeprecatedRouterMixIn, StandardizedRouter):

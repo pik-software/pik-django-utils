@@ -307,8 +307,9 @@ def set_oidc_settings(settings):
 
         *((  # Custom users are replicated from permission-back
             'social_core.pipeline.user.create_user', )
-            if 'AUTH_USER_MODEL' in settings and settings['AUTH_USER_MODEL']
-               != DEFAULT_USER_MODEL else ()),
+            if settings.get(
+                'AUTH_USER_MODEL',
+                DEFAULT_USER_MODEL) != DEFAULT_USER_MODEL else ()),
 
         'pik.oidc.pipeline.actualize_roles',
         # TODO: Remove after SPA

@@ -16,5 +16,4 @@ def get_pik_schema_view(**kwargs):
     kwargs.setdefault('generator_class', PIKSchemaGenerator)
     kwargs.setdefault('version', settings.SERVICE_RELEASE)
 
-    schema_view = get_schema_view(**kwargs)
-    return schema_view
+    return get_schema_view(**kwargs)

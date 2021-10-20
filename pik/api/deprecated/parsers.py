@@ -56,8 +56,7 @@ class DeprecatedJSONParser(JSONParser):
 
             view = parser_context['view']
             if hasattr(view, 'deprecated_parser_hook'):
-                if callable(view.deprecated_parser_hook):
-                    json_data = view.deprecated_parser_hook(json_data)
+                json_data = view.deprecated_parser_hook(json_data)
 
             return replace_struct_keys(json_data, replacer=to_actual_fields)
         except ValueError as exc:

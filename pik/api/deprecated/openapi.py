@@ -22,8 +22,7 @@ class DeprecatedAutoSchema(PIKAutoSchema):
             ]
 
         if hasattr(self.view, 'deprecated_render_hook'):
-            if callable(self.view.deprecated_render_hook):
-                schema = self.view.deprecated_render_hook(schema)
+            schema = self.view.deprecated_render_hook(schema)
 
         return schema
 
@@ -40,7 +39,6 @@ class DeprecatedAutoSchema(PIKAutoSchema):
                     for item in param['schema']['enum']]
 
         if hasattr(self.view, 'deprecated_render_hook'):
-            if callable(self.view.deprecated_render_hook):
-                schema = self.view.deprecated_render_hook(schema)
+            schema = self.view.deprecated_render_hook(schema)
 
         return schema
