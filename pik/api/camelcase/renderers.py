@@ -7,5 +7,4 @@ class CalemizeJSONRenderer(CamelCaseJSONRenderer):
         if hasattr(view, 'camelization_hook'):
             data = view.camelization_hook(data)
 
-        result = super().render(data, accepted_media_type, renderer_context)
-        return result
+        return super().render(data, accepted_media_type, renderer_context)

@@ -11,5 +11,4 @@ class DeprecatedJSONRenderer(JSONRenderer):
         if hasattr(view, 'deprecated_render_hook'):
             data = view.deprecated_render_hook(data)
 
-        result = super().render(data, accepted_media_type, renderer_context)
-        return result
+        return super().render(data, accepted_media_type, renderer_context)
