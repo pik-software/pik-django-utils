@@ -52,7 +52,12 @@ class DeprecatedJSONParser(JSONParser):
 
         try:
             data = stream.read().decode(encoding)
-            return replace_struct_keys(
-                json.loads(data), replacer=to_actual_fields)
+            json_data = json.loads(data)
+
+            view = parser_context['view']
+            if hasattr(view, 'deprecated_parser_hook'):
+                json_data = view.deprecated_parser_hook(json_data)
+
+            return replace_struct_keys(json_data, replacer=to_actual_fields)
         except ValueError as exc:
             raise ParseError(f"JSON parse error - {str(exc)}") from exc

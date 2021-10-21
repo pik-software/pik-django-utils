@@ -1,7 +1,7 @@
 from .openapi import DeprecatedAutoSchema
 from .parsers import (
     DeprecatedFormParser, DeprecatedMultiPartParser, DeprecatedJSONParser, )
-from .renderer import DeprecatedJSONRenderer
+from .renderers import DeprecatedJSONRenderer
 from .utils import (
     replace_struct_keys, to_actual_filters, to_actual_fields,
     to_actual_ordering, )
@@ -25,6 +25,9 @@ class DeprecatedViewSetMixIn:
             request.GET, replacer=to_actual_filters,
             ignore_fields=['ordering', 'query'])
 
+        if hasattr(self, 'deprecated_filters_hook'):
+            request.GET = self.deprecated_filters_hook(request.GET)
+
         if 'ordering' in request.GET:
             request.GET['ordering'] = to_actual_ordering.replace(
                 request.GET['ordering'])
@@ -34,7 +37,6 @@ class DeprecatedViewSetMixIn:
         return super().dispatch(request, *args, **kwargs)
 
 
-def get_deprecated_viewset(view):
+def get_deprecated_viewset(viewset):
     return type(
-        f'Deprecated{view.__name__}',
-        (DeprecatedViewSetMixIn, view), {})
+        f'Deprecated{viewset.__name__}', (DeprecatedViewSetMixIn, viewset), {})

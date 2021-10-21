@@ -5,7 +5,7 @@ from django.utils.encoding import force_str
 from django.utils.functional import Promise, cached_property
 from rest_framework.utils.serializer_helpers import ReturnDict
 
-from .consts import (
+from pik.api.deprecated.consts import (
     TO_DEPRECATED_FIELD_RULES, TO_ACTUAL_FIELD_RULES,
     TO_ACTUAL_ORDERING_RULES, TO_DEPRECATED_ORDERING_RULES,
     TO_DEPRECATED_FILTER_RULES, TO_ACTUAL_FILTER_RULES, )
@@ -13,22 +13,22 @@ from .consts import (
 
 def replace_keys(field, replacer, **kwargs):
     """
-    >>> replace_keys('version', KeysReplacer(TO_DEPRECATED_FIELD_RULES))
+    >>> replace_keys('version', to_deprecated_fields)
     '_version'
-    >>> replace_keys('type', KeysReplacer(TO_DEPRECATED_FIELD_RULES))
+    >>> replace_keys('type', to_deprecated_fields)
     '_type'
-    >>> replace_keys('guid', KeysReplacer(TO_DEPRECATED_FIELD_RULES))
+    >>> replace_keys('guid', to_deprecated_fields)
     '_uid'
-    >>> replace_keys('foo', KeysReplacer(TO_DEPRECATED_FIELD_RULES))
+    >>> replace_keys('foo', to_deprecated_fields)
     'foo'
 
-    >>> replace_keys('_uid', KeysReplacer(TO_ACTUAL_FIELD_RULES))
+    >>> replace_keys('_uid', to_actual_fields)
     'guid'
-    >>> replace_keys('_type', KeysReplacer(TO_ACTUAL_FIELD_RULES))
+    >>> replace_keys('_type', to_actual_fields)
     'type'
-    >>> replace_keys('_version', KeysReplacer(TO_ACTUAL_FIELD_RULES))
+    >>> replace_keys('_version', to_actual_fields)
     'version'
-    >>> replace_keys('foo', KeysReplacer(TO_ACTUAL_FIELD_RULES))
+    >>> replace_keys('foo', to_actual_fields)
     'foo'
 
     """
@@ -40,8 +40,7 @@ def replace_keys(field, replacer, **kwargs):
 def replace_struct_keys(data, **options):  # noqa: Too many branches
     """
     Replaces `guid` with keys with `_uid`
-    >>> replace_struct_keys( \
-        {'foo_type': 1}, replacer=to_deprecated_fields)
+    >>> replace_struct_keys({'foo_type': 1}, replacer=to_deprecated_fields)
     OrderedDict([('foo_type', 1)])
 
     >>> replace_struct_keys( \
@@ -53,11 +52,11 @@ def replace_struct_keys(data, **options):  # noqa: Too many branches
     >>> replace_struct_keys({'guid': 'foo'}, replacer=to_deprecated_fields)
     OrderedDict([('_uid', 'foo')])
     >>> replace_struct_keys(['guid', 'foo'], replacer=to_deprecated_fields)
-    ['_uid', 'foo']
+    ['guid', 'foo']
     >>> replace_struct_keys(('guid', 'foo'), replacer=to_deprecated_fields)
-    ['_uid', 'foo']
+    ['guid', 'foo']
     >>> replace_struct_keys('guid', replacer=to_deprecated_fields)
-    '_uid'
+    'guid'
 
     >>> replace_struct_keys({'foo': 'bar'}, replacer=to_deprecated_fields)
     OrderedDict([('foo', 'bar')])
@@ -70,14 +69,19 @@ def replace_struct_keys(data, **options):  # noqa: Too many branches
     >>> replace_struct_keys('foo', replacer=to_deprecated_fields)
     'foo'
 
+    >>> replace_struct_keys( \
+        {'guid': 1, 'type': 'string'}, replacer=to_deprecated_fields, \
+        ignore_dict_items=(('type', 'string'), ))
+    OrderedDict([('_uid', 1), ('type', 'string')])
+
     >>> replace_struct_keys({'_uid': 'foo'}, replacer=to_actual_fields)
     OrderedDict([('guid', 'foo')])
     >>> replace_struct_keys(['_uid', 'foo'], replacer=to_actual_fields)
-    ['guid', 'foo']
+    ['_uid', 'foo']
     >>> replace_struct_keys(('_uid', 'foo'), replacer=to_actual_fields)
-    ['guid', 'foo']
+    ['_uid', 'foo']
     >>> replace_struct_keys('_uid', replacer=to_actual_fields)
-    'guid'
+    '_uid'
 
     >>> replace_struct_keys({'foo': 'bar'}, replacer=to_actual_fields)
     OrderedDict([('foo', 'bar')])
@@ -90,13 +94,8 @@ def replace_struct_keys(data, **options):  # noqa: Too many branches
     >>> replace_struct_keys('foo', replacer=to_actual_fields)
     'foo'
 
-    >>> replace_struct_keys('some__uid', replacer=to_actual_filters)
-    'some__guid'
-
-    >>> replace_struct_keys( \
-        {'guid': 1, 'type': 'string'}, replacer=to_deprecated_fields, \
-        ignore_dict_items=(('type', 'string'), ))
-    OrderedDict([('_uid', 1), ('type', 'string')])
+    # >>> replace_struct_keys('some__uid', replacer=to_actual_filters)
+    # 'some__guid'
     """
     ignore_fields = options.get("ignore_fields") or ()
     ignore_dict_items = options.get("ignore_dict_items") or ()
@@ -120,8 +119,6 @@ def replace_struct_keys(data, **options):  # noqa: Too many branches
             else:
                 new_dict[new_key] = value
         return new_dict
-    if isinstance(data, str):
-        return replace_keys(data, **options)
     if isinstance(data, (list, tuple)):
         return [replace_struct_keys(item, **options) for item in data]
     return data
@@ -210,7 +207,7 @@ class KeysReplacer:
         self._rules = rules
 
     def replace(self, value):
-        if value is None:
+        if not isinstance(value, str):
             return value
         return self._pattern.sub(self._replacer, value)
 

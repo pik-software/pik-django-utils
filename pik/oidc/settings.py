@@ -1,9 +1,12 @@
 import os
 
+from django.conf.global_settings import AUTH_USER_MODEL as DEFAULT_USER_MODEL
+
 
 _CONFLICT_SETTINGS = [
     'SOCIAL_AUTH_PIPELINE'
 ]
+
 
 _REQUIRED_SETTINGS = [
     'INSTALLED_APPS',
@@ -301,12 +304,15 @@ def set_oidc_settings(settings):
         'social_core.pipeline.social_auth.associate_by_email',
         'pik.oidc.pipeline.associate_by_username',
         'social_core.pipeline.user.get_username',
-        'social_core.pipeline.user.create_user',
-        'pik.oidc.pipeline.actualize_roles',
 
+        *((  # Custom users are replicated from permission-back
+            'social_core.pipeline.user.create_user', )
+            if settings.get(
+                'AUTH_USER_MODEL',
+                DEFAULT_USER_MODEL) != DEFAULT_USER_MODEL else ()),
+
+        'pik.oidc.pipeline.actualize_roles',
         # TODO: Remove after SPA
         'pik.oidc.pipeline.actualize_staff_status',
-
         'social_core.pipeline.social_auth.associate_user',
-        'social_core.pipeline.social_auth.load_extra_data',
-    ))
+        'social_core.pipeline.social_auth.load_extra_data'))

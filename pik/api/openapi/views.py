@@ -2,7 +2,7 @@ from django.conf import settings
 from rest_framework.schemas import get_schema_view
 
 from .openapi import PIKSchemaGenerator
-from .renders import PIKRedocOpenAPIRenderer, \
+from .renderers import PIKRedocOpenAPIRenderer, \
     PIKJSONOpenAPIRenderer, PIKOpenAPIRenderer
 
 
@@ -15,4 +15,5 @@ def get_pik_schema_view(**kwargs):
         PIKOpenAPIRenderer))
     kwargs.setdefault('generator_class', PIKSchemaGenerator)
     kwargs.setdefault('version', settings.SERVICE_RELEASE)
+
     return get_schema_view(**kwargs)
