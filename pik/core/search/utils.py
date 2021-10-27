@@ -5,7 +5,7 @@ from django.db import migrations
 from django.db.models.expressions import RawSQL
 from django.utils.module_loading import import_string
 
-from .consts import PG_SEARCH_CONFIG
+from .constants import PG_SEARCH_RUSSIAN_LANGUAGE_CONFIG
 
 
 class SearchIndexRedundantFieldsException(Exception):
@@ -69,7 +69,8 @@ Multiple found: (search_index, custom_search_index). To add more fields use \
 
 
 def to_tsvector(value):
-    return RawSQL('to_tsvector(%s, %s)', (PG_SEARCH_CONFIG, value))
+    return RawSQL(
+        'to_tsvector(%s, %s)', (PG_SEARCH_RUSSIAN_LANGUAGE_CONFIG, value))
 
 
 def get_search_index(obj, search_fields):
@@ -110,7 +111,9 @@ def get_search_index(obj, search_fields):
 
 def filter_queryset_by_search_index(queryset, field, value):
     if value:
-        lookup = {field: SearchQuery(value, config=PG_SEARCH_CONFIG)}
+        lookup = {
+            field: SearchQuery(
+                value, config=PG_SEARCH_RUSSIAN_LANGUAGE_CONFIG)}
         return queryset.filter(**lookup)
     return queryset
 

@@ -7,6 +7,8 @@ from rest_framework_filters import (
 from rest_framework_filters.backends import RestFrameworkFilterBackend
 from rest_framework.filters import SearchFilter
 
+from .filters_mixins import StandardizedAPISearchIndex
+
 
 UID_LOOKUPS = ('exact', 'gt', 'gte', 'lt', 'lte', 'in', 'isnull')
 STRING_LOOKUPS = (
@@ -53,7 +55,7 @@ class StandardizedFieldFilters(RestFrameworkFilterBackend):
         return filters
 
 
-class StandardizedSearchFilter(SearchFilter):
+class StandardizedSearchFilter(StandardizedAPISearchIndex, SearchFilter):
     pass
 
 

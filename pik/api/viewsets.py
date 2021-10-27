@@ -236,4 +236,4 @@ class PrivateStorageAPIView(APIView):
         # For others like Firefox, we follow RFC2231
         # (encoding extension in HTTP headers).
         rfc2231_filename = quote(filename.encode('utf-8'))
-        return f"filename*=UTF-8''{rfc2231_filename}".encode('utf-8')
+        return f"filename*=UTF-8'{rfc2231_filename}'".encode('utf-8')
