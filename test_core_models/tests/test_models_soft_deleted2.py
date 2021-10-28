@@ -1,6 +1,9 @@
+import pytest
+
 from test_core_models import models
 
 
+@pytest.mark.django_db
 def test_built_in_cascade(settings):
     """
     Verifies cascade deletion
@@ -11,9 +14,10 @@ def test_built_in_cascade(settings):
     models.NullRelatedModel.objects.create(nullable_base=base)
 
     base.delete()
-    assert not (models.NullRelatedModel.objects.exists())
+    assert not models.NullRelatedModel.objects.exists()
 
 
+@pytest.mark.django_db
 def test_cascade_delete(settings):
     """
     Verify that if we delete a model with the ArchiveMixin, then the
@@ -31,22 +35,23 @@ def test_cascade_delete(settings):
 
     base.delete()
 
-    assert not (models.RelatedModel.objects.exists())
-    assert not (models.RelatedCousinModel.objects.exists())
+    assert not models.RelatedModel.objects.exists()
+    assert not models.RelatedCousinModel.objects.exists()
 
-    assert not (models.RelatedArchiveModel.objects.exists())
-    assert (models.RelatedArchiveModel.all_objects.exists())
+    assert not models.RelatedArchiveModel.objects.exists()
+    assert models.RelatedArchiveModel.all_objects.exists()
     related_archivable = models.RelatedArchiveModel.all_objects.get(
         pk=related_archivable.pk)
-    assert (related_archivable.deleted) is not None
+    assert related_archivable.deleted is not None
 
-    assert not (models.RelatedCousinArchiveModel.objects.exists())
-    assert (models.RelatedCousinArchiveModel.all_objects.exists())
+    assert not models.RelatedCousinArchiveModel.objects.exists()
+    assert models.RelatedCousinArchiveModel.all_objects.exists()
     cousin_archivable = models.RelatedCousinArchiveModel.all_objects.get(
         pk=cousin_archivable.pk)
-    assert (cousin_archivable.deleted) is not None
+    assert cousin_archivable.deleted is not None
 
 
+@pytest.mark.django_db
 def test_cascade_delete_qs(settings):
     """
     Verify that if we delete a model with the ArchiveMixin, then the
@@ -66,14 +71,15 @@ def test_cascade_delete_qs(settings):
 
     models.BaseArchiveModel.objects.all().delete()
 
-    assert not (models.RelatedModel.objects.exists())
-    assert not (models.RelatedCousinModel.objects.exists())
-    assert not (models.RelatedArchiveModel.objects.exists())
-    assert (models.RelatedArchiveModel.all_objects.exists())
-    assert not (models.RelatedCousinArchiveModel.objects.exists())
-    assert (models.RelatedCousinArchiveModel.all_objects.exists())
+    assert not models.RelatedModel.objects.exists()
+    assert not models.RelatedCousinModel.objects.exists()
+    assert not models.RelatedArchiveModel.objects.exists()
+    assert models.RelatedArchiveModel.all_objects.exists()
+    assert not models.RelatedCousinArchiveModel.objects.exists()
+    assert models.RelatedCousinArchiveModel.all_objects.exists()
 
 
+@pytest.mark.django_db
 def test_cascade_nullable():
     """
     Verify that related models are deleted even if the relation is
@@ -91,13 +97,14 @@ def test_cascade_nullable():
 
     base2.delete()
 
-    assert 1 == models.BaseArchiveModel.objects.count()
-    assert 1 == models.RelatedModel.objects.count()
-    assert 1 == models.RelatedArchiveModel.objects.count()
-    assert 1 == models.RelatedCousinModel.objects.count()
-    assert 1 == models.RelatedCousinArchiveModel.objects.count()
+    assert models.BaseArchiveModel.objects.count() == 1
+    assert models.RelatedModel.objects.count() == 1
+    assert models.RelatedArchiveModel.objects.count() == 1
+    assert models.RelatedCousinModel.objects.count() == 1
+    assert models.RelatedCousinArchiveModel.objects.count() == 1
 
 
+@pytest.mark.django_db
 def test_cascade_set_null():
     """
     Verify that related models are not deleted if on_delete is SET_NULL
@@ -110,14 +117,15 @@ def test_cascade_set_null():
 
     base2.delete()
 
-    assert 1 == models.BaseArchiveModel.objects.count()
-    assert 1 == models.RelatedModel.objects.count()
-    assert 1 == models.RelatedCousinModel.objects.count()
+    assert models.BaseArchiveModel.objects.count() == 1
+    assert models.RelatedModel.objects.count() == 1
+    assert models.RelatedCousinModel.objects.count() == 1
 
     assert (
         models.RelatedModel.objects.filter(pk=related.pk).exists())
 
 
+@pytest.mark.django_db
 def test_cascade_set_null_qs():
     """
     Verify that related models are not deleted if on_delete is SET_NULL
@@ -130,14 +138,15 @@ def test_cascade_set_null_qs():
 
     models.BaseArchiveModel.objects.filter(pk=base2.pk).delete()
 
-    assert 1 == models.BaseArchiveModel.objects.count()
-    assert 1 == models.RelatedModel.objects.count()
-    assert 1 == models.RelatedCousinModel.objects.count()
+    assert models.BaseArchiveModel.objects.count() == 1
+    assert models.RelatedModel.objects.count() == 1
+    assert models.RelatedCousinModel.objects.count() == 1
 
     assert (
         models.RelatedModel.objects.filter(pk=related.pk).exists())
 
 
+@pytest.mark.django_db
 def test_cascade_set_default():
     """
     Verify that related models are not deleted if on_delete is SET_DEFAULT
@@ -150,8 +159,8 @@ def test_cascade_set_default():
 
     base2.delete()
 
-    assert 1 == models.BaseArchiveModel.objects.count()
-    assert 1 == models.RelatedModel.objects.count()
-    assert 1 == models.RelatedCousinModel.objects.count()
+    assert models.BaseArchiveModel.objects.count() == 1
+    assert models.RelatedModel.objects.count() == 1
+    assert models.RelatedCousinModel.objects.count() == 1
 
     assert models.RelatedModel.objects.filter(pk=related.pk).exists()

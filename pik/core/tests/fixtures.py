@@ -21,7 +21,7 @@ def create_user(username=None, password=None, **kwargs):
         username = kwargs.get(User.USERNAME_FIELD)
 
     if not username:
-        username = get_random_string()
+        username = get_random_string(12)
 
     kwargs.update({
         User.USERNAME_FIELD: username,

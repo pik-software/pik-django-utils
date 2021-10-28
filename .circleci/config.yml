@@ -38,7 +38,8 @@ jobs:
             pip install --upgrade pip
             pip install --upgrade setuptools
             pip install --exists-action w -r requirements.txt --progress-bar off
-            pip install --exists-action w -r requirements.dev.txt --progress-bar off            
+            pip install --exists-action w -r requirements.dev.txt --progress-bar off
+            pip freeze
             pip check
 
       - type: cache-save
@@ -53,7 +54,11 @@ jobs:
             set -x
             check-manifest
             python setup.py check -m -s
-            pytest --doctest-modules --cov-report term-missing --durations=0 --cov pik -vvv
+            python -m pytest --cov . --junitxml=~/reports/report.xml
             prospector --profile-path . --profile .prospector.yaml pik
-            mypy pik --ignore-missing-imports
+            mypy pik --ignore-missing-imports --install-types --non-interactive
             pip check
+      - store_test_results:
+          path: ~/reports
+      - store_artifacts:
+          path: ~/report

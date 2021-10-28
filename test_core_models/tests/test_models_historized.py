@@ -4,16 +4,17 @@ from .factories import MyHistorizedFactory
 from ..models import MyHistorized
 
 
-@pytest.fixture(params=[
+@pytest.fixture(name='historized_model', params=[
     (MyHistorized, MyHistorizedFactory),
 ])
-def historized_model(request):
+def historized_model_fixture(request):
     return request.param
 
 
+@pytest.mark.django_db
 def test_historized_protocol(historized_model, settings):
     settings.SOFT_DELETE_SAFE_MODE = False
-    model, factory = historized_model
+    _, factory = historized_model
     obj = factory.create()
     history = obj.history.all()
     assert obj.history

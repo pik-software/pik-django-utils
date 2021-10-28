@@ -6,7 +6,7 @@ from ..models import MySimpleModel, TestNameModel
 
 
 class MySimpleModelFactory(factory.django.DjangoModelFactory):
-    data = factory.LazyFunction(get_random_string)
+    data = factory.LazyFunction(lambda: get_random_string(12))
 
     @factory.post_generation
     def names(self, create, extracted):
@@ -23,14 +23,14 @@ class MySimpleModelFactory(factory.django.DjangoModelFactory):
 class TestNameModelFactory(factory.django.DjangoModelFactory):
     __test__ = False  # prevent PytestCollectionWarning
 
-    name = factory.LazyFunction(get_random_string)
+    name = factory.LazyFunction(lambda: get_random_string(12))
 
     class Meta:
         model = TestNameModel
 
 
 class OverriddenQuerysetModelFactory(factory.django.DjangoModelFactory):
-    name = factory.LazyFunction(get_random_string)
+    name = factory.LazyFunction(lambda: get_random_string(12))
 
     class Meta:
         model = OverriddenQuerysetModel

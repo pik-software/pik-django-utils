@@ -22,12 +22,16 @@ REDIS_URL = 'redis://@127.0.0.1:6379'
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '+!1n5nglwv!@i^od9f9+srz$0*u_*(k0k)ann3@3uc$f#1*b6i'
+SECRET_KEY = '+!1n5nglwv!@i^od9f9+srz$0*u_*(k0k)ann3@3uc$f#1*b6i'  # noqa: dodgy - secret
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
 ALLOWED_HOSTS = []
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
 
 
 # Application definition
@@ -40,12 +44,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'pik.cors',
     'test_core_models',
     'test_core_models_fields',
     'test_core_shortcuts',
 ]
 
 MIDDLEWARE = [
+    'pik.cors.middleware.CachedCorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -116,4 +122,17 @@ STATIC_URL = '/static/'
 # SOFT DELETE
 # when SOFT_DELETE_SAFE_MODE is True - not soft deletion restricted
 SOFT_DELETE_SAFE_MODE = True
-SOFT_DELETE_EXCLUDE = []
+SOFT_DELETE_EXCLUDE = [
+    'sessions.Session'
+]
+
+
+HISTORY_SERIALIZER_CACHE_TTL_SEC = int(os.environ.get(
+    'HISTORY_SERIALIZER_CACHE_TTL_SEC', 24 * 3600))
+
+ONLY_LAST_VERSION_ALLOWED_DAYS_RANGE = os.environ.get(
+    'ONLY_LAST_VERSION_ALLOWED_DAYS_RANGE', 1)
+
+
+from pik.oidc.settings import set_oidc_settings  # noqa: pylint=wrong-import-position
+set_oidc_settings(globals())

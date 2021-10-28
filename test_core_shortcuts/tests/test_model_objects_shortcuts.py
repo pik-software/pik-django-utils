@@ -14,76 +14,83 @@ from .factories import (
 from ..models import MySimpleModel, OverriddenQuerysetModel
 
 
-@pytest.fixture(params=[
+@pytest.fixture(name='test_model', params=[
     (MySimpleModel, MySimpleModelFactory),
 ])
-def test_model(request):
+@pytest.mark.django_db
+def test_model_fixture(request):
     return request.param
 
 
+@pytest.mark.django_db
 def test_get_object_or_none(test_model):
     model, factory = test_model
     objs = factory.create_batch(10)
 
-    obj = get_object_or_none(model, data=get_random_string())
+    obj = get_object_or_none(model, data=get_random_string(12))
     assert obj is None
 
     obj = get_object_or_none(model, data=objs[-1].data)
     assert obj is not None
 
 
+@pytest.mark.django_db
 def test_get_object_or_none_queryset(test_model):
     model, factory = test_model
     objs = factory.create_batch(10)
 
-    obj = get_object_or_none(model.objects.filter(data=get_random_string()))
+    obj = get_object_or_none(model.objects.filter(data=get_random_string(12)))
     assert obj is None
 
     obj = get_object_or_none(model.objects.filter(data=objs[-1].data))
     assert obj is not None
 
 
+@pytest.mark.django_db
 def test_get_object_or_none_manager(test_model):
     model, factory = test_model
     objs = factory.create_batch(10)
 
-    obj = get_object_or_none(model.objects, data=get_random_string())
+    obj = get_object_or_none(model.objects, data=get_random_string(12))
     assert obj is None
 
     obj = get_object_or_none(model.objects, data=objs[-1].data)
     assert obj is not None
 
 
+@pytest.mark.django_db
 def test_get_object_or_none_args(test_model):
     model, factory = test_model
     objs = factory.create_batch(10)
 
-    obj = get_object_or_none(model, Q(data=get_random_string()))
+    obj = get_object_or_none(model, Q(data=get_random_string(12)))
     assert obj is None
 
     obj = get_object_or_none(model, Q(data=objs[-1].data))
     assert obj is not None
 
 
+@pytest.mark.django_db
 def test_validate_and_create_object(test_model):
     name1 = TestNameModelFactory.create()
     name2 = TestNameModelFactory.create()
-    model, factory = test_model
+    model, _ = test_model
 
-    kwargs = {'data': get_random_string(), 'names': [name1, name2]}
+    kwargs = {'data': get_random_string(12), 'names': [name1, name2]}
     obj = validate_and_create_object(model, **kwargs)
     assert obj.pk
     assert name1 in obj.names.all()
     assert name2 in obj.names.all()
 
 
+@pytest.mark.django_db
 def test_validate_and_update_object__update(test_model):
-    model, factory = test_model
+    _, factory = test_model
     name1 = TestNameModelFactory.create()
     name2 = TestNameModelFactory.create()
 
     obj = factory.create()
-    new_data = get_random_string()
+    new_data = get_random_string(12)
     kwargs = {'data': new_data, 'names': [name1, name2]}
 
     res_obj, is_updated = validate_and_update_object(obj, **kwargs)
@@ -94,8 +101,9 @@ def test_validate_and_update_object__update(test_model):
     assert name2 in res_obj.names.all()
 
 
+@pytest.mark.django_db
 def test_validate_and_update_object__no_update(test_model):
-    model, factory = test_model
+    _, factory = test_model
     name1 = TestNameModelFactory.create()
     name2 = TestNameModelFactory.create()
 
@@ -110,12 +118,13 @@ def test_validate_and_update_object__no_update(test_model):
     assert name2 in res_obj.names.all()
 
 
+@pytest.mark.django_db
 def test_update_or_create_object__create_without_search(test_model):
     model, _ = test_model
-    new_data = get_random_string()
+    new_data = get_random_string(12)
     name1 = TestNameModelFactory.create()
     name2 = TestNameModelFactory.create()
-    kwargs = {'data':new_data, 'names': [name1, name2]}
+    kwargs = {'data': new_data, 'names': [name1, name2]}
 
     res_obj, is_updated, is_created = update_or_create_object(
         model, **kwargs)
@@ -126,13 +135,14 @@ def test_update_or_create_object__create_without_search(test_model):
     assert name2 in res_obj.names.all()
 
 
+@pytest.mark.django_db
 def test_update_or_create_object__create(test_model):
     model, factory = test_model
     obj = factory.create()
-    new_data = get_random_string()
+    new_data = get_random_string(12)
     name1 = TestNameModelFactory.create()
     name2 = TestNameModelFactory.create()
-    kwargs = {'data':new_data, 'names': [name1, name2]}
+    kwargs = {'data': new_data, 'names': [name1, name2]}
 
     res_obj, is_updated, is_created = update_or_create_object(
         model, search_keys=dict(data=new_data), **kwargs)
@@ -143,6 +153,7 @@ def test_update_or_create_object__create(test_model):
     assert name2 in res_obj.names.all()
 
 
+@pytest.mark.django_db
 def test_update_or_create_object__no_update(test_model):
     model, factory = test_model
     name1 = TestNameModelFactory.create()
@@ -160,11 +171,12 @@ def test_update_or_create_object__no_update(test_model):
     assert name2 in res_obj.names.all()
 
 
+@pytest.mark.django_db
 def test_update_or_create_object_with_queryset():
     obj = OverriddenQuerysetModelFactory(name='Test')
 
     new_name = 'New Name'
-    res_obj, is_updated, is_created = update_or_create_object(
+    _, is_updated, _ = update_or_create_object(
         OverriddenQuerysetModel.test_objects,
         search_keys=dict(name=obj.name), **{'name': new_name})
 
@@ -174,13 +186,14 @@ def test_update_or_create_object_with_queryset():
     assert obj.name == new_name
 
 
+@pytest.mark.django_db
 class TestNotCallM2MUpdate(TestCase):
     @staticmethod
     @patch('pik.core.shortcuts.model_objects._update_m2m_fields')
     def test_update_or_create_object(_update_m2m_fields):
         model, factory = MySimpleModel, MySimpleModelFactory
         obj = factory.create()
-        new_data = get_random_string()
+        new_data = get_random_string(12)
 
         res_obj, is_updated, is_created = update_or_create_object(
             model, search_keys=dict(data=new_data), data=new_data)

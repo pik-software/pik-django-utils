@@ -4,20 +4,21 @@ from .factories import MyUidedFactory, MyPUidedFactory
 from ..models import MyUided, MyPUided
 
 
-@pytest.fixture(params=[
+@pytest.fixture(name='uided_model', params=[
     (MyUided, MyUidedFactory),
 ])
-def uided_model(request):
+def uided_model_fixture(request):
     return request.param
 
 
-@pytest.fixture(params=[
+@pytest.fixture(name='puided_model', params=[
     (MyPUided, MyPUidedFactory),
 ])
-def puided_model(request):
+def puided_model_fixture(request):
     return request.param
 
 
+@pytest.mark.django_db
 def test_uided_protocol(uided_model):
     model, factory = uided_model
     obj = factory.create()
@@ -27,6 +28,7 @@ def test_uided_protocol(uided_model):
     assert obj.stype == model._meta.model_name  # noqa
 
 
+@pytest.mark.django_db
 def test_puided_protocol(puided_model):
     model, factory = puided_model
     obj = factory.create()

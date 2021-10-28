@@ -127,7 +127,7 @@ class OrganizationViewSet(HistoryViewSetMixin, StandardizedModelViewSet):
         StandardizedFieldFilters, StandardizedSearchFilter,
         StandardizedOrderingFilter,
     )
-    filter_class = OrganizationFilter
+    filterset_class = OrganizationFilter
     search_fields = ('name', 'uid', 'inn',)
     ordering_fields = ('name', 'updated',)
 
@@ -163,7 +163,7 @@ class UnitViewSet(HistoryViewSetMixin, StandardizedModelViewSet):
     filter_backends = (
         StandardizedFieldFilters, StandardizedSearchFilter,
         StandardizedOrderingFilter)
-    filter_class = UnitFilter
+    filterset_class = UnitFilter
     search_fields = ('name', 'unit_type__name', 'organization__name',
                      'organization__inn', 'organization__kpp',)
     ordering_fields = ('name', 'unit_type__name', 'updated', 'created')
