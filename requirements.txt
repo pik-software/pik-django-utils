@@ -2,7 +2,7 @@
 Django
 django-simple-history
 djangorestframework
-django-restql
+django-restql<0.15.0
 djangorestframework-camel-case
 django-filter
 djangorestframework-filters==1.0.0.dev0
