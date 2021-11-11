@@ -31,3 +31,9 @@ importlib-metadata
 
 # Text normalization library
 cucco
+
+# Rabbit
+pika
+
+# sentry
+sentry-sdk
