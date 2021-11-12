@@ -19,6 +19,19 @@ BOOLEAN_LOOKUPS = ('exact', 'in', 'isnull')
 ARRAY_LOOKUPS = ('contains', 'contained_by', 'overlap', 'len', 'isnull')
 NUMBER_LOOKUPS = ('exact', 'gt', 'gte', 'lt', 'lte', 'in', 'isnull')
 
+# FIELD_FILTER_MAP = (
+#     ('CharField', STRING_LOOKUPS),
+#     ('DateTimeField', DATE_LOOKUPS),
+#     ('BooleanField', BOOLEAN_LOOKUPS),
+# )
+
+FIELD_FILTER_MAP = {
+    'CharField': STRING_LOOKUPS,
+    'DateTimeField': DATE_LOOKUPS,
+    'BooleanField': BOOLEAN_LOOKUPS,
+    'UUIDField': STRING_LOOKUPS,
+}
+
 
 class StandardizedFieldFilters(RestFrameworkFilterBackend):
     def get_schema_fields(self, view):
@@ -112,6 +125,18 @@ class StandardizedFilterSet(FilterSet):
         ('created', 'created'),
         ('version', 'version'),
     ))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        filter_fields = self.declared_filters
+        model_fields = self.Meta.model._meta.get_fields()
+        model_field_names_types = [(i.name, type(i).__name__) for i in
+                                   model_fields]
+
+        for model_field_name, model_field_type in model_field_names_types:
+            if model_field_name in filter_fields:
+                self.model_field_name = AutoFilter(
+                    lookups=FIELD_FILTER_MAP[model_field_type])
 
     class Meta:
         model = None
