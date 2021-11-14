@@ -122,13 +122,15 @@ class StandardizedFilterSet(FilterSet):
     ))
 
     def make_lookups_for_autofilters_with_all_lookups(self, *args, **kwargs):
+        declared_filters = self.declared_filters  # noqa: access-member-before-definition
+
         filter_fields = {
-            name: self.declared_filters.pop(name)
-            for name, obj in list(self.declared_filters.items())
-            if (type(obj) == AutoFilter and
+            name: declared_filters.pop(name)
+            for name, obj in list(declared_filters.items())
+            if (obj.__class__ is AutoFilter and
                 obj.lookups == '__all__' and
-                name not in self._AUTO_FILTER_IGNORE_FIELDS)
-        }
+                name not in self._AUTO_FILTER_IGNORE_FIELDS
+                )}
 
         model_fields = {
             field.name: type(field).__name__
@@ -136,16 +138,14 @@ class StandardizedFilterSet(FilterSet):
 
         filter_fields = {
             name: AutoFilter(lookups=AUTO_FILTER_FIELD_MAP[model_fields[name]])
-            for name in filter_fields
-        }
+            for name in filter_fields}
 
-        self.declared_filters = {**self.declared_filters, **filter_fields}
+        self.declared_filters = {**declared_filters, **filter_fields}
 
     def __init__(self, *args, **kwargs):
         self.make_lookups_for_autofilters_with_all_lookups(
             self, *args, **kwargs)
         super().__init__(*args, **kwargs)
-
 
     class Meta:
         model = None
