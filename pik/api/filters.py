@@ -12,24 +12,17 @@ from .filters_mixins import StandardizedAPISearchIndex
 
 UID_LOOKUPS = ('exact', 'gt', 'gte', 'lt', 'lte', 'in', 'isnull')
 STRING_LOOKUPS = (
-    'exact', 'iexact', 'in', 'startswith', 'endswith', 'contains', 'contains',
-    'isnull')
+    'exact', 'iexact', 'in', 'startswith', 'endswith', 'contains', 'isnull')
 DATE_LOOKUPS = ('exact', 'gt', 'gte', 'lt', 'lte', 'in', 'isnull')
 BOOLEAN_LOOKUPS = ('exact', 'in', 'isnull')
 ARRAY_LOOKUPS = ('contains', 'contained_by', 'overlap', 'len', 'isnull')
 NUMBER_LOOKUPS = ('exact', 'gt', 'gte', 'lt', 'lte', 'in', 'isnull')
 
-# FIELD_FILTER_MAP = (
-#     ('CharField', STRING_LOOKUPS),
-#     ('DateTimeField', DATE_LOOKUPS),
-#     ('BooleanField', BOOLEAN_LOOKUPS),
-# )
-
-FIELD_FILTER_MAP = {
+AUTO_FILTER_FIELD_MAP = {
     'CharField': STRING_LOOKUPS,
     'DateTimeField': DATE_LOOKUPS,
     'BooleanField': BOOLEAN_LOOKUPS,
-    'UUIDField': STRING_LOOKUPS,
+    'IntegerField': NUMBER_LOOKUPS,
 }
 
 
@@ -111,6 +104,8 @@ class BooleanQuerySetFilter(BooleanFilter):
 
 
 class StandardizedFilterSet(FilterSet):
+    _AUTO_FILTER_IGNORE_FIELDS = ('guid', 'updated', 'created', 'version')
+
     FILTER_DEFAULTS = {**FilterSet.FILTER_DEFAULTS, **{
         ArrayField: {'filter_class': ArrayFilter},
         DateTimeField: {'filter_class': IsoDateTimeFilter},
@@ -126,17 +121,31 @@ class StandardizedFilterSet(FilterSet):
         ('version', 'version'),
     ))
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        filter_fields = self.declared_filters
-        model_fields = self.Meta.model._meta.get_fields()
-        model_field_names_types = [(i.name, type(i).__name__) for i in
-                                   model_fields]
+    def make_lookups_for_autofilters_with_all_lookups(self, *args, **kwargs):
+        filter_fields = {
+            name: self.declared_filters.pop(name)
+            for name, obj in list(self.declared_filters.items())
+            if (type(obj) == AutoFilter and
+                obj.lookups == '__all__' and
+                name not in self._AUTO_FILTER_IGNORE_FIELDS)
+        }
 
-        for model_field_name, model_field_type in model_field_names_types:
-            if model_field_name in filter_fields:
-                self.model_field_name = AutoFilter(
-                    lookups=FIELD_FILTER_MAP[model_field_type])
+        model_fields = {
+            field.name: type(field).__name__
+            for field in self.Meta.model._meta.get_fields()}
+
+        filter_fields = {
+            name: AutoFilter(lookups=AUTO_FILTER_FIELD_MAP[model_fields[name]])
+            for name in filter_fields
+        }
+
+        self.declared_filters = {**self.declared_filters, **filter_fields}
+
+    def __init__(self, *args, **kwargs):
+        self.make_lookups_for_autofilters_with_all_lookups(
+            self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
+
 
     class Meta:
         model = None
