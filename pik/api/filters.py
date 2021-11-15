@@ -18,13 +18,6 @@ BOOLEAN_LOOKUPS = ('exact', 'in', 'isnull')
 ARRAY_LOOKUPS = ('contains', 'contained_by', 'overlap', 'len', 'isnull')
 NUMBER_LOOKUPS = ('exact', 'gt', 'gte', 'lt', 'lte', 'in', 'isnull')
 
-AUTO_FILTER_FIELD_MAP = {
-    'CharField': STRING_LOOKUPS,
-    'DateTimeField': DATE_LOOKUPS,
-    'BooleanField': BOOLEAN_LOOKUPS,
-    'IntegerField': NUMBER_LOOKUPS,
-}
-
 
 class StandardizedFieldFilters(RestFrameworkFilterBackend):
     def get_schema_fields(self, view):
@@ -120,32 +113,6 @@ class StandardizedFilterSet(FilterSet):
         ('created', 'created'),
         ('version', 'version'),
     ))
-
-    def make_lookups_for_autofilters_with_all_lookups(self, *args, **kwargs):
-        declared_filters = self.declared_filters  # noqa: access-member-before-definition
-
-        filter_fields = {
-            name: declared_filters.pop(name)
-            for name, obj in list(declared_filters.items())
-            if (obj.__class__ is AutoFilter and
-                obj.lookups == '__all__' and
-                name not in self._AUTO_FILTER_IGNORE_FIELDS
-                )}
-
-        model_fields = {
-            field.name: type(field).__name__
-            for field in self.Meta.model._meta.get_fields()}
-
-        filter_fields = {
-            name: AutoFilter(lookups=AUTO_FILTER_FIELD_MAP[model_fields[name]])
-            for name in filter_fields}
-
-        self.declared_filters = {**declared_filters, **filter_fields}
-
-    def __init__(self, *args, **kwargs):
-        self.make_lookups_for_autofilters_with_all_lookups(
-            self, *args, **kwargs)
-        super().__init__(*args, **kwargs)
 
     class Meta:
         model = None

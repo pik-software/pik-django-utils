@@ -54,6 +54,7 @@ class RabbitMQConnector(object):
             body=json_data)
 
     def consume(self, queue_name, callback):
+        self._channel.queue_declare(queue=queue_name, durable=True)
         self._channel.basic_consume(
             on_message_callback=callback,
             queue=queue_name,

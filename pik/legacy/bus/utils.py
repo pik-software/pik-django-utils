@@ -14,7 +14,3 @@ def get_host():
 
 def get_message_type(model_class):
     return f'urn:message:{model_class.__module__}.{model_class.__name__}'
-
-
-def get_queue_name(service_name, model_class):
-    return f'{service_name}.{model_class.__name__}'
