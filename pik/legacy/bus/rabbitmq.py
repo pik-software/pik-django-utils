@@ -4,20 +4,18 @@ from sentry_sdk import capture_exception
 
 class RabbitMQConnector(object):
     __instance = None
-    _connection_url = None
-    _connection = None
-    _channel = None
+    __connection_url = None
 
     def __new__(cls, connection_url):
         if cls.__instance is None:
             cls.__instance = super().__new__(cls)
-            cls.__instance._connection_url = connection_url
+            cls.__connection_url = connection_url
             cls._connect(cls.__instance)
         return cls.__instance
 
     def _connect(self):
         self._connection = BlockingConnection(
-            URLParameters(self._connection_url))
+            URLParameters(self.__connection_url))
         self._channel = self._connection.channel()
 
     def _disconnect(self):
@@ -36,7 +34,8 @@ class RabbitMQConnector(object):
         try:
             self._produce(queue_name, json_data)
         except (exceptions.AMQPError, exceptions.ChannelError,
-                exceptions.ReentrancyError):
+                exceptions.ReentrancyError, exceptions.StreamLostError,
+                exceptions.ConnectionClosed, ConnectionError):
             self._disconnect()
             self._connect()
 

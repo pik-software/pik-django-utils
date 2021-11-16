@@ -229,6 +229,9 @@ class PermittedFieldsSerializerMixIn(PermittedFieldsPermissionMixIn):
     def to_internal_value(self, request_data):
         errors = {}
         ret = super().to_internal_value(request_data)
+
+        if 'request' not in self.context:
+            return ret
         user = self.context['request'].user
         model = self.Meta.model
 
