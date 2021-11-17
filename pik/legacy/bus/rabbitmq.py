@@ -2,64 +2,68 @@ from pika import BlockingConnection, URLParameters, exceptions
 from sentry_sdk import capture_exception
 
 
-class RabbitMQConnector(object):
+class RabbitMQConnector:
     __instance = None
     __connection_url = None
+    _connection = None
+    _channel = None
 
     def __new__(cls, connection_url):
         if cls.__instance is None:
             cls.__instance = super().__new__(cls)
             cls.__connection_url = connection_url
-            cls._connect(cls.__instance)
+            cls._connect()
         return cls.__instance
 
-    def _connect(self):
-        self._connection = BlockingConnection(
-            URLParameters(self.__connection_url))
-        self._channel = self._connection.channel()
+    @classmethod
+    def _connect(cls):
+        cls._connection = BlockingConnection(
+            URLParameters(cls.__connection_url))
+        cls._channel = cls._connection.channel()
 
-    def _disconnect(self):
-        if self._connection and not self._connection.is_closed:
+    @classmethod
+    def _disconnect(cls):
+        if cls._connection and not cls._connection.is_closed:
             try:
-                self._connection.close()
+                cls._connection.close()
             except (
                     exceptions.StreamLostError, exceptions.ConnectionClosed,
                     ConnectionError):
                 pass
 
-        self._connection = None
-        self._channel = None
+        cls._connection = None
+        cls._channel = None
 
-    def produce(self, queue_name, json_data):
+    @classmethod
+    def produce(cls, queue_name, json_data):
         try:
-            self._produce(queue_name, json_data)
+            cls._produce(queue_name, json_data)
         except (exceptions.AMQPError, exceptions.ChannelError,
                 exceptions.ReentrancyError, exceptions.StreamLostError,
                 exceptions.ConnectionClosed, ConnectionError):
-            self._disconnect()
-            self._connect()
+            cls._disconnect()
+            cls._connect()
 
             try:
-                self._produce(queue_name, json_data)
+                cls._produce(queue_name, json_data)
             except (exceptions.AMQPError, exceptions.ChannelError,
                     exceptions.ReentrancyError) as exc:
                 capture_exception(exc)
 
-    def _produce(self, queue_name, json_data):
-        self._channel.queue_declare(queue=queue_name, durable=True)
-        self._channel.basic_publish(
+    @classmethod
+    def _produce(cls, queue_name, json_data):
+        cls._channel.queue_declare(queue=queue_name, durable=True)
+        cls._channel.basic_publish(
             exchange='',
             routing_key=queue_name,
             body=json_data)
 
-    def consume(self, queue_name, callback):
-        self._channel.queue_declare(queue=queue_name, durable=True)
-        self._channel.basic_consume(
+    @classmethod
+    def consume(cls, queue_name, callback):
+        cls._channel.queue_declare(queue=queue_name, durable=True)
+        cls._channel.basic_consume(
             on_message_callback=callback,
             queue=queue_name,
         )
 
-        self._channel.start_consuming()
-
-    def __del__(self):
-        self._connection.close()
+        cls._channel.start_consuming()
