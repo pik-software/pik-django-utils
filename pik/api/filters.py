@@ -20,7 +20,6 @@ ARRAY_LOOKUPS = (
     'contains', 'contained_by', 'overlap', 'len', 'isnull', 'exact')
 
 
-
 class StandardizedFieldFilters(RestFrameworkFilterBackend):
     def get_schema_fields(self, view):
         # This is not compatible with widgets where the query param differs
