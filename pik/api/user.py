@@ -1,3 +1,4 @@
+from typing import List
 from django.contrib.auth import get_user_model
 from rest_framework import renderers, serializers, permissions
 from rest_framework.response import Response
@@ -12,7 +13,7 @@ class UserSerializer(ModelSerializer):
     class Meta:
         model = get_user_model()
         fields = ('email', 'username')
-        read_only_fields = []
+        read_only_fields: List[object] = []
 
 
 class StandardizedUserApiView(APIView):
