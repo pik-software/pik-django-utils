@@ -13,7 +13,7 @@ class UserSerializer(ModelSerializer):
     class Meta:
         model = get_user_model()
         fields = ('email', 'username')
-        read_only_fields: List[object] = []
+        read_only_fields: List[str] = []
 
 
 class StandardizedUserApiView(APIView):

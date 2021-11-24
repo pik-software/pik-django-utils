@@ -34,7 +34,7 @@ cucco
 
 # Rabbit
 pika
-retry
+tenacity
 
 # sentry
 sentry-sdk

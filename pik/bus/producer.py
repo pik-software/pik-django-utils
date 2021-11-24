@@ -1,11 +1,6 @@
-# TODO:
-# - Камелизацию в API перевести на serializer
-#
-
 from pydoc import locate
 import os
 import platform
-from retry import retry
 
 import django
 from django.db.models.signals import post_save
@@ -17,7 +12,8 @@ from djangorestframework_camel_case.settings import api_settings
 from djangorestframework_camel_case.util import camelize
 from sentry_sdk import capture_exception
 from pika import BlockingConnection, URLParameters
-from pika.exceptions import AMQPError, AMQPConnectionError
+from pika.exceptions import AMQPConnectionError
+from tenacity import retry, retry_if_exception_type, stop_after_attempt
 
 
 class BusSerializerNotFound(Exception):
@@ -25,46 +21,32 @@ class BusSerializerNotFound(Exception):
 
 
 class MessageHandler:
+    RECONNECT_ATTEMPT_COUNT = 5
+
     def __init__(self, connection_url):
         self.connection_url = connection_url
 
     @cached_property
-    def _connector(self):
-        connection = BlockingConnection(URLParameters(self.connection_url))
-        channel = connection.channel()
-        return connection, channel
+    def _channel(self):
+        return BlockingConnection(URLParameters(self.connection_url)).channel()
 
-    def _reset_connector(self):
-        connection, _ = self._connector
-        if connection and not connection.is_closed:
-            try:
-                connection.close()
-            except (ConnectionError, AMQPError):
-                pass
-        del self.__dict__['_connector']
+    def _reset_channel(self):
+        self = self.args[0]  # noqa: self-cls-assignment
+        del self.__dict__['_channel']
 
-    @staticmethod
-    def _produce(channel, queue_name, json_message):
+    @retry(
+        stop=stop_after_attempt(RECONNECT_ATTEMPT_COUNT),
+        retry=retry_if_exception_type(AMQPConnectionError),
+        after=_reset_channel,
+        reraise=True,
+    )
+    def handle(self, queue_name, json_message):
+        channel = self._channel
         channel.queue_declare(queue=queue_name, durable=True)
         channel.basic_publish(
             exchange='',
             routing_key=queue_name,
             body=json_message)
-
-    @retry(AMQPConnectionError, tries=5, delay=2, backoff=2)
-    def handle(self, queue_name, json_message):
-        try:
-            _, channel = self._connector
-            self._produce(channel, queue_name, json_message)
-        except AMQPConnectionError:
-            try:
-                self._reset_connector()
-                _, channel = self._connector
-                self._produce(channel, queue_name, json_message)
-            except AMQPConnectionError as exc:
-                raise AMQPConnectionError from exc
-            except Exception as exc:  # noqa: broad-except
-                capture_exception(exc)
 
 
 handler = MessageHandler(settings.RABBITMQ_URL)
@@ -133,4 +115,7 @@ class MessageProducer:
 def push_model_instance_to_rabbit_queue(instance, **kwargs):
     if not settings.RABBITMQ_ENABLE:
         return
-    MessageProducer(instance).produce()
+    try:
+        MessageProducer(instance).produce()
+    except Exception as exc:  # noqa: broad-except
+        capture_exception(exc)

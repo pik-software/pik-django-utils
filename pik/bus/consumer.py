@@ -9,12 +9,14 @@ from pika import BlockingConnection, URLParameters
 
 
 MODEL_SERIALIZER = {
-    serializer.split('.')[-1].replace('Serializer', ''): locate(serializer)
+    locate(serializer).Meta.model.__name__: locate(serializer)
     for serializer in settings.RABBITMQ_SERIALIZERS
 }
 
 
 class QueueItemProcessor:
+    parser_class = JSONParser
+
     def __init__(self, connection_url, queue):
         channel = BlockingConnection(URLParameters(connection_url)).channel()
         channel.queue_declare(queue=queue, durable=True)
@@ -28,23 +30,20 @@ class QueueItemProcessor:
         try:
             self.apply_payload(
                 self.prepare_payload(
-                    self.get_item_payload(body)),
+                    self.get_message_payload(body)),
                 method.routing_key)
         except Exception as exc:  # noqa: board-except
-            # TODO: add item to death letter queue?
             capture_exception(exc)
 
         channel.basic_ack(delivery_tag=method.delivery_tag)
 
-    @staticmethod
-    def get_item_payload(body):
-        return JSONParser().parse(io.BytesIO(body))['message']
+    def get_message_payload(self, message):
+        message = io.BytesIO(message)  # drf parser accepts stream
+        return self.parser_class().parse(message)['message']
 
     @staticmethod
     def prepare_payload(payload):
-        payload = underscoreize(payload)
-        payload['uid'] = payload.pop('guid')
-        return payload
+        return underscoreize(payload)
 
     @staticmethod
     def apply_payload(payload, queue):
@@ -54,9 +53,9 @@ class QueueItemProcessor:
             payload = serializer_class.underscorize_hook(payload)
 
         model = serializer_class.Meta.model
+        qs = getattr(model, 'all_objects', model.objects)
         try:
-            # TODO: to for method all_objects
-            instance = model.objects.get(uid=payload.get('guid'))
+            instance = qs.get(uid=payload.get('guid'))
         except model.DoesNotExist:
             instance = model(uid=payload.get('guid'))
 

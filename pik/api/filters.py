@@ -98,8 +98,6 @@ class BooleanQuerySetFilter(BooleanFilter):
 
 
 class StandardizedFilterSet(FilterSet):
-    _AUTO_FILTER_IGNORE_FIELDS = ('guid', 'updated', 'created', 'version')
-
     FILTER_DEFAULTS = {**FilterSet.FILTER_DEFAULTS, **{
         ArrayField: {'filter_class': ArrayFilter},
         DateTimeField: {'filter_class': IsoDateTimeFilter},
