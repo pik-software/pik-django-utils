@@ -49,24 +49,23 @@ class MessageHandler:
             body=json_message)
 
 
-handler = MessageHandler(settings.RABBITMQ_URL)
-
-
 class MessageProducer:
-    renderer_class = JSONRenderer
-    _instance = NotImplemented
-
     MODEL_SERIALIZER = {
         locate(serializer).Meta.model: locate(serializer)
         for serializer in settings.RABBITMQ_SERIALIZERS
     }
 
+    renderer_class = JSONRenderer
+    _instance = NotImplemented
+    handler = None
+
     def __init__(self, instance):
         self._instance = instance
+        self.handler = MessageHandler(settings.RABBITMQ_URL)
 
     def produce(self):
         try:
-            handler.handle(self.queue_name, self.json_message)
+            self.handler.handle(self.queue_name, self.json_message)
         except BusSerializerNotFound:
             pass
 

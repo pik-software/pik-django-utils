@@ -8,13 +8,12 @@ from sentry_sdk import capture_exception
 from pika import BlockingConnection, URLParameters
 
 
-MODEL_SERIALIZER = {
-    locate(serializer).Meta.model.__name__: locate(serializer)
-    for serializer in settings.RABBITMQ_SERIALIZERS
-}
-
-
 class QueueItemProcessor:
+    MODEL_SERIALIZER = {
+        locate(serializer).Meta.model.__name__: locate(serializer)
+        for serializer in settings.RABBITMQ_SERIALIZERS
+    }
+
     parser_class = JSONParser
 
     def __init__(self, connection_url, queue):
@@ -47,7 +46,7 @@ class QueueItemProcessor:
 
     @staticmethod
     def apply_payload(payload, queue):
-        serializer_class = MODEL_SERIALIZER[queue]
+        serializer_class = QueueItemProcessor.MODEL_SERIALIZER[queue]
 
         if hasattr(serializer_class, 'underscorize_hook'):
             payload = serializer_class.underscorize_hook(payload)
