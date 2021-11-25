@@ -21,8 +21,9 @@ class DeprecatedAutoSchema(PIKAutoSchema):
                 for required in schema['required']
             ]
 
-        if hasattr(self.view, 'deprecated_render_hook'):
-            schema = self.view.deprecated_render_hook(schema)
+        if hasattr(self.view.serializer_class, 'deprecated_render_hook'):
+            schema = self.view.serializer_class().deprecated_render_hook(
+                schema)
 
         return schema
 
@@ -38,7 +39,8 @@ class DeprecatedAutoSchema(PIKAutoSchema):
                     to_deprecated_filters.replace(item)
                     for item in param['schema']['enum']]
 
-        if hasattr(self.view, 'deprecated_render_hook'):
-            schema = self.view.deprecated_render_hook(schema)
+        if hasattr(self.view.serializer_class, 'deprecated_render_hook'):
+            schema = self.view.serializer_class().deprecated_render_hook(
+                schema)
 
         return schema
