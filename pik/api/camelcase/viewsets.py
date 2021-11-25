@@ -7,7 +7,6 @@ from .openapi import PIKCamelCaseAutoSchema
 
 
 class CamelCaseViewSetMixIn:
-
     renderer_classes = [
         CalemizeJSONRenderer]
 
