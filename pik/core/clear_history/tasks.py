@@ -14,8 +14,8 @@ from tqdm import tqdm
 @app.shared_task()
 def clear_history():
     """Deletes oldest rows from history models."""
-    keep_days = settings.HISTORY_CLEANING_KEEP_DAYS
-    chunk_size = settings.HISTORY_CLEANING_CHUNK_SIZE
+    keep_days = getattr(settings, 'HISTORY_CLEANING_KEEP_DAYS', 180)
+    chunk_size = getattr(settings, 'HISTORY_CLEANING_CHUNK_SIZE', 10_000)
     deletion_date = datetime.now() - timedelta(days=keep_days)
     history_models: List[Type[Union[Model, HistoricalChanges]]] = [
         model for model in apps.get_models()
