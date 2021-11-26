@@ -27,8 +27,6 @@ class MessageConsume(ModelSerializerMixin):
                     self.get_message_payload(body)),
                 method.routing_key)
         except Exception as exc:  # noqa: board-except
-            import traceback
-            print(traceback.format_exc())
             capture_exception(exc)
 
         channel.basic_ack(delivery_tag=method.delivery_tag)
