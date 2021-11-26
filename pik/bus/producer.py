@@ -14,7 +14,7 @@ from pika import BlockingConnection, URLParameters
 from pika.exceptions import AMQPConnectionError
 from tenacity import retry, retry_if_exception_type, stop_after_attempt
 
-from .mixins import ModelSerializerMixin
+from pik.bus.mixins import ModelSerializerMixin
 
 
 class BusSerializerNotFound(Exception):

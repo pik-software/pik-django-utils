@@ -5,7 +5,7 @@ from djangorestframework_camel_case.util import underscoreize
 from sentry_sdk import capture_exception
 from pika import BlockingConnection, URLParameters
 
-from .mixins import ModelSerializerMixin
+from pik.bus.mixins import ModelSerializerMixin
 
 
 class MessageConsume(ModelSerializerMixin):
