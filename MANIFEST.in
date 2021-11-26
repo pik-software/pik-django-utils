@@ -14,6 +14,14 @@ recursive-include docs *.md
 # Include the pik files
 recursive-include pik *.html
 recursive-include pik *.md
+# lists of files in version control and sdist do not match!
+# missing from sdist:
+#   pik/bus/consumer.py
+#   pik/bus/mixins.py
+#   pik/bus/producer.py
+# suggested MANIFEST.in rules:
+#   recursive-include pik *.py
+recursive-include pik *.py
 
 # EXCLUDE
 prune .circleci
