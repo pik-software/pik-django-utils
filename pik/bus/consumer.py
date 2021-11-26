@@ -1,4 +1,5 @@
 import io
+import logging
 
 from rest_framework.parsers import JSONParser
 from djangorestframework_camel_case.util import underscoreize
@@ -10,8 +11,10 @@ from pik.bus.mixins import ModelSerializerMixin
 
 class MessageConsume(ModelSerializerMixin):
     parser_class = JSONParser
+    _logger = None
 
     def __init__(self, connection_url, queue):
+        self._logger = logging.getLogger(self.__class__.__name__)
         channel = BlockingConnection(URLParameters(connection_url)).channel()
         channel.queue_declare(queue=queue, durable=True)
         channel.basic_consume(
@@ -27,6 +30,7 @@ class MessageConsume(ModelSerializerMixin):
                     self.get_message_payload(body)),
                 method.routing_key)
         except Exception as exc:  # noqa: board-except
+            self._logger.exception(exc)
             capture_exception(exc)
 
         channel.basic_ack(delivery_tag=method.delivery_tag)
