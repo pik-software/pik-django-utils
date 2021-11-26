@@ -136,3 +136,9 @@ ONLY_LAST_VERSION_ALLOWED_DAYS_RANGE = os.environ.get(
 
 from pik.oidc.settings import set_oidc_settings  # noqa: pylint=wrong-import-position
 set_oidc_settings(globals())
+
+
+# Stub for rabbitMQ settings
+RABBITMQ_ENABLE = False
+RABBITMQ_URL = ''
+RABBITMQ_SERIALIZERS = ()

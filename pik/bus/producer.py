@@ -1,4 +1,3 @@
-from pydoc import locate
 import os
 import platform
 
@@ -15,6 +14,8 @@ from pika import BlockingConnection, URLParameters
 from pika.exceptions import AMQPConnectionError
 from tenacity import retry, retry_if_exception_type, stop_after_attempt
 
+from .mixins import ModelSerializerMixin
+
 
 class BusSerializerNotFound(Exception):
     pass
@@ -30,14 +31,11 @@ class MessageHandler:
     def _channel(self):
         return BlockingConnection(URLParameters(self.connection_url)).channel()
 
-    def _reset_channel(self):
-        self = self.args[0]  # noqa: self-cls-assignment
-        del self.__dict__['_channel']
-
     @retry(
         stop=stop_after_attempt(RECONNECT_ATTEMPT_COUNT),
         retry=retry_if_exception_type(AMQPConnectionError),
-        after=_reset_channel,
+        # Clear _channel cached_property.
+        after=lambda retry_state: delattr(retry_state.args[0], '_channel'),
         reraise=True,
     )
     def handle(self, queue_name, json_message):
@@ -49,15 +47,10 @@ class MessageHandler:
             body=json_message)
 
 
-class MessageProducer:
-    MODEL_SERIALIZER = {
-        locate(serializer).Meta.model: locate(serializer)
-        for serializer in settings.RABBITMQ_SERIALIZERS
-    }
-
+class MessageProducer(ModelSerializerMixin):
     renderer_class = JSONRenderer
     _instance = NotImplemented
-    handler = None
+    _handler = None
 
     def __init__(self, instance):
         self._instance = instance
@@ -72,7 +65,8 @@ class MessageProducer:
     @property
     def payload(self):
         try:
-            serializer = self.MODEL_SERIALIZER[self._instance.__class__]
+            serializer = self.MODEL_SERIALIZER[
+                self._instance.__class__.__name__]
         except KeyError as exc:
             raise BusSerializerNotFound(
                 self._instance.__class__.__name__) from exc

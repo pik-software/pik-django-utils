@@ -1,19 +1,14 @@
 import io
-from pydoc import locate
 
-from django.conf import settings
 from rest_framework.parsers import JSONParser
 from djangorestframework_camel_case.util import underscoreize
 from sentry_sdk import capture_exception
 from pika import BlockingConnection, URLParameters
 
+from .mixins import ModelSerializerMixin
 
-class QueueItemProcessor:
-    MODEL_SERIALIZER = {
-        locate(serializer).Meta.model.__name__: locate(serializer)
-        for serializer in settings.RABBITMQ_SERIALIZERS
-    }
 
+class MessageConsume(ModelSerializerMixin):
     parser_class = JSONParser
 
     def __init__(self, connection_url, queue):
@@ -32,6 +27,8 @@ class QueueItemProcessor:
                     self.get_message_payload(body)),
                 method.routing_key)
         except Exception as exc:  # noqa: board-except
+            import traceback
+            print(traceback.format_exc())
             capture_exception(exc)
 
         channel.basic_ack(delivery_tag=method.delivery_tag)
@@ -46,7 +43,7 @@ class QueueItemProcessor:
 
     @staticmethod
     def apply_payload(payload, queue):
-        serializer_class = QueueItemProcessor.MODEL_SERIALIZER[queue]
+        serializer_class = MessageConsume.MODEL_SERIALIZER[queue]
 
         if hasattr(serializer_class, 'underscorize_hook'):
             payload = serializer_class.underscorize_hook(payload)
