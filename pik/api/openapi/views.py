@@ -22,7 +22,7 @@ class CachedSchemaViewMixIn:
             return Response(
                 open(self.path, 'r', encoding='utf-8'),
                 content_type=request.accepted_media_type)
-        return super(PIKSchemaView, self).get(request, *args, **kwargs)
+        return super(PIKSchemaView, self).get(request, *args, **kwargs)  # noqa: bad-super-call
 
 
 class PIKSchemaView(CachedSchemaViewMixIn, SchemaView):
@@ -44,8 +44,10 @@ def get_pik_schema_view(**kwargs):
     kwargs.setdefault('patterns', None)
     kwargs.setdefault('public', False)
 
-    kwargs.setdefault('authentication_classes', api_settings.DEFAULT_AUTHENTICATION_CLASSES,)
-    kwargs.setdefault('permission_classes', api_settings.DEFAULT_PERMISSION_CLASSES,)
+    kwargs.setdefault(
+        'authentication_classes', api_settings.DEFAULT_AUTHENTICATION_CLASSES,)
+    kwargs.setdefault(
+        'permission_classes', api_settings.DEFAULT_PERMISSION_CLASSES,)
 
     generator = kwargs['generator_class'](
         title=kwargs['title'], url=kwargs['url'],

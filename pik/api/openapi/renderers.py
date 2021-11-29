@@ -1,9 +1,7 @@
 import json
-import os
 
-from django.conf import settings
-from rest_framework.renderers import JSONOpenAPIRenderer, BaseRenderer, \
-    TemplateHTMLRenderer, OpenAPIRenderer
+from rest_framework.renderers import (
+    JSONOpenAPIRenderer, TemplateHTMLRenderer, OpenAPIRenderer)
 from rest_framework.settings import api_settings
 from rest_framework.utils.encoders import JSONEncoder
 
