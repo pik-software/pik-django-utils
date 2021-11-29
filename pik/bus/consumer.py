@@ -24,7 +24,7 @@ def log_after_retry_connect(retry_state):
         retry_state.attempt_number)
 
 
-class MessageConsume:
+class MessageConsumer:
     RECONNECT_WAIT = 1
 
     _queue = None
@@ -82,25 +82,23 @@ class MessageHandler(ModelSerializerMixin):
         if hasattr(self._serializer_class, 'underscorize_hook'):
             self._data = self._serializer_class.underscorize_hook(self._data)
 
-    def get_model(self):
+    @property
+    def model(self):
         return self._serializer_class.Meta.model
 
-    @staticmethod
-    def get_qs(model):
-        return getattr(model, 'all_objects', model.objects)
+    @property
+    def queryset(self):
+        return getattr(self.model, 'all_objects', self.model.objects)
 
-    def get_instance(self):
-        model = self.get_model()
-        qs = self.get_qs(model)
-
+    @property
+    def instance(self):
         try:
-            return qs.get(uid=self._data.get('guid'))
-        except model.DoesNotExist:
-            return model(uid=self._data.get('guid'))
+            return self.queryset.get(uid=self._data.get('guid'))
+        except self.model.DoesNotExist:
+            return self.model(uid=self._data.get('guid'))
 
     def update_instance(self):
-        instance = self.get_instance()
-        self._serializer_class().update(instance, self._data)
+        self._serializer_class().update(self.instance, self._data)
 
     def handle(self):
         self.fetch_message()
