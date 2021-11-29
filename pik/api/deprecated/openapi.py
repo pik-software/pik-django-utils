@@ -22,7 +22,6 @@ class DeprecatedAutoSchema(PIKAutoSchema):
             ]
 
         # For components>schemas>entity>properties>[property_name]
-        # Example: components>schemas>RosreestrStatement>properties>rosreestr_statement_type:{}  # noqa
         if hasattr(self.view.serializer_class, 'deprecated_render_hook'):
             schema = self.view.serializer_class().deprecated_render_hook(
                 schema)
@@ -42,7 +41,6 @@ class DeprecatedAutoSchema(PIKAutoSchema):
                     for item in param['schema']['enum']]
 
         # For paths>path>method>parameters>name:[parameter_name]
-        # Example: paths>/api/v1/rosreestrstatement-list/>get>parameters>name:rosreestr_statement_type  # noqa
         if hasattr(self.view.serializer_class, 'deprecated_render_hook'):
             schema = self.view.serializer_class().deprecated_render_hook(
                 schema)

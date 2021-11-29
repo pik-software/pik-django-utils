@@ -1,16 +1,13 @@
-from pydoc import locate as pydoc_locate
-from functools import lru_cache
+from pydoc import locate
 
 from django.conf import settings
 
 
-@lru_cache(maxsize=None)
-def locate(class_full_path):
-    return pydoc_locate(class_full_path)
-
-
 class ModelSerializerMixin:
+    SERIALIZER_OFFSET = 0
+    QUEUE_OR_EXCHANGE_OFFSET = 1
+
     MODEL_SERIALIZER = {
-        locate(serializer).Meta.model.__name__: locate(serializer)
-        for serializer in settings.RABBITMQ_SERIALIZERS
+        locate(serializer).Meta.model.__name__: (locate(serializer), queue)
+        for queue, serializer in settings.RABBITMQ_SERIALIZERS.items()
     }
