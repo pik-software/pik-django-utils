@@ -8,18 +8,6 @@ from rest_framework.settings import api_settings
 from rest_framework.utils.encoders import JSONEncoder
 
 
-class CachedRenderer(BaseRenderer):
-    """ BaseRenderer with pre-rendered files support """
-    extension = 'txt'
-
-    def render(self, data, accepted_media_type=None, renderer_context=None):
-        name = renderer_context['request'].path.replace('/', '_')
-        path = os.path.join(settings.STATIC_ROOT, f'{name}.{self.extension}')
-        if os.path.isfile(path):
-            return open(path, 'r', encoding='utf-8')
-        return super().render(data, accepted_media_type, renderer_context)
-
-
 class JSONOpenPrettyRenderer(JSONOpenAPIRenderer):
     """ NonASCI OpenApi RENDERER """
     ensure_ascii = not api_settings.UNICODE_JSON
@@ -30,7 +18,7 @@ class JSONOpenPrettyRenderer(JSONOpenAPIRenderer):
         ).encode('utf-8')
 
 
-class JSONOpenAPICachedRenderer(CachedRenderer, JSONOpenAPIRenderer):
+class JSONOpenAPICachedRenderer(JSONOpenAPIRenderer):
     """ JSON OpenAPI Renderer with pre-rendered support """
 
     extension = 'json'
@@ -42,15 +30,13 @@ class RedocOpenAPIRenderer(TemplateHTMLRenderer):
     template_name = 'redoc.html'
 
 
-class TemplateHTMLCachedRenderer(CachedRenderer, TemplateHTMLRenderer):
+class TemplateHTMLCachedRenderer(TemplateHTMLRenderer):
     """ Template Renderer with pre-rendered support """
 
     extension = 'html'
 
 
-class PIKOpenAPIRenderer(
-        CachedRenderer,
-        OpenAPIRenderer):
+class PIKOpenAPIRenderer(OpenAPIRenderer):
     """ OpenAPI renderer with pre-rendered support """
     extension = 'yaml'
 
