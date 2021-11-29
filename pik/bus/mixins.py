@@ -8,6 +8,8 @@ class ModelSerializerMixin:
     QUEUE_OR_EXCHANGE_OFFSET = 1
 
     MODEL_SERIALIZER = {
-        locate(serializer).Meta.model.__name__: (locate(serializer), queue)
-        for queue, serializer in settings.RABBITMQ_SERIALIZERS.items()
+        locate(serializer).Meta.model.__name__:
+            (locate(serializer), queue_or_exchange)
+        for queue_or_exchange, serializer
+        in settings.RABBITMQ_SERIALIZERS.items()
     }
