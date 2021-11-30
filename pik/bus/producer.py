@@ -12,7 +12,8 @@ from djangorestframework_camel_case.util import camelize
 from sentry_sdk import capture_exception
 from pika import BlockingConnection, URLParameters
 from pika.exceptions import AMQPConnectionError
-from tenacity import retry, retry_if_exception_type, stop_after_attempt
+from tenacity import (
+    retry, retry_if_exception_type, stop_after_attempt, wait_fixed)
 
 from pik.bus.mixins import ModelSerializerMixin
 
@@ -22,7 +23,8 @@ class BusModelNotFound(Exception):
 
 
 class MessageProducer:
-    RECONNECT_ATTEMPT_COUNT = 5
+    RECONNECT_ATTEMPT_COUNT = 8
+    RECONNECT_WAIT_DELAY = 1
 
     def __init__(self, connection_url):
         self.connection_url = connection_url
@@ -32,6 +34,7 @@ class MessageProducer:
         return BlockingConnection(URLParameters(self.connection_url)).channel()
 
     @retry(
+        wait=wait_fixed(RECONNECT_WAIT_DELAY),
         stop=stop_after_attempt(RECONNECT_ATTEMPT_COUNT),
         retry=retry_if_exception_type(AMQPConnectionError),
         # Clear _channel cached_property.
