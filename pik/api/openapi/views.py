@@ -1,7 +1,7 @@
 import os
 
 from django.conf import settings
-from rest_framework.response import Response
+from django.http import HttpResponse
 from rest_framework.schemas.views import SchemaView
 from rest_framework.settings import api_settings
 
@@ -19,7 +19,7 @@ class CachedSchemaViewMixIn:
 
     def get(self, request, *args, **kwargs):
         if os.path.isfile(self.path):
-            return Response(
+            return HttpResponse(
                 open(self.path, 'r', encoding='utf-8'),
                 content_type=request.accepted_media_type)
         return super(PIKSchemaView, self).get(request, *args, **kwargs)  # noqa: bad-super-call
