@@ -22,7 +22,7 @@ class CachedSchemaViewMixIn:
             return HttpResponse(
                 open(self.pregenerated, 'r', encoding='utf-8'),
                 content_type=request.accepted_media_type)
-        return super().get(request, *args, **kwargs)  # noqa: bad-super-call
+        return super().get(request, *args, **kwargs)
 
 
 class PIKSchemaView(CachedSchemaViewMixIn, SchemaView):
