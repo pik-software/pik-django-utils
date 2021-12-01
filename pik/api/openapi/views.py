@@ -12,17 +12,17 @@ from .renderers import PIKRedocOpenAPIRenderer, \
 
 class CachedSchemaViewMixIn:
     @property
-    def path(self):
+    def pregenerated(self):
         name = self.request.path.replace('/', '_')
         extension = self.request.accepted_renderer.extension
         return os.path.join(settings.STATIC_ROOT, f'{name}.{extension}')
 
     def get(self, request, *args, **kwargs):
-        if os.path.isfile(self.path):
+        if os.path.isfile(self.pregenerated):
             return HttpResponse(
-                open(self.path, 'r', encoding='utf-8'),
+                open(self.pregenerated, 'r', encoding='utf-8'),
                 content_type=request.accepted_media_type)
-        return super(PIKSchemaView, self).get(request, *args, **kwargs)  # noqa: bad-super-call
+        return super().get(request, *args, **kwargs)  # noqa: bad-super-call
 
 
 class PIKSchemaView(CachedSchemaViewMixIn, SchemaView):
