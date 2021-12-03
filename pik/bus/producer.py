@@ -52,14 +52,10 @@ class MessageProducer:
         reraise=True,
     )
     def produce(self, exchange, json_message):
-        channel = self._channel
-        channel.basic_publish(
+        self._channel.basic_publish(
             exchange=exchange,
             routing_key='',
             body=json_message)
-
-    def __del__(self):
-        self._channel.connection.close()
 
 
 producer = MessageProducer(settings.RABBITMQ_URL)
