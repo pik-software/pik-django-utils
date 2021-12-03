@@ -1,5 +1,6 @@
 import os
 import platform
+import logging
 
 import django
 from django.db.models.signals import post_save
@@ -18,12 +19,22 @@ from tenacity import (
 from pik.bus.mixins import ModelSerializerMixin
 
 
+logger = logging.getLogger(__name__)
+
+
 class BusModelNotFound(Exception):
     pass
 
 
+def after_fail_retry(retry_state):
+    logger.error(
+        f'Reconnecting to RabbitMQ. Attempt number: %s',
+        retry_state.attempt_number)
+    delattr(retry_state.args[0], '_channel')
+
+
 class MessageProducer:
-    RECONNECT_ATTEMPT_COUNT = 8
+    RECONNECT_ATTEMPT_COUNT = 32
     RECONNECT_WAIT_DELAY = 1
 
     def __init__(self, connection_url):
@@ -37,8 +48,7 @@ class MessageProducer:
         wait=wait_fixed(RECONNECT_WAIT_DELAY),
         stop=stop_after_attempt(RECONNECT_ATTEMPT_COUNT),
         retry=retry_if_exception_type(AMQPConnectionError),
-        # Clear _channel cached_property.
-        after=lambda retry_state: delattr(retry_state.args[0], '_channel'),
+        after=after_fail_retry,
         reraise=True,
     )
     def produce(self, exchange, json_message):
@@ -47,6 +57,9 @@ class MessageProducer:
             exchange=exchange,
             routing_key='',
             body=json_message)
+
+    def __del__(self):
+        self._channel.connection.close()
 
 
 producer = MessageProducer(settings.RABBITMQ_URL)
@@ -124,4 +137,8 @@ def push_model_instance_to_rabbit_queue(instance, **kwargs):
     try:
         InstanceHandler(instance).handle()
     except Exception as exc:  # noqa: broad-except
+        logger.error(
+            f'Reconnecting to RabbitMQ after %s attempt is fail',
+            MessageProducer.RECONNECT_ATTEMPT_COUNT)
+        logger.exception(exc)
         capture_exception(exc)
