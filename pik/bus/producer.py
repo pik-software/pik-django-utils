@@ -28,7 +28,7 @@ class BusModelNotFound(Exception):
 
 def after_fail_retry(retry_state):
     logger.error(
-        f'Reconnecting to RabbitMQ. Attempt number: %s',
+        'Reconnecting to RabbitMQ. Attempt number: %s',
         retry_state.attempt_number)
     delattr(retry_state.args[0], '_channel')
 
@@ -138,7 +138,7 @@ def push_model_instance_to_rabbit_queue(instance, **kwargs):
         InstanceHandler(instance).handle()
     except Exception as exc:  # noqa: broad-except
         logger.error(
-            f'Reconnecting to RabbitMQ after %s attempt is fail',
+            'Reconnecting to RabbitMQ after %s attempt is fail',
             MessageProducer.RECONNECT_ATTEMPT_COUNT)
         logger.exception(exc)
         capture_exception(exc)
