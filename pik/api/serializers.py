@@ -75,6 +75,22 @@ class StandardizedProtocolSerializer(serializers.ModelSerializer):
     type = serializers.SerializerMethodField()
     version = serializers.SerializerMethodField()
 
+    def include_extra_kwargs(self, kwargs, extra_kwargs):
+        """
+        Override parent method to include kwargs for readonly fields
+        Include any 'extra_kwargs' that have been included for this field,
+        possibly removing any incompatible existing keyword arguments.
+        """
+        if extra_kwargs.get('default') and kwargs.get('required') is False:
+            kwargs.pop('required')
+
+        if extra_kwargs.get('read_only', kwargs.get('read_only', False)):
+            extra_kwargs.pop('required', None)  # Read only fields should always omit the 'required' argument.
+
+        kwargs.update(extra_kwargs)
+
+        return kwargs
+
     @staticmethod
     def get_guid(obj) -> Optional[Union[UUID, str]]:
         if not hasattr(obj, 'uid'):
