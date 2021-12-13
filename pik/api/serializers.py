@@ -75,6 +75,23 @@ class StandardizedProtocolSerializer(serializers.ModelSerializer):
     type = serializers.SerializerMethodField()
     version = serializers.SerializerMethodField()
 
+    def include_extra_kwargs(self, kwargs, extra_kwargs):
+        """
+        Override parent method to include kwargs for readonly fields
+        Include any 'extra_kwargs' that have been included for this field,
+        possibly removing any incompatible existing keyword arguments.
+        """
+        if extra_kwargs.get('default') and kwargs.get('required') is False:
+            kwargs.pop('required')
+
+        if extra_kwargs.get('read_only', kwargs.get('read_only', False)):
+            # Read only fields should always omit the 'required' argument.
+            extra_kwargs.pop('required', None)
+
+        kwargs.update(extra_kwargs)
+
+        return kwargs
+
     @staticmethod
     def get_guid(obj) -> Optional[Union[UUID, str]]:
         if not hasattr(obj, 'uid'):
@@ -142,10 +159,10 @@ class LabeledModelSerializerMixIn:
         if isinstance(parent, ModelSerializer):
             opts = parent.Meta.model._meta
             if not self._label_is_set:
-                self.label = _normalize_label(opts.get_field(self.source)
+                self.label = _normalize_label(opts.get_field(self.source)  # noqa: attribute-defined-outside-init
                                               .verbose_name)
             if not self._help_text_is_set:
-                self.help_text = opts.get_field(self.source).help_text
+                self.help_text = opts.get_field(self.source).help_text  # noqa: attribute-defined-outside-init
 
 
 class ValidatedModelSerializerMixIn:
