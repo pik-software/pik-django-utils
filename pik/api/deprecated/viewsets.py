@@ -37,6 +37,11 @@ class DeprecatedViewSetMixIn:
                 request.GET['query'])
         return super().dispatch(request, *args, **kwargs)
 
+    @staticmethod
+    def type_field_hook(serializer, obj):
+        if hasattr(serializer, 'deprecated_type_field_hook'):
+            return serializer.deprecated_type_field_hook(obj)
+
 
 def get_deprecated_viewset(viewset):
     return type(

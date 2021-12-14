@@ -83,9 +83,10 @@ class StandardizedProtocolSerializer(serializers.ModelSerializer):
             return str(obj.pk)
         return obj.uid
 
-    @staticmethod
-    def get_type(obj) -> Optional[str]:
-        return obj._meta.model_name  # noqa: protected-access
+    def get_type(self, obj) -> Optional[str]:
+        if hasattr(self.context.get('view'), 'type_field_hook'):
+            return self.context['view'].type_field_hook(self, obj)
+        return obj._meta.model_name
 
     @staticmethod
     def get_version(obj) -> Optional[int]:

@@ -24,6 +24,11 @@ class CamelCaseViewSetMixIn:
                 request.GET[param] = camel_to_underscore(request.GET[param])
         return super().dispatch(request, *args, **kwargs)
 
+    @staticmethod
+    def type_field_hook(serializer, obj):
+        if hasattr(serializer, 'camelcase_type_field_hook'):
+            return serializer.camelcase_type_field_hook(obj)
+
 
 def get_camelcase_viewset(viewset):
     return type(
