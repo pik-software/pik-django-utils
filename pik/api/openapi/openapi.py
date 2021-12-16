@@ -51,9 +51,9 @@ class TypedSerializerAutoSchema(AutoSchema):
         properties = schema['properties']
         type_field = serializer.fields.get(self.TYPE_FIELD)
         has_typefield = (
-                isinstance(serializer, ModelSerializer)
-                and isinstance(type_field, SerializerMethodField)
-                and self.TYPE_FIELD in properties)
+            isinstance(serializer, ModelSerializer)
+            and isinstance(type_field, SerializerMethodField)
+            and self.TYPE_FIELD in properties)
         if has_typefield:
             type_name = type_field.to_representation(serializer.Meta.model())
             if type_name:
