@@ -26,7 +26,7 @@ def clear_history():
             history_date__lte=deletion_date).order_by()
         objects_count = deleting_objects.count()
         model_label = (
-            f'[{model_number + 1}/{len(history_models)}] {model._meta.label}')
+            f'[{model_number + 1}/{len(history_models)}] {model._meta.label}')  # noqa protected-access
         pbar = tqdm(total=objects_count, desc=model_label)
         for _ in range(math.ceil(objects_count / chunk_size)):
             deleted_count, _ = model.objects.filter(
@@ -37,4 +37,4 @@ def clear_history():
             pbar.update(deleted_count)
         if objects_count:
             with connection.cursor() as cursor:
-                cursor.execute(f"VACUUM {model._meta.db_table};")
+                cursor.execute(f"VACUUM {model._meta.db_table};")  # noqa protected-access
