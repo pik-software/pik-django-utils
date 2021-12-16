@@ -33,3 +33,4 @@ check_manifest>=0.37
 
 # typing
 mypy>=0.600
+types-six
