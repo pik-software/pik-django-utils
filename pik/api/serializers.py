@@ -76,6 +76,10 @@ class StandardizedProtocolSerializer(serializers.ModelSerializer):
     version = serializers.SerializerMethodField()
 
     @staticmethod
+    def deprecated_type_field_hook(obj):
+        return obj._meta.model_name
+
+    @staticmethod
     def get_guid(obj) -> Optional[Union[UUID, str]]:
         if not hasattr(obj, 'uid'):
             if not hasattr(obj, 'pk'):
@@ -84,9 +88,10 @@ class StandardizedProtocolSerializer(serializers.ModelSerializer):
         return obj.uid
 
     def get_type(self, obj) -> Optional[str]:
-        if hasattr(self.context.get('view'), 'type_field_hook'):
-            return self.context['view'].type_field_hook(self, obj)
-        return obj._meta.model_name
+        if 'type_field_hook' not in self.context:
+            return obj._meta.model_name
+        return self.context['type_field_hook'](self, obj) or (
+            obj._meta.object_name)
 
     @staticmethod
     def get_version(obj) -> Optional[int]:
