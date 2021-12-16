@@ -16,6 +16,7 @@ from pika.exceptions import AMQPConnectionError
 from tenacity import (
     retry, retry_if_exception_type, stop_after_attempt, wait_fixed)
 
+from pik.api.camelcase.viewsets import camelcase_type_field_hook
 from pik.bus.mixins import ModelSerializerMixin
 
 
@@ -76,8 +77,9 @@ class InstanceHandler(ModelSerializerMixin):
 
     @property
     def payload(self):
-        data = self.serializer(self._instance).to_representation(
-            self._instance)
+        data = self.serializer(
+            self._instance, context=self.get_serializer_context()
+        ).to_representation(self._instance)
         data = camelize(data, **api_settings.JSON_UNDERSCOREIZE)
         if hasattr(self.serializer, 'camelization_hook'):
             return self.serializer.camelization_hook(data)
@@ -124,6 +126,10 @@ class InstanceHandler(ModelSerializerMixin):
     @property
     def json_message(self):
         return self.renderer_class().render(self.message)
+
+    @staticmethod
+    def get_serializer_context():
+        return {'type_field_hook': camelcase_type_field_hook}
 
 
 @receiver(post_save)
