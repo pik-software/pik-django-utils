@@ -76,6 +76,10 @@ class StandardizedProtocolSerializer(serializers.ModelSerializer):
     version = serializers.SerializerMethodField()
 
     @staticmethod
+    def deprecated_type_field_hook(obj):
+        return obj._meta.model_name
+
+    @staticmethod
     def get_guid(obj) -> Optional[Union[UUID, str]]:
         if not hasattr(obj, 'uid'):
             if not hasattr(obj, 'pk'):
@@ -83,9 +87,11 @@ class StandardizedProtocolSerializer(serializers.ModelSerializer):
             return str(obj.pk)
         return obj.uid
 
-    @staticmethod
-    def get_type(obj) -> Optional[str]:
-        return obj._meta.model_name  # noqa: protected-access
+    def get_type(self, obj) -> Optional[str]:
+        if 'type_field_hook' not in self.context:
+            return obj._meta.model_name
+        return self.context['type_field_hook'](self, obj) or (
+            obj._meta.object_name)
 
     @staticmethod
     def get_version(obj) -> Optional[int]:
@@ -142,10 +148,10 @@ class LabeledModelSerializerMixIn:
         if isinstance(parent, ModelSerializer):
             opts = parent.Meta.model._meta
             if not self._label_is_set:
-                self.label = _normalize_label(opts.get_field(self.source)
+                self.label = _normalize_label(opts.get_field(self.source)  # noqa: attribute-defined-outside-init
                                               .verbose_name)
             if not self._help_text_is_set:
-                self.help_text = opts.get_field(self.source).help_text
+                self.help_text = opts.get_field(self.source).help_text  # noqa: attribute-defined-outside-init
 
 
 class ValidatedModelSerializerMixIn:
