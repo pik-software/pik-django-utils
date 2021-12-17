@@ -29,6 +29,7 @@ We use semantic versioning MAJOR.MINOR.MAINTENANCE scheme, where the project aut
  - `pik.core.tests` - Testing helpers
  - `pik.core.shortcuts` - Django code shortcuts and missed helpers
  - `pik.core.cache` - Cache helpers
+ - `pik.core.clear_history` - Module for deleting old history rows
 
 ### pik.core.models ###
 

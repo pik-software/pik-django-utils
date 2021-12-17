@@ -1,14 +1,14 @@
 # db
 redis==3.5.3
-psycopg2==2.8.5
+psycopg2
 django-redis==4.12.1
 
 # tests
-astroid==2.0.4
-pylint==2.1.1
-pycodestyle<2.4
-flake8==3.5.0
-prospector==1.1.6.2
+astroid==2.9.0
+pylint==2.12.2
+pycodestyle==2.7.0
+flake8==3.9.2
+prospector==1.5.3.1
 factory_boy==2.11.1
 freezegun==0.3.10
 pdbpp==0.9.2
@@ -33,3 +33,4 @@ check_manifest>=0.37
 
 # typing
 mypy>=0.600
+types-six

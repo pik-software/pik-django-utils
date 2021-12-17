@@ -59,7 +59,7 @@ def validate_and_create_object(model: Type[models.Model], **kwargs) \
     except (ValidationError, IntegrityError) as exc:
         LOGGER.warning(
             'Create %s error: %r (kwargs=%r)', model.__name__, exc, kwargs)
-        raise ValueError(str(exc))
+        raise ValueError(str(exc)) from exc
     return obj
 
 
@@ -94,7 +94,7 @@ def validate_and_update_object(obj: models.Model, **kwargs) \
                 setattr(obj, key, old_value)
             LOGGER.warning(
                 'Update %s error: %r (kwargs=%r)', model.__name__, exc, kwargs)
-            raise ValueError(str(exc))
+            raise ValueError(str(exc)) from exc
     return obj, list(updated_keys.keys())
 
 
