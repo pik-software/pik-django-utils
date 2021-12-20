@@ -11,6 +11,7 @@ from rest_framework.renderers import JSONRenderer
 from djangorestframework_camel_case.settings import api_settings
 from djangorestframework_camel_case.util import camelize
 from sentry_sdk import capture_exception
+from sentry_sdk.integrations.logging import ignore_logger
 from pika import BlockingConnection, URLParameters
 from pika.exceptions import AMQPConnectionError
 from tenacity import (
@@ -20,6 +21,10 @@ from pik.api.camelcase.viewsets import camelcase_type_field_hook
 from pik.bus.mixins import ModelSerializerMixin
 
 
+# Disable capture internal pika exceptions by sentry.
+ignore_logger('pika.adapters.blocking_connection')
+ignore_logger('pika.adapters.base_connection')
+ignore_logger('pika.adapters.utils.io_services_utils')
 logger = logging.getLogger(__name__)
 
 
