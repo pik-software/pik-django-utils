@@ -12,7 +12,8 @@ from djangorestframework_camel_case.settings import api_settings
 from djangorestframework_camel_case.util import camelize
 from sentry_sdk import capture_exception
 from pika import BlockingConnection, URLParameters
-from pika.exceptions import AMQPConnectionError
+from pika.exceptions import (
+    AMQPConnectionError, ChannelWrongStateError, ChannelClosedByBroker, )
 from tenacity import (
     retry, retry_if_exception_type, stop_after_attempt, wait_fixed)
 
@@ -22,6 +23,8 @@ from pik.bus.mixins import ModelSerializerMixin
 
 logger = logging.getLogger(__name__)
 
+AMQP_ERRORS = (
+    AMQPConnectionError, ChannelWrongStateError, ChannelClosedByBroker)
 
 class BusModelNotFound(Exception):
     pass
@@ -43,12 +46,15 @@ class MessageProducer:
 
     @cached_property
     def _channel(self):
-        return BlockingConnection(URLParameters(self.connection_url)).channel()
+        channel = BlockingConnection(URLParameters(
+            self.connection_url)).channel()
+        channel.confirm_delivery()
+        return channel
 
     @retry(
         wait=wait_fixed(RECONNECT_WAIT_DELAY),
         stop=stop_after_attempt(RECONNECT_ATTEMPT_COUNT),
-        retry=retry_if_exception_type(AMQPConnectionError),
+        retry=retry_if_exception_type(AMQP_ERRORS),
         after=after_fail_retry,
         reraise=True,
     )
@@ -87,9 +93,10 @@ class InstanceHandler(ModelSerializerMixin):
 
     @property
     def message(self):
+        payload = self.payload
         return {
-            'messageType': self.model_name,
-            'message': self.payload,
+            'messageType': payload['type'],
+            'message': payload,
             'host': self.host,
         }
 
