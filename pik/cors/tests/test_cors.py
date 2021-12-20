@@ -22,7 +22,7 @@ def test_cors_preflight_missing():
     response = client.options("/login/", **PREFLIGHT_HEADERS)
     assert 'ACCESS_CONTROL_ALLOW_ORIGIN' not in response
     assert response.content == b''
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
 
 @pytest.mark.django_db
@@ -32,7 +32,7 @@ def test_cors_preflight():
     response = client.options("/login/", **PREFLIGHT_HEADERS)
     assert response[ACCESS_CONTROL_ALLOW_ORIGIN] == "http://allien"
     assert response.content == b''
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
 
 @pytest.mark.django_db
@@ -40,7 +40,7 @@ def test_cors_missing():
     client = rest_framework.test.APIClient()
     response = client.get("/login/", **CORS_HEADERS)
     assert 'ACCESS_CONTROL_ALLOW_ORIGIN' not in response
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
 
 
 @pytest.mark.django_db
@@ -50,4 +50,4 @@ def test_cors():
 
     response = client.get("/login/", **CORS_HEADERS)
     assert response[ACCESS_CONTROL_ALLOW_ORIGIN] == "http://allien"
-    assert response.status_code == 200
+    assert response.status_code == status.HTTP_200_OK
