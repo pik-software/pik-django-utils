@@ -40,5 +40,7 @@ def clear_history():
         if not found:
             continue
         for _ in range(math.ceil(found / chunk_size)):
-            history_model_manager[:chunk_size].delete()
+            history_model_manager.filter(
+                pk__in=history_model_manager.values_list(
+                    'pk', flat=True)[:chunk_size]).delete()
         LOGGER.info("Removed %s historical records for %s", found, model)
