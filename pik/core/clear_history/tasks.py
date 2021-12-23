@@ -36,9 +36,9 @@ def clear_history():
             history_date__lt=start_date
         ).order_by()
         found = history_model_manager.count()
-        LOGGER.info(f"{model} has {found} old historical entries")
+        LOGGER.info("%s has %s old historical entries", model, found)
         if not found:
             continue
         for _ in range(math.ceil(found / chunk_size)):
             history_model_manager[:chunk_size].delete()
-        LOGGER.info(f"Removed {found} historical records for {model}\n")
+        LOGGER.info(f"Removed %s historical records for %s\n", found, model)
