@@ -1,5 +1,6 @@
 import pytest
 import rest_framework.test
+from rest_framework import status
 from corsheaders.middleware import ACCESS_CONTROL_ALLOW_ORIGIN
 from pik.cors.models import Cors
 

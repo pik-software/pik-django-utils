@@ -1,4 +1,4 @@
-from djangorestframework_camel_case.parser import CamelCaseJSONParser
+from .parsers import CamelCaseJSONParser
 from djangorestframework_camel_case.util import (
     underscoreize, camel_to_underscore, )
 

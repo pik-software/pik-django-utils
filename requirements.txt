@@ -3,8 +3,7 @@ Django
 django-simple-history
 djangorestframework
 django-restql
-# djangorestframework-camel-case
--e git+https://github.com/nazarov-ae/djangorestframework-camel-case.git@add-lower-camel-case#egg=djangorestframework_camel_case
+djangorestframework-camel-case
 django-filter
 djangorestframework-filters==1.0.0.dev0
 django-model-utils
