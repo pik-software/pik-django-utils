@@ -34,16 +34,14 @@ class HistoricalSerializerBase(Serializer):
         fields = self._readable_fields  # noqa
 
         for field in fields:
-            simplify_nested_serializer(field)
+            # simplify_nested_serializer(field)
+            ret[field.field_name] = None
             try:
                 attribute = field.get_attribute(instance)
                 if attribute is not None:
-                    ret[field.field_name] = field.to_representation(
-                        attribute)
-                else:
-                    ret[field.field_name] = None
+                    ret[field.field_name] = field.to_representation(attribute)
             except AttributeError:
-                ret[field.field_name] = None
+                pass
 
         return ret
 

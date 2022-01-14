@@ -34,7 +34,7 @@ class ModelViewSet(StandardizedModelViewSet):
  - [ ] api.filters.ModelFilter: (optional)
 
 ```
-class ModelFilter(filters.FilterSet):
+class ModelFilter(StandardizedFilterSet):
     class Meta:
         model = Model
         fields = {
