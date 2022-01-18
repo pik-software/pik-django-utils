@@ -4,7 +4,6 @@ from urllib.parse import quote
 from django.http import Http404
 from django.utils.module_loading import import_string
 from django.core.exceptions import ImproperlyConfigured
-from rest_framework.permissions import IsAuthenticated, DjangoObjectPermissions
 from django_restql.mixins import EagerLoadingMixin
 from private_storage import appconfig
 from private_storage.models import PrivateFile
@@ -13,7 +12,7 @@ from private_storage.storage import private_storage
 from rest_framework import generics, mixins
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, DjangoObjectPermissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSetMixin
@@ -256,7 +255,6 @@ class StandardizedObjPermissionModelViewSet(StandardizedModelViewSet):
     def check_permissions(self, request):
         """ Dropping global permission checking in order of later per object
         check through the `DjangoPerModelViewPermission` """
-        pass
 
     def get_queryset(self):
         if not hasattr(self.request, 'user'):

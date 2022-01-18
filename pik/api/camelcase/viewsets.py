@@ -1,8 +1,7 @@
-from .parsers import (
-    CamelCaseJSONParser, CamelCaseFormParser, CamelCaseMultiPartParser)
 from djangorestframework_camel_case.util import (
     underscoreize, camel_to_underscore, )
-
+from .parsers import (
+    CamelCaseJSONParser, CamelCaseFormParser, CamelCaseMultiPartParser)
 from .renderers import CalemizeJSONRenderer
 from .openapi import PIKCamelCaseAutoSchema
 

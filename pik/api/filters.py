@@ -2,12 +2,11 @@ import coreapi
 from django.contrib.postgres.fields import ArrayField
 from django.db.models import DateTimeField
 from django_filters import OrderingFilter
-from rest_framework.filters import OrderingFilter as DRFOrderingFilter
+from rest_framework.filters import (
+    OrderingFilter as DRFOrderingFilter, SearchFilter)
 from rest_framework_filters import (
     FilterSet, BaseCSVFilter, AutoFilter, IsoDateTimeFilter, BooleanFilter, )
 from rest_framework_filters.backends import RestFrameworkFilterBackend
-from rest_framework.filters import SearchFilter
-
 from .filters_mixins import StandardizedAPISearchIndex
 
 
