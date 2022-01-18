@@ -241,7 +241,7 @@ class PrivateStorageAPIView(APIView):
 
 
 class StandardizedObjPermissionModelViewSet(StandardizedModelViewSet):
-    permission_classes = [DjangoObjectPermissions, IsAuthenticated]
+    permission_classes = (DjangoObjectPermissions, IsAuthenticated)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
