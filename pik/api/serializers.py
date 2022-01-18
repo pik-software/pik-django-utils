@@ -289,20 +289,6 @@ class StandardizedSnapshotLinkSerializer(BaseSnapshotLinkSerializer,
         fields = BaseSnapshotLinkSerializer.Meta.fields + SOFT_DELETE_FIELDS
 
 
-class StandardizedDocumentedModelLinkSerializerBase(
-        BaseDocumentedModelLinkSerializer, StandardizedModelSerializer):
-    is_deleted = serializers.SerializerMethodField()
-
-    @staticmethod
-    def get_is_deleted(obj) -> bool:
-        return bool(obj.deleted)
-
-    class Meta(BaseDocumentedModelLinkSerializer.Meta):
-        fields = (
-            BaseDocumentedModelLinkSerializer.Meta.fields + (
-                'is_deleted', 'deleted'))
-
-
 class StandardizedDocumentedModelLinkSerializer(
         BaseDocumentedModelLinkSerializer, StandardizedModelSerializer):
 
