@@ -1,7 +1,7 @@
 from django.core.cache import caches
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from core.models import BasePHistorical
+from pik.core.models import BasePHistorical
 
 from .consts import DEFAULT_CACHE_NAME, CACHE_KEY
 
