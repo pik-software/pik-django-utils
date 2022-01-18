@@ -47,6 +47,8 @@ class SettableNestedSerializerMixIn:
         object_type = ""
         if hasattr(request_data, 'get'):  # request_data could be other types
             object_type = request_data.get('type', None)
+        if object_type:
+            object_type = object_type.lower()
 
         model = self.Meta.model
         expected = [model._meta.model_name]  # noqa: protected-access
