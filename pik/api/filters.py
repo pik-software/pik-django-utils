@@ -115,6 +115,7 @@ class StandardizedFilterSet(FilterSet):
         ('updated', 'updated'),
         ('created', 'created'),
         ('version', 'version'),
+        ('uid', 'name'),
     ))
 
     class Meta:
