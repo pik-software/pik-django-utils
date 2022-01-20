@@ -51,7 +51,7 @@ class SettableNestedSerializerMixIn:
             object_type = object_type.lower()
 
         model = self.Meta.model
-        expected = [model._meta.model_name]  # noqa: protected-access
+        expected = [model._meta.object_name]  # noqa: protected-access
 
         # Check type through multi-table children too
         if isinstance(model.objects, InheritanceManager):
