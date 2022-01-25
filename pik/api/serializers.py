@@ -331,3 +331,35 @@ class StandardizedChangeAttachmentLinkSerializer(
         fields = (
             BaseChangeAttachmentLinkSerializer.Meta.fields + ('file',)
             + SOFT_DELETE_FIELDS)
+
+
+class GuidOnlyRelationSerializer(serializers.BaseSerializer):
+
+    def __init__(self, entity_type, **kwargs):
+        self.entity_type = entity_type
+        super().__init__(**kwargs)
+
+    def to_internal_value(self, data):
+        guid = data.get('guid')
+        entity_type = data.get('type')
+        if not guid:
+            raise serializers.ValidationError({
+                'guid': 'This field is required.'
+            })
+        if not entity_type:
+            raise serializers.ValidationError({
+                'type': 'This field is required.'
+            })
+        return guid
+
+    def to_representation(self, instance):
+        return {
+            'guid': instance,
+            'type': self.entity_type
+        }
+
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        pass
