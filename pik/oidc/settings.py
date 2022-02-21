@@ -309,7 +309,7 @@ def set_oidc_settings(settings):
             'social_core.pipeline.user.create_user', )
             if settings.get(
                 'AUTH_USER_MODEL',
-                DEFAULT_USER_MODEL) != DEFAULT_USER_MODEL else ()),
+                DEFAULT_USER_MODEL) == DEFAULT_USER_MODEL else ()),
 
         'pik.oidc.pipeline.actualize_roles',
         # TODO: Remove after SPA
