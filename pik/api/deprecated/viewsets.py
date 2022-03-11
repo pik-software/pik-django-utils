@@ -7,6 +7,12 @@ from .utils import (
     to_actual_ordering, )
 
 
+def deprecated_type_field_hook(serializer, obj):
+    if hasattr(serializer, 'deprecated_type_field_hook'):
+        return serializer.deprecated_type_field_hook(obj)
+    return None
+
+
 class DeprecatedViewSetMixIn:
     renderer_classes = [
         DeprecatedJSONRenderer]
@@ -36,6 +42,11 @@ class DeprecatedViewSetMixIn:
             request.GET['query'] = to_actual_fields.replace(
                 request.GET['query'])
         return super().dispatch(request, *args, **kwargs)
+
+    def get_serializer_context(self):
+        return {
+            **super().get_serializer_context(),
+            'type_field_hook': deprecated_type_field_hook}
 
 
 def get_deprecated_viewset(viewset):

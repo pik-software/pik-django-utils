@@ -6,6 +6,12 @@ from .renderers import CalemizeJSONRenderer
 from .openapi import PIKCamelCaseAutoSchema
 
 
+def camelcase_type_field_hook(serializer, obj):
+    if hasattr(serializer, 'camelcase_type_field_hook'):
+        return serializer.camelcase_type_field_hook(obj)
+    return None
+
+
 class CamelCaseViewSetMixIn:
     renderer_classes = [
         CalemizeJSONRenderer]
@@ -25,6 +31,11 @@ class CamelCaseViewSetMixIn:
             if param in request.GET:
                 request.GET[param] = camel_to_underscore(request.GET[param])
         return super().dispatch(request, *args, **kwargs)
+
+    def get_serializer_context(self):
+        return {
+            **super().get_serializer_context(),
+            'type_field_hook': camelcase_type_field_hook}
 
 
 def get_camelcase_viewset(viewset):

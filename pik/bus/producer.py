@@ -8,18 +8,24 @@ from django.dispatch import receiver
 from django.conf import settings
 from django.utils.functional import cached_property
 from rest_framework.renderers import JSONRenderer
+from rest_framework import status
 from djangorestframework_camel_case.settings import api_settings
 from djangorestframework_camel_case.util import camelize
 from sentry_sdk import capture_exception
 from pika import BlockingConnection, URLParameters
-from pika.exceptions import AMQPConnectionError
+from pika.exceptions import (
+    AMQPConnectionError, ChannelWrongStateError, ChannelClosedByBroker, )
 from tenacity import (
-    retry, retry_if_exception_type, stop_after_attempt, wait_fixed)
+    retry, retry_if_exception_type, stop_after_attempt, wait_fixed, )
 
+from pik.api.camelcase.viewsets import camelcase_type_field_hook
 from pik.bus.mixins import ModelSerializerMixin
 
 
 logger = logging.getLogger(__name__)
+
+AMQP_ERRORS = (
+    AMQPConnectionError, ChannelWrongStateError, ChannelClosedByBroker)
 
 
 class BusModelNotFound(Exception):
@@ -42,20 +48,27 @@ class MessageProducer:
 
     @cached_property
     def _channel(self):
-        return BlockingConnection(URLParameters(self.connection_url)).channel()
+        channel = BlockingConnection(URLParameters(
+            self.connection_url)).channel()
+        channel.confirm_delivery()
+        return channel
 
     @retry(
         wait=wait_fixed(RECONNECT_WAIT_DELAY),
         stop=stop_after_attempt(RECONNECT_ATTEMPT_COUNT),
-        retry=retry_if_exception_type(AMQPConnectionError),
+        retry=retry_if_exception_type(AMQP_ERRORS),
         after=after_fail_retry,
         reraise=True,
     )
     def produce(self, exchange, json_message):
-        self._channel.basic_publish(
-            exchange=exchange,
-            routing_key='',
-            body=json_message)
+        try:
+            self._channel.basic_publish(
+                exchange=exchange,
+                routing_key='',
+                body=json_message)
+        except ChannelClosedByBroker as exc:
+            if exc.reply_code != status.HTTP_502_BAD_GATEWAY:
+                raise ChannelClosedByBroker from exc
 
 
 producer = MessageProducer(settings.RABBITMQ_URL)
@@ -76,8 +89,9 @@ class InstanceHandler(ModelSerializerMixin):
 
     @property
     def payload(self):
-        data = self.serializer(self._instance).to_representation(
-            self._instance)
+        data = self.serializer(
+            self._instance, context=self.get_serializer_context()
+        ).to_representation(self._instance)
         data = camelize(data, **api_settings.JSON_UNDERSCOREIZE)
         if hasattr(self.serializer, 'camelization_hook'):
             return self.serializer.camelization_hook(data)
@@ -85,9 +99,10 @@ class InstanceHandler(ModelSerializerMixin):
 
     @property
     def message(self):
+        payload = self.payload
         return {
-            'messageType': self.model_name,
-            'message': self.payload,
+            'messageType': [payload['type'], ],
+            'message': payload,
             'host': self.host,
         }
 
@@ -124,6 +139,10 @@ class InstanceHandler(ModelSerializerMixin):
     @property
     def json_message(self):
         return self.renderer_class().render(self.message)
+
+    @staticmethod
+    def get_serializer_context():
+        return {'type_field_hook': camelcase_type_field_hook}
 
 
 @receiver(post_save)
