@@ -17,7 +17,6 @@
 ```
 class ModelViewSet(StandardizedModelViewSet):
     lookup_field = 'uid'
-    lookup_url_kwarg = '_uid'
     ordering = '-created'
     serializer_class = <ModelSerializer>
     allow_bulk_create = True
