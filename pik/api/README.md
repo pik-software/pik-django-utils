@@ -7,7 +7,13 @@ api's. To acheave it there are two hooks in serializers:
 - `camelcase_type_field_hook`.
 
 
-```python
+```
+class ModelViewSet(StandardizedModelViewSet):
+    lookup_field = 'uid'
+    ordering = '-created'
+    serializer_class = <ModelSerializer>
+    allow_bulk_create = True
+    allow_history = True
 
 class BuildingSerializer(StandardizedSerializer):
 
@@ -23,3 +29,17 @@ class BuildingSerializer(StandardizedSerializer):
     
 
 ```
+class ModelFilter(StandardizedFilterSet):
+    class Meta:
+        model = Model
+        fields = {
+            ...
+        }
+```
+
+# SCHEMA #
+
+DEFAULT_AUTO_SCHEMA_CLASS
+`view.swagger_schema`
+`view.method._swagger_auto_schema.auto_schema`
+`view.method._swagger_auto_schema[method].auto_schema`

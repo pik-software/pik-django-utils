@@ -148,10 +148,10 @@ class LabeledModelSerializerMixIn:
         if isinstance(parent, ModelSerializer):
             opts = parent.Meta.model._meta
             if not self._label_is_set:
-                self.label = _normalize_label(opts.get_field(self.source)  # noqa: attribute-defined-outside-init
-                                              .verbose_name)
+                self.label = _normalize_label(  # noqa pylint: disable=attribute-defined-outside-init
+                    opts.get_field(self.source).verbose_name)
             if not self._help_text_is_set:
-                self.help_text = opts.get_field(self.source).help_text  # noqa: attribute-defined-outside-init
+                self.help_text = opts.get_field(self.source).help_text  # noqa pylint: disable=attribute-defined-outside-init
 
 
 class ValidatedModelSerializerMixIn:

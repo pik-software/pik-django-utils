@@ -3,6 +3,7 @@ from urllib.parse import quote
 
 from django.http import Http404
 from django.utils.module_loading import import_string
+from django.core.exceptions import ImproperlyConfigured
 from django_restql.mixins import EagerLoadingMixin
 from private_storage import appconfig
 from private_storage.models import PrivateFile
@@ -11,7 +12,7 @@ from private_storage.storage import private_storage
 from rest_framework import generics, mixins
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, DjangoObjectPermissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSetMixin
@@ -236,4 +237,31 @@ class PrivateStorageAPIView(APIView):
         # For others like Firefox, we follow RFC2231
         # (encoding extension in HTTP headers).
         rfc2231_filename = quote(filename.encode('utf-8'))
-        return f"filename*=UTF-8'{rfc2231_filename}'".encode('utf-8')
+        return f"filename*=UTF-8''{rfc2231_filename}".encode('utf-8')
+
+
+class StandardizedObjPermissionModelViewSet(StandardizedModelViewSet):
+    permission_classes = (DjangoObjectPermissions, IsAuthenticated)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for permission in self.permission_classes:
+            if issubclass(permission, DjangoObjectPermissions):
+                return
+        raise ImproperlyConfigured(
+            '`DjangoObjectPermissions` is required for per object viewset '
+            'functionality')
+
+    def check_permissions(self, request):
+        """ Dropping global permission checking in order of later per object
+        check through the `DjangoPerModelViewPermission` """
+
+    def get_queryset(self):
+        if not hasattr(self.request, 'user'):
+            return super().get_queryset().none()
+        return super().get_queryset().filter_by_user_grants(self.request.user)
+
+
+class RestQLStandardizedObjPermissionModelViewSet(
+        EagerLoadingMixin, StandardizedObjPermissionModelViewSet):
+    pass

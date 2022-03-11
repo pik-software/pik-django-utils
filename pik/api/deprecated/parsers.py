@@ -8,8 +8,7 @@ from django.http.multipartparser import (
 from rest_framework.exceptions import ParseError
 
 from rest_framework.parsers import (
-    FormParser, MultiPartParser, DataAndFiles,
-    JSONParser, )
+    FormParser, MultiPartParser, DataAndFiles, JSONParser, )
 
 from .utils import (
     replace_struct_keys, TO_ACTUAL_FIELD_RULES, to_actual_fields, )
