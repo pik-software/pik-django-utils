@@ -11,13 +11,13 @@ from .filters_mixins import StandardizedAPISearchIndex
 
 
 UID_LOOKUPS = ('exact', 'gt', 'gte', 'lt', 'lte', 'in', 'isnull')
-STRING_LOOKUPS = (
-    'exact', 'iexact', 'in', 'startswith', 'endswith', 'contains', 'contains',
-    'isnull')
 DATE_LOOKUPS = ('exact', 'gt', 'gte', 'lt', 'lte', 'in', 'isnull')
-BOOLEAN_LOOKUPS = ('exact', 'in', 'isnull')
-ARRAY_LOOKUPS = ('contains', 'contained_by', 'overlap', 'len', 'isnull')
 NUMBER_LOOKUPS = ('exact', 'gt', 'gte', 'lt', 'lte', 'in', 'isnull')
+STRING_LOOKUPS = (
+    'exact', 'iexact', 'in', 'startswith', 'endswith', 'contains', 'isnull')
+BOOLEAN_LOOKUPS = ('exact', 'in', 'isnull')
+ARRAY_LOOKUPS = (
+    'contains', 'contained_by', 'overlap', 'len', 'isnull', 'exact')
 
 
 class StandardizedFieldFilters(RestFrameworkFilterBackend):

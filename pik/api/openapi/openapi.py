@@ -50,13 +50,14 @@ class TypedSerializerAutoSchema(AutoSchema):
         schema = super().map_serializer(serializer)
         properties = schema['properties']
         type_field = serializer.fields.get(self.TYPE_FIELD)
-        has_typefield = (isinstance(serializer, ModelSerializer)
-                         and isinstance(type_field, SerializerMethodField)
-                         and self.TYPE_FIELD in properties)
+        has_typefield = (
+            isinstance(serializer, ModelSerializer)
+            and isinstance(type_field, SerializerMethodField)
+            and self.TYPE_FIELD in properties)
         if has_typefield:
             type_name = type_field.to_representation(serializer.Meta.model())
             if type_name:
-                properties[self.TYPE_FIELD]['enum'] = [type_name.lower()]
+                properties[self.TYPE_FIELD]['enum'] = [type_name]
         return schema
 
 
