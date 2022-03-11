@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 AMQP_ERRORS = (
     AMQPConnectionError, ChannelWrongStateError, ChannelClosedByBroker)
 
+
 class BusModelNotFound(Exception):
     pass
 
@@ -95,7 +96,7 @@ class InstanceHandler(ModelSerializerMixin):
     def message(self):
         payload = self.payload
         return {
-            'messageType': payload['type'],
+            'messageType': [payload['type'], ],
             'message': payload,
             'host': self.host,
         }
