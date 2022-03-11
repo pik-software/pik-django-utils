@@ -1,7 +1,7 @@
-from djangorestframework_camel_case.parser import CamelCaseJSONParser
 from djangorestframework_camel_case.util import (
     underscoreize, camel_to_underscore, )
-
+from .parsers import (
+    CamelCaseJSONParser, CamelCaseFormParser, CamelCaseMultiPartParser)
 from .renderers import CalemizeJSONRenderer
 from .openapi import PIKCamelCaseAutoSchema
 
@@ -17,6 +17,8 @@ class CamelCaseViewSetMixIn:
         CalemizeJSONRenderer]
 
     parser_classes = [
+        CamelCaseFormParser,
+        CamelCaseMultiPartParser,
         CamelCaseJSONParser]
 
     schema = PIKCamelCaseAutoSchema()
