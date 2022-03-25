@@ -10,8 +10,6 @@ from pika import BlockingConnection, URLParameters
 from pika.exceptions import AMQPConnectionError
 from tenacity import retry, retry_if_exception_type, wait_fixed
 
-from pik.bus.mixins import ModelSerializerMixin
-
 
 logger = logging.getLogger(__name__)
 
