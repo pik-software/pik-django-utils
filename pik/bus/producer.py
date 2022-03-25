@@ -1,6 +1,7 @@
 import os
 import platform
 import logging
+from pydoc import locate
 
 import django
 from django.db.models.signals import post_save
@@ -19,7 +20,6 @@ from tenacity import (
     retry, retry_if_exception_type, stop_after_attempt, wait_fixed, )
 
 from pik.api.camelcase.viewsets import camelcase_type_field_hook
-from pik.bus.mixins import ModelSerializerMixin
 
 
 logger = logging.getLogger(__name__)
@@ -74,9 +74,25 @@ class MessageProducer:
 producer = MessageProducer(settings.RABBITMQ_URL)
 
 
-class InstanceHandler(ModelSerializerMixin):
+class InstanceHandler:
     renderer_class = JSONRenderer
     _instance = NotImplemented
+
+    # MODELS_INFO = {
+    #   model: {
+    #       'serializer': serializer,
+    #       'exchange': exchange
+    #   },
+    #   ...
+    # }
+    MODELS_INFO = {
+        locate(serializer).Meta.model.__name__: {  # type: ignore
+            'serializer': locate(serializer),
+            'exchange': exchange,
+        }
+        for exchange, serializer
+        in settings.RABBITMQ_PRODUCES.items()
+    }
 
     def __init__(self, instance):
         self._instance = instance
@@ -119,16 +135,14 @@ class InstanceHandler(ModelSerializerMixin):
     @property
     def serializer(self):
         try:
-            return self.MODEL_SERIALIZER[self.model_name][
-                self.SERIALIZER_OFFSET]
+            return self.MODELS_INFO[self.model_name]['serializer']
         except KeyError as exc:
             raise BusModelNotFound() from exc
 
     @property
     def exchange(self):
         try:
-            return self.MODEL_SERIALIZER[self.model_name][
-                self.QUEUE_OR_EXCHANGE_OFFSET]
+            return self.MODELS_INFO[self.model_name]['exchange']
         except KeyError as exc:
             raise BusModelNotFound() from exc
 

@@ -1,6 +1,8 @@
 import io
 import logging
+from pydoc import locate
 
+from django.conf import settings
 from rest_framework.parsers import JSONParser
 from djangorestframework_camel_case.util import underscoreize
 from sentry_sdk import capture_exception
@@ -56,20 +58,36 @@ class MessageConsumer:
         channel.basic_ack(delivery_tag=method.delivery_tag)
 
 
-class MessageHandler(ModelSerializerMixin):
+class MessageHandler:
     parser_class = JSONParser
 
     _data = None
     _serializer_class = None
+
+    # MODELS_INFO = {
+    #   model: {
+    #       'serializer': serializer,
+    #       'queue': queue
+    #   },
+    #   ...
+    # }
+    MODELS_INFO = {
+        locate(serializer).Meta.model.__name__: {  # type: ignore
+            'serializer': locate(serializer),
+            'queue': queue,
+        }
+        for queue, serializer
+        in settings.RABBITMQ_CONSUMES.items()
+    }
 
     def __init__(self, message, queue):
         self._data = message
         self._serializer_class = self.get_serializer(queue)
 
     def get_serializer(self, queue):
-        for serializer_exchange in self.MODEL_SERIALIZER.values():
-            if serializer_exchange[self.QUEUE_OR_EXCHANGE_OFFSET] == queue:
-                return serializer_exchange[self.SERIALIZER_OFFSET]
+        for model_info in self.MODELS_INFO.values():
+            if model_info['queue'] == queue:
+                return model_info['serializer']
         raise BusQueueNotFound()
 
     def fetch_message(self):
