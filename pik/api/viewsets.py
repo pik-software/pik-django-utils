@@ -23,6 +23,8 @@ from .restql import DefaultRequestQueryParserMixin
 
 class DeletedModelViewSetMixIn:
     def get_queryset(self):
+        if self.queryset:
+            return self.queryset
         if hasattr(self.serializer_class.Meta.model, 'all_objects'):
             return self.serializer_class.Meta.model.all_objects.all()
         return self.serializer_class.Meta.model.objects.all()
