@@ -3,13 +3,12 @@ import logging
 from pydoc import locate
 
 from django.conf import settings
-from rest_framework.parsers import JSONParser
 from djangorestframework_camel_case.util import underscoreize
-from sentry_sdk import capture_exception
 from pika import BlockingConnection, URLParameters
 from pika.exceptions import AMQPConnectionError
+from rest_framework.parsers import JSONParser
+from sentry_sdk import capture_exception
 from tenacity import retry, retry_if_exception_type, wait_fixed
-
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +69,8 @@ class MessageHandler:
     #   ...
     # }
     MODELS_INFO = {
-        locate(serializer).Meta.model.__name__: {  # type: ignore
+        (locate(serializer).get_type()
+         or locate(serializer).Meta.model.__name__): {  # type: ignore
             'serializer': locate(serializer),
             'queue': queue,
         }

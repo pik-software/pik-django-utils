@@ -1,26 +1,25 @@
+import logging
 import os
 import platform
-import logging
 from pydoc import locate
 
 import django
+from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.conf import settings
 from django.utils.functional import cached_property
-from rest_framework.renderers import JSONRenderer
-from rest_framework import status
 from djangorestframework_camel_case.settings import api_settings
 from djangorestframework_camel_case.util import camelize
-from sentry_sdk import capture_exception
 from pika import BlockingConnection, URLParameters
 from pika.exceptions import (
     AMQPConnectionError, ChannelWrongStateError, ChannelClosedByBroker, )
+from rest_framework import status
+from rest_framework.renderers import JSONRenderer
+from sentry_sdk import capture_exception
 from tenacity import (
     retry, retry_if_exception_type, stop_after_attempt, wait_fixed, )
 
 from pik.api.camelcase.viewsets import camelcase_type_field_hook
-
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +85,8 @@ class InstanceHandler:
     #   ...
     # }
     MODELS_INFO = {
-        locate(serializer).Meta.model.__name__: {  # type: ignore
+        (locate(serializer).get_type()
+         or locate(serializer).Meta.model.__name__): {  # type: ignore
             'serializer': locate(serializer),
             'exchange': exchange,
         }
@@ -148,7 +148,7 @@ class InstanceHandler:
 
     @property
     def model_name(self):
-        return self._instance.__class__.__name__
+        return self.get_type() or self._instance.__class__.__name__
 
     @property
     def json_message(self):
