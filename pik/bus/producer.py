@@ -85,8 +85,7 @@ class InstanceHandler:
     #   ...
     # }
     MODELS_INFO = {
-        (locate(serializer).get_type()
-         or locate(serializer).Meta.model.__name__): {  # type: ignore
+        locate(serializer).Meta.model.__name__: {  # type: ignore
             'serializer': locate(serializer),
             'exchange': exchange,
         }
@@ -148,7 +147,7 @@ class InstanceHandler:
 
     @property
     def model_name(self):
-        return self.get_type() or self._instance.__class__.__name__
+        return self._instance.__class__.__name__
 
     @property
     def json_message(self):
