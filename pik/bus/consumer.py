@@ -27,28 +27,30 @@ def log_after_retry_connect(retry_state):
 class MessageConsumer:
     RECONNECT_WAIT = 1
 
-    _queue = None
+    _consumer_name = None
 
-    def __init__(self, connection_url, queue):
-        self._queue = queue
-        self.start_consume(connection_url, queue)
+    def __init__(self, connection_url, consumer_name, queues):
+        self._consumer_name = consumer_name
+        self.start_consume(connection_url, queues)
 
     @retry(
         wait=wait_fixed(RECONNECT_WAIT),
         retry=retry_if_exception_type(AMQPConnectionError),
         after=log_after_retry_connect,
     )
-    def start_consume(self, connection_url, queue):
+    def start_consume(self, connection_url, queues):
         channel = BlockingConnection(URLParameters(connection_url)).channel()
-        channel.basic_consume(
-            on_message_callback=self.consume,
-            queue=queue,
-        )
+        for queue in queues:
+            channel.basic_consume(
+                on_message_callback=self.consume,
+                queue=queue,
+            )
         channel.start_consuming()
 
     def consume(self, channel, method, properties, body):
         try:
-            MessageHandler(body, self._queue).handle()
+            queue_name = f'{self._consumer_name}.{method.exchange}'
+            MessageHandler(body, queue_name).handle()
         except Exception as exc:  # noqa: board-except
             logger.exception(exc)
             capture_exception(exc)
