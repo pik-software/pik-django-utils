@@ -16,7 +16,7 @@ pytest-selenium
 pytest-base-url
 pytest-benchmark
 # Error with all files Line: 1 pylint: fatal / Fatal error while checking
-# TODO: refreeze
+# TODO: unfreeze
 pylint==2.12.2
 
 # packaging
