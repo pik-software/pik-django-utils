@@ -69,8 +69,7 @@ class MessageHandler:
     #   ...
     # }
     MODELS_INFO = {
-        (locate(serializer).get_type()
-         or locate(serializer).Meta.model.__name__): {  # type: ignore
+        locate(serializer).Meta.model.__name__: {  # type: ignore
             'serializer': locate(serializer),
             'queue': queue,
         }
