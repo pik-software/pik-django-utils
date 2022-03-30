@@ -14,8 +14,8 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         django.setup()
 
-        if not settings.RABBITMQ_ENABLE:
-            logger.warning('RABBITMQ_ENABLE is set to False')
+        if not settings.RABBITMQ_CONSUMER_ENABLE:
+            logger.warning('RABBITMQ_CONSUMER_ENABLE is set to False')
 
         consumer_name = settings.RABBITMQ_ACCOUNT_NAME
         queues = list(settings.RABBITMQ_CONSUMES.keys())
