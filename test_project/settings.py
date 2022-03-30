@@ -139,7 +139,8 @@ set_oidc_settings(globals())
 
 
 # Stub for rabbitMQ settings
-RABBITMQ_ENABLE = False
+RABBITMQ_PRODUCER_ENABLE = False
+RABBITMQ_CONSUMER_ENABLE = False
 RABBITMQ_URL = ''
 RABBITMQ_PRODUCES = {}
 RABBITMQ_CONSUMES = {}
