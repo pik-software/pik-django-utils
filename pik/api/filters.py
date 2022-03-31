@@ -65,6 +65,7 @@ class StandardizedOrderingFilter(DRFOrderingFilter):
 
 class ArrayFilter(BaseCSVFilter, AutoFilter):
     DEFAULT_LOOKUPS = ARRAY_LOOKUPS
+    lookups = ARRAY_LOOKUPS
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault('lookups', self.DEFAULT_LOOKUPS)
