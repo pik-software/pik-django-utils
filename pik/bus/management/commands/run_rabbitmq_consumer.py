@@ -16,6 +16,7 @@ class Command(BaseCommand):
 
         if not settings.RABBITMQ_CONSUMER_ENABLE:
             logger.warning('RABBITMQ_CONSUMER_ENABLE is set to False')
+            return
 
         consumer_name = settings.RABBITMQ_ACCOUNT_NAME
         queues = list(settings.RABBITMQ_CONSUMES.keys())
