@@ -55,12 +55,13 @@ class CamelCaseJSONParser(BaseCamelCaseJSONParser):
 
         try:
             data = stream.read().decode(encoding)
-            json_data = underscoreize(json.loads(data), **self.json_underscoreize)
+            json_data = underscoreize(
+                json.loads(data), **self.json_underscoreize)
             view = parser_context['view']
             if hasattr(view.serializer_class, 'underscorize_hook'):
-                json_data = view.serializer_class().underscorize_hook(json_data)
+                json_data = view.serializer_class().underscorize_hook(
+                    json_data)
         except ValueError as exc:
-            raise ParseError("JSON parse error - %s" % str(exc))
+            raise ParseError(f'JSON parse error - {str(exc)}') from exc
 
         return json_data
-

@@ -52,15 +52,14 @@ def underscore(word: str) -> str:
 def _get_iterable(data):
     if isinstance(data, QueryDict):
         return data.lists()
-    else:
-        return data.items()
+    return data.items()
 
 
 def underscoreize(data, **options):
     ignore_fields = options.get("ignore_fields") or ()
     if isinstance(data, dict):
         new_dict = {}
-        if type(data) == MultiValueDict:
+        if isinstance(data, MultiValueDict):
             new_data = MultiValueDict()
             for key, value in data.items():
                 new_data.setlist(underscore(key, **options), data.getlist(key))
