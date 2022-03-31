@@ -1,3 +1,5 @@
+import json
+
 from django.conf import settings
 from django.http.multipartparser import (
     MultiPartParser as DjangoMultiPartParser,
@@ -9,6 +11,8 @@ from rest_framework.parsers import (
 
 from djangorestframework_camel_case.parser import (
     CamelCaseJSONParser as BaseCamelCaseJSONParser)
+
+from pik.utils.camelization import underscoreize
 
 
 class CamelCaseFormParser(FormParser):
@@ -46,10 +50,17 @@ class CamelCaseMultiPartParser(MultiPartParser):
 
 class CamelCaseJSONParser(BaseCamelCaseJSONParser):
     def parse(self, stream, media_type=None, parser_context=None):
-        json_data = super().parse(stream, media_type, parser_context)
+        parser_context = parser_context or {}
+        encoding = parser_context.get("encoding", settings.DEFAULT_CHARSET)
 
-        view = parser_context['view']
-        if hasattr(view.serializer_class, 'underscorize_hook'):
-            json_data = view.serializer_class().underscorize_hook(json_data)
+        try:
+            data = stream.read().decode(encoding)
+            json_data = underscoreize(json.loads(data), **self.json_underscoreize)
+            view = parser_context['view']
+            if hasattr(view.serializer_class, 'underscorize_hook'):
+                json_data = view.serializer_class().underscorize_hook(json_data)
+        except ValueError as exc:
+            raise ParseError("JSON parse error - %s" % str(exc))
 
         return json_data
+

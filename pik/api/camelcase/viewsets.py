@@ -1,9 +1,8 @@
-from djangorestframework_camel_case.util import (
-    underscoreize, camel_to_underscore, )
 from .parsers import (
     CamelCaseJSONParser, CamelCaseFormParser, CamelCaseMultiPartParser)
 from .renderers import CalemizeJSONRenderer
 from .openapi import PIKCamelCaseAutoSchema
+from pik.utils.camelization import underscore, underscoreize
 
 
 def camelcase_type_field_hook(serializer, obj):
@@ -29,7 +28,7 @@ class CamelCaseViewSetMixIn:
         request.GET = underscoreize(request.GET)
         for param in ['query', 'ordering']:
             if param in request.GET:
-                request.GET[param] = camel_to_underscore(request.GET[param])
+                request.GET[param] = underscore(request.GET[param])
         return super().dispatch(request, *args, **kwargs)
 
     def get_serializer_context(self):
