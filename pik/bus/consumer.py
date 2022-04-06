@@ -4,7 +4,7 @@ from pydoc import locate
 
 from django.conf import settings
 from rest_framework.parsers import JSONParser
-from djangorestframework_camel_case.util import underscoreize
+from pik.utils.camelization import underscoreize
 from sentry_sdk import capture_exception
 from pika import BlockingConnection, URLParameters
 from pika.exceptions import AMQPConnectionError
