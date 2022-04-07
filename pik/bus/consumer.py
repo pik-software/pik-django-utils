@@ -4,11 +4,11 @@ from pydoc import locate
 
 from django.conf import settings
 from rest_framework.parsers import JSONParser
-from pik.utils.camelization import underscoreize
 from sentry_sdk import capture_exception
 from pika import BlockingConnection, URLParameters
 from pika.exceptions import AMQPConnectionError
 from tenacity import retry, retry_if_exception_type, wait_fixed
+from pik.utils.camelization import underscoreize
 
 
 logger = logging.getLogger(__name__)
