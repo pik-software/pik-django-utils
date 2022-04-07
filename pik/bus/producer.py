@@ -161,7 +161,7 @@ class InstanceHandler:
 
 @receiver(post_save)
 def push_model_instance_to_rabbit_queue(instance, **kwargs):
-    if not settings.RABBITMQ_ENABLE:
+    if not settings.RABBITMQ_PRODUCER_ENABLE:
         return
     try:
         InstanceHandler(instance).handle()
