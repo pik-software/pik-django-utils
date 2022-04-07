@@ -1,4 +1,4 @@
-from pik.utils.camelization import underscore, underscoreize
+from pik.utils.camelization import camel_to_underscore, underscoreize
 from .parsers import (
     CamelCaseJSONParser, CamelCaseFormParser, CamelCaseMultiPartParser)
 from .renderers import CalemizeJSONRenderer
@@ -28,7 +28,7 @@ class CamelCaseViewSetMixIn:
         request.GET = underscoreize(request.GET)
         for param in ['query', 'ordering']:
             if param in request.GET:
-                request.GET[param] = underscore(request.GET[param])
+                request.GET[param] = camel_to_underscore(request.GET[param])
         return super().dispatch(request, *args, **kwargs)
 
     def get_serializer_context(self):

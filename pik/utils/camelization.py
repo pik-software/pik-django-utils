@@ -10,37 +10,37 @@ PATTERNS = [
 ]
 
 
-def underscore(word: str) -> str:
+def camel_to_underscore(word: str) -> str:
     """
     Make an underscored, lowercase form from the expression in the string.
 
     Example::
 
-        >>> underscore('fullName')
+        >>> camel_to_underscore('fullName')
         'full_name'
-        >>> underscore('FullName')
+        >>> camel_to_underscore('FullName')
         'full_name'
-        >>> underscore('fullName1')
+        >>> camel_to_underscore('fullName1')
         'full_name_1'
-        >>> underscore('full123Name')
+        >>> camel_to_underscore('full123Name')
         'full_123_name'
-        >>> underscore('fullN1ame')
+        >>> camel_to_underscore('fullN1ame')
         'full_n_1ame'
-        >>> underscore('full123N1ame')
+        >>> camel_to_underscore('full123N1ame')
         'full_123n_1ame'
-        >>> underscore('Code1C')
+        >>> camel_to_underscore('Code1C')
         'code_1c'
-        >>> underscore('CodeOIDP')
+        >>> camel_to_underscore('CodeOIDP')
         'code_oidp'
-        >>> underscore('CodeOIDP1')
+        >>> camel_to_underscore('CodeOIDP1')
         'code_oidp1'
-        >>> underscore('OIDPCode')
+        >>> camel_to_underscore('OIDPCode')
         'oidp_code'
-        >>> underscore('code-oidp')
+        >>> camel_to_underscore('code-oidp')
         'code_oidp'
-        >>> underscore('code-OIDP')
+        >>> camel_to_underscore('code-OIDP')
         'code_oidp'
-        >>> underscore('code-OIDP-1')
+        >>> camel_to_underscore('code-OIDP-1')
         'code_oidp_1'
 
     """
@@ -62,11 +62,12 @@ def underscoreize(data, **options):
         if isinstance(data, MultiValueDict):
             new_data = MultiValueDict()
             for key, value in data.items():
-                new_data.setlist(underscore(key, **options), data.getlist(key))
+                new_data.setlist(
+                    camel_to_underscore(key, **options), data.getlist(key))
             return new_data
         for key, value in _get_iterable(data):
             if isinstance(key, str):
-                new_key = underscore(key, **options)
+                new_key = camel_to_underscore(key, **options)
             else:
                 new_key = key
 
