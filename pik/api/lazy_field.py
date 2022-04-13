@@ -1,5 +1,6 @@
 from functools import reduce
 from operator import or_
+from typing import Dict
 
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
@@ -98,7 +99,7 @@ class ModelSerializerRegistratorMetaclass(SerializerMetaclass):
         pik.api.lazy_field.LazySerializerRegistrationConflict: ...
 
     """
-    SERIALIZERS = {}
+    SERIALIZERS: Dict['str', type] = {}
 
     def __new__(cls, *args, **kwargs):
         new = super().__new__(cls, *args, **kwargs)
