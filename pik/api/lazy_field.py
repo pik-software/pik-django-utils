@@ -99,7 +99,7 @@ class ModelSerializerRegistratorMetaclass(SerializerMetaclass):
         pik.api.lazy_field.LazySerializerRegistrationConflict: ...
 
     """
-    SERIALIZERS: Dict['str', type] = {}
+    SERIALIZERS: Dict[str, type] = {}
 
     def __new__(cls, *args, **kwargs):
         new = super().__new__(cls, *args, **kwargs)
