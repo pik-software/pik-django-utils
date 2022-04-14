@@ -106,8 +106,7 @@ class InstanceHandler:
     @property
     def payload(self):
         data = self.serializer(
-            self._instance, context=self.get_serializer_context()
-        ).to_representation(self._instance)
+            self._instance, context=self.get_serializer_context()).data
         data = camelize(data, **api_settings.JSON_UNDERSCOREIZE)
         if hasattr(self.serializer, 'camelization_hook'):
             return self.serializer.camelization_hook(data)
