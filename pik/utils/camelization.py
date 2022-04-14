@@ -63,11 +63,11 @@ def underscoreize(data, **options):
             new_data = MultiValueDict()
             for key, value in data.items():
                 new_data.setlist(
-                    camel_to_underscore(key, **options), data.getlist(key))
+                    camel_to_underscore(key), data.getlist(key))
             return new_data
         for key, value in _get_iterable(data):
             if isinstance(key, str):
-                new_key = camel_to_underscore(key, **options)
+                new_key = camel_to_underscore(key)
             else:
                 new_key = key
 
