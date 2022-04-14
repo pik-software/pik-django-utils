@@ -4,6 +4,7 @@ from typing import Dict
 
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
+from django_filters.conf import is_callable
 from rest_framework.fields import Field
 from rest_framework.serializers import ModelSerializer, SerializerMetaclass
 
@@ -99,9 +100,17 @@ class ModelSerializerRegistratorMetaclass(SerializerMetaclass):
         pik.api.lazy_field.LazySerializerRegistrationConflict: ...
 
         >>> class TestRegistered(LazyFieldHandlerMixIn, ModelSerializer):
-        ...     lazy_lookup_name_hook = 'CustomTestRegistered'
-        >>> ModelSerializerRegistratorMetaclass.SERIALIZERS['CustomTestRegistered']
+        ...     lazy_lookup_name_hook = 'TestRegistered1'
+        >>> ModelSerializerRegistratorMetaclass.SERIALIZERS['TestRegistered1']
         <class 'pik.api.lazy_field.TestRegistered'>
+
+        >>> class TestRegistered(LazyFieldHandlerMixIn, ModelSerializer):
+        ...     @staticmethod
+        ...     def lazy_lookup_name_hook():
+        ...         return 'TestRegistered2'
+        >>> ModelSerializerRegistratorMetaclass.SERIALIZERS['TestRegistered2']
+        <class 'pik.api.lazy_field.TestRegistered'>
+
 
     """
     SERIALIZERS: Dict[str, type] = {}
@@ -111,6 +120,8 @@ class ModelSerializerRegistratorMetaclass(SerializerMetaclass):
         if not issubclass(new, ModelSerializer):
             return new
         name = getattr(new, 'lazy_lookup_name_hook', new.__name__)
+        if is_callable(name):
+            name = name()
         # Historical serializers are generated for v1 & v2
         is_historical = name.startswith('Historical')
         if name in cls.SERIALIZERS and not is_historical:
