@@ -1,13 +1,13 @@
 import os
 import platform
 import logging
-from pydoc import locate
 
 import django
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
 from django.utils.functional import cached_property
+from django.utils.module_loading import import_string
 from rest_framework.renderers import JSONRenderer
 from rest_framework import status
 from djangorestframework_camel_case.settings import api_settings
@@ -86,8 +86,8 @@ class InstanceHandler:
     #   ...
     # }
     MODELS_INFO = {
-        locate(serializer).Meta.model.__name__: {  # type: ignore
-            'serializer': locate(serializer),
+        import_string(serializer).Meta.model.__name__: {  # type: ignore
+            'serializer': import_string(serializer),
             'exchange': exchange,
         }
         for exchange, serializer
@@ -106,8 +106,7 @@ class InstanceHandler:
     @property
     def payload(self):
         data = self.serializer(
-            self._instance, context=self.get_serializer_context()
-        ).to_representation(self._instance)
+            self._instance, context=self.get_serializer_context()).data
         data = camelize(data, **api_settings.JSON_UNDERSCOREIZE)
         if hasattr(self.serializer, 'camelization_hook'):
             return self.serializer.camelization_hook(data)
