@@ -1,8 +1,8 @@
 import io
 import logging
-from pydoc import locate
 
 from django.conf import settings
+from django.utils.module_loading import import_string
 from rest_framework.parsers import JSONParser
 from djangorestframework_camel_case.util import underscoreize
 from sentry_sdk import capture_exception
@@ -72,8 +72,8 @@ class MessageHandler:
     #   ...
     # }
     MODELS_INFO = {
-        locate(serializer).Meta.model.__name__: {  # type: ignore
-            'serializer': locate(serializer),
+        import_string(serializer).Meta.model.__name__: {  # type: ignore
+            'serializer': import_string(serializer),
             'queue': queue,
         }
         for queue, serializer
