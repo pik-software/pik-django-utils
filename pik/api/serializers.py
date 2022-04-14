@@ -13,8 +13,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ModelSerializer
 
 from .constants import SOFT_DELETE_FIELDS
-from .lazy_field import (
-    LazyFieldHandlerMixIn, ModelSerializerRegistratorMetaclass)
+from .lazy_field import LazyFieldHandlerMixIn
 from .restql import DefaultRequestQueryParserMixin
 
 
@@ -285,7 +284,6 @@ class StandardizedModelSerializer(
         DynamicModelSerializerMixIn,
         PermittedFieldsSerializerMixIn,
         StandardizedProtocolSerializer,
-        metaclass=ModelSerializerRegistratorMetaclass
 ):
 
     # we pass soft deleted logic here because drf-yasg can't find type of
