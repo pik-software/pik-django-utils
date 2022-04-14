@@ -36,9 +36,6 @@ class SettableNestedSerializerMixIn:
               'Получен "{object_type}".'),
     }
 
-    def update(self, *args, **kwargs):
-        return super().update(*args, **kwargs)
-
     def run_validators(self, value):
         if not self.parent:
             return super().run_validators(value)
