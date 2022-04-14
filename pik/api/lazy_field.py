@@ -98,6 +98,11 @@ class ModelSerializerRegistratorMetaclass(SerializerMetaclass):
             ...
         pik.api.lazy_field.LazySerializerRegistrationConflict: ...
 
+        >>> class TestRegistered(LazyFieldHandlerMixIn, ModelSerializer):
+        ...     lazy_lookup_name_hook = 'CustomTestRegistered'
+        >>> ModelSerializerRegistratorMetaclass.SERIALIZERS['CustomTestRegistered']
+        <class 'pik.api.lazy_field.TestRegistered'>
+
     """
     SERIALIZERS: Dict[str, type] = {}
 
@@ -105,12 +110,13 @@ class ModelSerializerRegistratorMetaclass(SerializerMetaclass):
         new = super().__new__(cls, *args, **kwargs)
         if not issubclass(new, ModelSerializer):
             return new
+        name = getattr(new, 'lazy_lookup_name_hook', new.__name__)
         # Historical serializers are generated for v1 & v2
-        is_historical = new.__name__.startswith('Historical')
-        if new.__name__ in cls.SERIALIZERS and not is_historical:
+        is_historical = name.startswith('Historical')
+        if name in cls.SERIALIZERS and not is_historical:
             raise LazySerializerRegistrationConflict(
-                (new, cls.SERIALIZERS[new.__name__]))
-        cls.SERIALIZERS[new.__name__] = new
+                (new, cls.SERIALIZERS[name]))
+        cls.SERIALIZERS[name] = new
         return new
 
 
