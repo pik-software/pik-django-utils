@@ -103,11 +103,14 @@ class ModelSerializerRegistratorMetaclass(SerializerMetaclass):
 
     def __new__(cls, *args, **kwargs):
         new = super().__new__(cls, *args, **kwargs)
-        if issubclass(new, ModelSerializer):
-            if new.__name__ in cls.SERIALIZERS:
-                raise LazySerializerRegistrationConflict(
-                    (new, cls.SERIALIZERS[new.__name__]))
-            cls.SERIALIZERS[new.__name__] = new
+        if not issubclass(new, ModelSerializer):
+            return new
+        # Historical serializers are generated for v1 & v2
+        is_historical = new.__name__.startswith('Historical')
+        if new.__name__ in cls.SERIALIZERS and not is_historical:
+            raise LazySerializerRegistrationConflict(
+                (new, cls.SERIALIZERS[new.__name__]))
+        cls.SERIALIZERS[new.__name__] = new
         return new
 
 

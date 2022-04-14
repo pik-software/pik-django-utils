@@ -13,7 +13,8 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ModelSerializer
 
 from .constants import SOFT_DELETE_FIELDS
-from .lazy_field import LazyFieldHandlerMixIn
+from .lazy_field import (
+    LazyFieldHandlerMixIn, ModelSerializerRegistratorMetaclass)
 from .restql import DefaultRequestQueryParserMixin
 
 
@@ -34,6 +35,9 @@ class SettableNestedSerializerMixIn:
             _('Некорректный тип объекта. Ожидался "{expected_object_type}". '
               'Получен "{object_type}".'),
     }
+
+    def update(self, *args, **kwargs):
+        return super().update(*args, **kwargs)
 
     def run_validators(self, value):
         if not self.parent:
@@ -284,6 +288,7 @@ class StandardizedModelSerializer(
         DynamicModelSerializerMixIn,
         PermittedFieldsSerializerMixIn,
         StandardizedProtocolSerializer,
+        metaclass=ModelSerializerRegistratorMetaclass
 ):
 
     # we pass soft deleted logic here because drf-yasg can't find type of
