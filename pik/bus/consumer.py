@@ -116,7 +116,9 @@ class MessageHandler:
             return self.model(uid=self._data.get('guid'))
 
     def update_instance(self):
-        self._serializer_class().update(self.instance, self._data)
+        serializer = self._serializer_class(self.instance, self._data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
 
     def handle(self):
         self.fetch_message()
