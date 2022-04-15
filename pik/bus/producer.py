@@ -78,24 +78,27 @@ class InstanceHandler:
     renderer_class = JSONRenderer
     _instance = NotImplemented
 
-    # MODELS_INFO = {
-    #   model: {
-    #       'serializer': serializer,
-    #       'exchange': exchange
-    #   },
-    #   ...
-    # }
-    MODELS_INFO = {
-        import_string(serializer).Meta.model.__name__: {  # type: ignore
-            'serializer': import_string(serializer),
-            'exchange': exchange,
-        }
-        for exchange, serializer
-        in settings.RABBITMQ_PRODUCES.items()
-    }
-
     def __init__(self, instance):
         self._instance = instance
+
+    @cached_property
+    @staticmethod
+    def models_info():
+        """```{
+            model: {
+               'serializer': serializer,
+               'exchange': exchange
+           },
+           ...
+        }```"""
+        return {
+            import_string(serializer).Meta.model.__name__: {  # type: ignore
+                'serializer': import_string(serializer),
+                'exchange': exchange,
+            }
+            for exchange, serializer
+            in settings.RABBITMQ_PRODUCES.items()
+        }
 
     def handle(self):
         try:
@@ -134,14 +137,14 @@ class InstanceHandler:
     @property
     def serializer(self):
         try:
-            return self.MODELS_INFO[self.model_name]['serializer']
+            return self.models_info[self.model_name]['serializer']
         except KeyError as exc:
             raise BusModelNotFound() from exc
 
     @property
     def exchange(self):
         try:
-            return self.MODELS_INFO[self.model_name]['exchange']
+            return self.models_info[self.model_name]['exchange']
         except KeyError as exc:
             raise BusModelNotFound() from exc
 

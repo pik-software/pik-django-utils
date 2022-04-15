@@ -2,6 +2,7 @@ import io
 import logging
 
 from django.conf import settings
+from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
 from rest_framework.parsers import JSONParser
 from djangorestframework_camel_case.util import underscoreize
@@ -64,28 +65,31 @@ class MessageHandler:
     _data = None
     _serializer_class = None
 
-    # MODELS_INFO = {
-    #   model: {
-    #       'serializer': serializer,
-    #       'queue': queue
-    #   },
-    #   ...
-    # }
-    MODELS_INFO = {
-        import_string(serializer).Meta.model.__name__: {  # type: ignore
-            'serializer': import_string(serializer),
-            'queue': queue,
-        }
-        for queue, serializer
-        in settings.RABBITMQ_CONSUMES.items()
-    }
-
     def __init__(self, message, queue):
         self._data = message
         self._serializer_class = self.get_serializer(queue)
 
+    @cached_property
+    @staticmethod
+    def models_info():
+        """```{
+            model: {
+                'serializer': serializer,
+                'queue': queue
+            },
+           ...
+        }```"""
+        return {
+            import_string(serializer).Meta.model.__name__: {  # type: ignore
+                'serializer': import_string(serializer),
+                'queue': queue,
+            }
+            for queue, serializer
+            in settings.RABBITMQ_CONSUMES.items()
+        }
+
     def get_serializer(self, queue):
-        for model_info in self.MODELS_INFO.values():
+        for model_info in self.models_info.values():
             if model_info['queue'] == queue:
                 return model_info['serializer']
         raise BusQueueNotFound()
