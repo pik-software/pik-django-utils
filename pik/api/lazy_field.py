@@ -4,6 +4,7 @@ from typing import Dict
 
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
+from django.conf import settings
 from django_filters.conf import is_callable
 from rest_framework.fields import Field
 from rest_framework.serializers import ModelSerializer, SerializerMetaclass
@@ -122,9 +123,12 @@ class ModelSerializerRegistratorMetaclass(SerializerMetaclass):
         name = getattr(new, 'lazy_lookup_name_hook', new.__name__)
         if is_callable(name):
             name = name()
+        if name in getattr(settings, 'LAZY_FIELD_SKIP_SERIALIZERS', ()):
+            return new
         # Historical serializers are generated for v1 & v2
-        is_historical = name.startswith('Historical')
-        if name in cls.SERIALIZERS and not is_historical:
+        if name.startswith('Historical'):
+            return new
+        if name in cls.SERIALIZERS:
             raise LazySerializerRegistrationConflict(
                 (new, cls.SERIALIZERS[name]))
         cls.SERIALIZERS[name] = new
