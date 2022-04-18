@@ -67,11 +67,10 @@ class MessageHandler:
 
     def __init__(self, message, queue):
         self._data = message
-        self._serializer_class = self.get_serializer(queue)
+        self._queue = queue
 
     @cached_property
-    @staticmethod
-    def models_info():
+    def models_info(self):  # noqa: no-self-used
         """```{
             model: {
                 'serializer': serializer,
@@ -88,9 +87,10 @@ class MessageHandler:
             in settings.RABBITMQ_CONSUMES.items()
         }
 
-    def get_serializer(self, queue):
+    @cached_property
+    def serializer_class(self):
         for model_info in self.models_info.values():
-            if model_info['queue'] == queue:
+            if model_info['queue'] == self._queue:
                 return model_info['serializer']
         raise BusQueueNotFound()
 
