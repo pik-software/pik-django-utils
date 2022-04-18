@@ -63,7 +63,6 @@ class MessageHandler:
     parser_class = JSONParser
 
     _data = None
-    _serializer_class = None
 
     def __init__(self, message, queue):
         self._data = message
@@ -101,12 +100,12 @@ class MessageHandler:
     def prepare_message(self):
         self._data = underscoreize(self._data)
 
-        if hasattr(self._serializer_class, 'underscorize_hook'):
-            self._data = self._serializer_class.underscorize_hook(self._data)
+        if hasattr(self.serializer_class, 'underscorize_hook'):
+            self._data = self.serializer_class.underscorize_hook(self._data)
 
     @property
     def model(self):
-        return self._serializer_class.Meta.model
+        return self.serializer_class.Meta.model
 
     @property
     def queryset(self):
@@ -120,7 +119,7 @@ class MessageHandler:
             return self.model(uid=self._data.get('guid'))
 
     def update_instance(self):
-        serializer = self._serializer_class(self.instance, self._data)
+        serializer = self.serializer_class(self.instance, self._data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
