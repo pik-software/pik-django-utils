@@ -82,8 +82,7 @@ class InstanceHandler:
         self._instance = instance
 
     @cached_property
-    @staticmethod
-    def models_info():
+    def models_info(self):  # noqa: no-self-used Unable to combine static @method & @cached_property
         """```{
             model: {
                'serializer': serializer,
