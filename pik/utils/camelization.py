@@ -5,8 +5,10 @@ from django.http import QueryDict
 from django.utils.datastructures import MultiValueDict
 
 PATTERNS = [
-    re.compile(r'([A-Z\d]+)([A-Z\d][a-z])'),
-    re.compile(r'([a-z])([A-Z\d])')
+    # re.compile(r'([A-Z\d]+)([A-Z\d][a-z])'),
+    # re.compile(r'([a-z])([A-Z\d])')
+    re.compile(r'(?<=[a-zA-Z\d])(?=[A-Z])'),
+    re.compile(r'(?<=[a-zA-Z])(?=[\d])')
 ]
 
 
@@ -27,25 +29,25 @@ def camel_to_underscore(word: str) -> str:
         >>> camel_to_underscore('fullN1ame')
         'full_n_1ame'
         >>> camel_to_underscore('full123N1ame')
-        'full_123n_1ame'
+        'full_123_n_1ame'
         >>> camel_to_underscore('Code1C')
-        'code_1c'
+        'code_1_c'
         >>> camel_to_underscore('CodeOIDP')
-        'code_oidp'
+        'code_o_i_d_p'
         >>> camel_to_underscore('CodeOIDP1')
-        'code_oidp1'
+        'code_o_i_d_p_1'
         >>> camel_to_underscore('OIDPCode')
-        'oidp_code'
+        'o_i_d_p_code'
         >>> camel_to_underscore('code-oidp')
         'code_oidp'
         >>> camel_to_underscore('code-OIDP')
-        'code_oidp'
+        'code_o_i_d_p'
         >>> camel_to_underscore('code-OIDP-1')
-        'code_oidp_1'
+        'code_o_i_d_p_1'
 
     """
     for pattern in PATTERNS:
-        word = re.sub(pattern, r'\1_\2', word)
+        word = re.sub(pattern, '_', word)
     return word.replace('-', '_').lower()
 
 
