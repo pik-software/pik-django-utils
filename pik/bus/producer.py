@@ -1,13 +1,13 @@
 import os
 import platform
 import logging
-from pydoc import locate
 
 import django
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
 from django.utils.functional import cached_property
+from django.utils.module_loading import import_string
 from rest_framework.renderers import JSONRenderer
 from rest_framework import status
 from djangorestframework_camel_case.settings import api_settings
@@ -78,24 +78,26 @@ class InstanceHandler:
     renderer_class = JSONRenderer
     _instance = NotImplemented
 
-    # MODELS_INFO = {
-    #   model: {
-    #       'serializer': serializer,
-    #       'exchange': exchange
-    #   },
-    #   ...
-    # }
-    MODELS_INFO = {
-        locate(serializer).Meta.model.__name__: {  # type: ignore
-            'serializer': locate(serializer),
-            'exchange': exchange,
-        }
-        for exchange, serializer
-        in settings.RABBITMQ_PRODUCES.items()
-    }
-
     def __init__(self, instance):
         self._instance = instance
+
+    @cached_property
+    def models_info(self):  # noqa: no-self-used Unable to combine static @method & @cached_property
+        """```{
+            model: {
+               'serializer': serializer,
+               'exchange': exchange
+           },
+           ...
+        }```"""
+        return {
+            import_string(serializer).Meta.model.__name__: {  # type: ignore
+                'serializer': import_string(serializer),
+                'exchange': exchange,
+            }
+            for exchange, serializer
+            in settings.RABBITMQ_PRODUCES.items()
+        }
 
     def handle(self):
         try:
@@ -106,8 +108,7 @@ class InstanceHandler:
     @property
     def payload(self):
         data = self.serializer(
-            self._instance, context=self.get_serializer_context()
-        ).to_representation(self._instance)
+            self._instance, context=self.get_serializer_context()).data
         data = camelize(data, **api_settings.JSON_UNDERSCOREIZE)
         if hasattr(self.serializer, 'camelization_hook'):
             return self.serializer.camelization_hook(data)
@@ -135,14 +136,14 @@ class InstanceHandler:
     @property
     def serializer(self):
         try:
-            return self.MODELS_INFO[self.model_name]['serializer']
+            return self.models_info[self.model_name]['serializer']
         except KeyError as exc:
             raise BusModelNotFound() from exc
 
     @property
     def exchange(self):
         try:
-            return self.MODELS_INFO[self.model_name]['exchange']
+            return self.models_info[self.model_name]['exchange']
         except KeyError as exc:
             raise BusModelNotFound() from exc
 
