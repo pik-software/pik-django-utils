@@ -32,7 +32,7 @@ def camel_to_underscore(word: str) -> str:
         'full_123_n1ame'
         >>> camel_to_underscore('code1C')
         'code_1_c'
-        >>> camel_to_underscore('code1с')
+        >>> camel_to_underscore('code1c')
         'code1c'
         >>> camel_to_underscore('CodeOIDP')
         'code_o_i_d_p'
