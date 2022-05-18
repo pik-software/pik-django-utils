@@ -7,8 +7,8 @@ from django.utils.datastructures import MultiValueDict
 PATTERNS = [
     # re.compile(r'([A-Z\d]+)([A-Z\d][a-z])'),
     # re.compile(r'([a-z])([A-Z\d])')
-    re.compile(r'(?<=[a-zA-Z\d])(?=[A-Z])'),
-    re.compile(r'(?<=[a-zA-Z])(?=[\d])')
+    re.compile(r'(?<=[a-zA-Z_\d])(?=[A-Z])'),
+    re.compile(r'(?<=[a-zA-Z_])(?=[\d])')
 ]
 
 
@@ -44,6 +44,8 @@ def camel_to_underscore(word: str) -> str:
         'code_o_i_d_p'
         >>> camel_to_underscore('code-OIDP-1')
         'code_o_i_d_p_1'
+        >>> camel_to_underscore('created_Gte')
+        'created__gte'
 
     """
     for pattern in PATTERNS:
