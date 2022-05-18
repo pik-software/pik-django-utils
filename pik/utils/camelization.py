@@ -8,7 +8,7 @@ PATTERNS = [
     # re.compile(r'([A-Z\d]+)([A-Z\d][a-z])'),
     # re.compile(r'([a-z])([A-Z\d])')
     re.compile(r'(?<=[a-zA-Z_\d])(?=[A-Z])'),
-    re.compile(r'(?<=[a-zA-Z_])(?=[\d])')
+    re.compile(r'(?<=[a-zA-Z_])(?=(\d+_|\d+$))')
 ]
 
 
