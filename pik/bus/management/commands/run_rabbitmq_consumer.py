@@ -31,4 +31,4 @@ class Command(BaseCommand):
         consumer_name = settings.RABBITMQ_ACCOUNT_NAME
         queues = list(settings.RABBITMQ_CONSUMES.keys())
         logger.info('Starting worker for queues %s"', queues)
-        MessageConsumer(settings.RABBITMQ_URL, consumer_name, queues).start_consume()
+        MessageConsumer(settings.RABBITMQ_URL, consumer_name, queues).consume()
