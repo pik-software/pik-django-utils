@@ -11,9 +11,9 @@ class PIKMessageException(PUided, Dated):
     queue = models.CharField(_('Очередь'), max_length=255)
     message = models.BinaryField(_('Сообщение'))
     exception = models.JSONField(_('Ошибка'))
-    exception_type = models.CharField(max_length=255)
-    exception_message = models.CharField(max_length=255)
-    dependencies = models.JSONField(default=dict, blank=True)
+    exception_type = models.CharField('Тип ошибки', max_length=255)
+    exception_message = models.CharField('Сообщение об ошибке', max_length=255)
+    dependencies = models.JSONField('Зависимости', default=dict, blank=True)
 
     class Meta:
         verbose_name = _('Сообщение шины')

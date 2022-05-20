@@ -59,8 +59,7 @@ class MessageConsumer:
         for queue in self._queues:
             self._channel.basic_consume(
                 on_message_callback=partial(self._handle_message, queue=queue),
-                queue=queue,
-            )
+                queue=queue)
 
     @staticmethod
     def _handle_message(queue, channel, method, properties, body):
@@ -85,6 +84,7 @@ class MessageHandler:
     _message = None
     _queue = None
     _serializers = None
+    exc_data = None
 
     def __init__(self, message, queue):
         self._message = message
@@ -96,8 +96,10 @@ class MessageHandler:
             self._prepare_payload()
             self._update_instance()
             self._process_dependants()
+            return True
         except Exception as exc:  # noqa: broad-except
             self._capture_exception(exc)
+            return False
 
     def _fetch_payload(self):
         self._payload = self.parser_class().parse(
@@ -167,7 +169,7 @@ class MessageHandler:
         from .models import PIKMessageException  # noqa: cyclic import workaround
         logger.info(exc)
         capture_exception(exc)
-        exc_data = extract_exception_data(exc)
+        self.exc_data = extract_exception_data(exc)
 
         if not isinstance(self._payload, dict) or 'guid' not in self._payload:
             uid = sha1(self._message).hexdigest()[:32]
@@ -177,14 +179,14 @@ class MessageHandler:
                     'uid': uid},
                 uid=uid, queue=self._queue, message=self._message,
                 exception=extract_exception_data(exc),
-                exception_message=exc_data['message'],
-                exception_type=exc_data['code']
+                exception_message=self.exc_data['message'],
+                exception_type=self.exc_data['code']
             )
             return
 
         dependencies = {
             self._payload[field]['type']: self._payload[field]['guid']
-            for field, errors in exc_data['detail'].items()
+            for field, errors in self.exc_data.get('detail', {}).items()
             for error in errors
             if error['code'] == 'does_not_exist'}
 
@@ -192,9 +194,9 @@ class MessageHandler:
             PIKMessageException, search_keys={
                 'entity_uid': self._payload.get('guid'),
                 'queue': self._queue},
-            exception_type=exc_data['code'],
-            exception_message=exc_data['message'],
+            exception_type=self.exc_data['code'],
+            exception_message=self.exc_data['message'],
             entity_uid=self._payload.get('guid'),
-            message=self._message, exception=exc_data, queue=self._queue,
+            message=self._message, exception=self.exc_data, queue=self._queue,
             dependencies=dependencies
         )
