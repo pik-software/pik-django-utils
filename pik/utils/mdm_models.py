@@ -12,7 +12,7 @@ def _process_mixins_meta(mixin_meta: Type,
     return mixin_meta
 
 
-def define_models(  # noqa: pylint=dangerous-default-value
+def define_models(  # noqa: dangerous-default-value
     names: List[str],
     base_module: types.ModuleType,
     variables: dict,
@@ -53,7 +53,7 @@ def _process_lazy_fields(new_serializer):
     return new_serializer
 
 
-def define_serializers( # noqa: pylint=dangerous-default-value
+def define_serializers( # noqa: dangerous-default-value
     names: List[str],
     base_module: types.ModuleType,
     variables: dict,
