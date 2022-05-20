@@ -4,11 +4,6 @@ from typing import List, NoReturn, Type, Tuple
 from pik.api.lazy_field import LazyField
 
 
-MODELS = {}
-BASE_SERIALIZERS = {}
-SERIALIZERS = {}
-
-
 def _process_mixins_meta(mixin_meta: Type,
                          mixin_classes: Tuple, attrs: dict) -> Type:
     for mixin_class in mixin_classes[::-1]:
@@ -21,7 +16,7 @@ def define_models(
     names: List[str],
     base_module: types.ModuleType,
     variables: dict,
-    mixins: dict = {},
+    mixins: dict = {}, # noqa: dangerous-default-value
 ) -> NoReturn:
     """Define Django models dynamically using its names and
     module with its base models provided"""
@@ -41,23 +36,20 @@ def define_models(
             name, (*mixin_classes, base_model,),
             {**attrs, **excluded_fields, 'Meta': meta})
         variables[name] = new_model
-        MODELS[f'{variables[name].__module__}.{name}'] = new_model
-        serializer_name = f'{name}Serializer'
-        BASE_SERIALIZERS[f'Base{serializer_name}'] = (
-            f'{new_model.__module__.replace(".models", ".serializers")}.'
-            f'{serializer_name}')
 
 
 def _process_lazy_fields(new_serializer):
     """Process all serializer LazyFields and replace its path attributes
     from BaseSerializers to specific ones"""
 
-    for field_name, field in new_serializer._declared_fields.items():
+    for _, field in \
+            new_serializer._declared_fields.items(): # noqa: protected-access
         if not isinstance(field, LazyField):
             continue
-        path = field._kwargs['path']
+        path = field._kwargs['path'] # noqa: protected-access
         if path.startswith('Base'):
-            field._kwargs['path'] = path[len('Base'):]
+            new_path = path[len('Base'):]
+            field._kwargs['path'] = new_path # noqa: protected-access
     return new_serializer
 
 
@@ -66,7 +58,7 @@ def define_serializers(
     base_module: types.ModuleType,
     variables: dict,
     model_module: types.ModuleType,
-    mixins: dict = {},
+    mixins: dict = {}, # noqa: dangerous-default-value
 ) -> NoReturn:
     """Define DRF serializers dynamically using its model names
     and module with its base serializers provided"""
@@ -84,7 +76,4 @@ def define_serializers(
                               (*mixin_classes, base_serializer,),
                               {**attrs, 'Meta': meta})
         new_serializer = _process_lazy_fields(new_serializer)
-        new_serializer_full_path = f'{new_serializer.__module__}.' \
-                                   f'{new_serializer_name}'
         variables[new_serializer_name] = new_serializer
-        SERIALIZERS[new_serializer_full_path] = new_serializer
