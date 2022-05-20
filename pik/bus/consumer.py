@@ -2,12 +2,10 @@ import io
 import logging
 from functools import partial
 from hashlib import sha1
-from json import JSONDecodeError
 
 from django.conf import settings
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
-from rest_framework.exceptions import ValidationError
 from rest_framework.parsers import JSONParser
 from djangorestframework_camel_case.util import underscoreize
 from sentry_sdk import capture_exception
@@ -16,7 +14,6 @@ from pika.exceptions import AMQPConnectionError
 from tenacity import retry, retry_if_exception_type, wait_fixed
 
 from pik.api.exceptions import extract_exception_data
-from pik.bus.models import PIKMessageException
 from pik.core.shortcuts import update_or_create_object
 
 logger = logging.getLogger(__name__)
@@ -153,10 +150,10 @@ class MessageHandler:
                 queue: import_string(serializer)
                 for queue, serializer in settings.RABBITMQ_CONSUMES.items()
             }
-        if queue not in cls._serializers:
+        if not cls._serializers or queue not in cls._serializers:  # noqa: unsupported-membership-test
             raise QueueSerializerMissingExcpetion(
                 f'Unable to find serializer for {queue}')
-        return cls._serializers[queue]
+        return cls._serializers[queue]  # noqa: unsupported-membership-test
 
     def _process_dependants(self):
         from .models import PIKMessageException  # noqa: cyclic import workaround
@@ -172,7 +169,7 @@ class MessageHandler:
         capture_exception(exc)
         exc_data = extract_exception_data(exc)
 
-        if not isinstance(self._payload, dict) or not 'guid' in self._payload:
+        if not isinstance(self._payload, dict) or 'guid' not in self._payload:
             uid = sha1(self._message).hexdigest()[:32]
             update_or_create_object(
                 PIKMessageException, search_keys={
@@ -185,11 +182,11 @@ class MessageHandler:
             )
             return
 
-        dependencies = {self._payload[field]['type']: self._payload[field]['guid']
+        dependencies = {
+            self._payload[field]['type']: self._payload[field]['guid']
             for field, errors in exc_data['detail'].items()
             for error in errors
-            if error['code'] == 'does_not_exist'
-        }
+            if error['code'] == 'does_not_exist'}
 
         update_or_create_object(
             PIKMessageException, search_keys={
