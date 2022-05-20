@@ -14,6 +14,7 @@ def dated_model_fixture(request):
     return request.param
 
 
+@pytest.mark.django_db
 @freeze_time("2012-01-14 03:21:34")
 def test_dated_protocol(dated_model):
     _, factory = dated_model
