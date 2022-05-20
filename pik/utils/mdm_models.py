@@ -1,5 +1,5 @@
 import types
-from typing import List, NoReturn, Type, Tuple
+from typing import List, Type, Tuple
 
 from pik.api.lazy_field import LazyField
 
@@ -17,7 +17,7 @@ def define_models( # noqa: dangerous-default-value
     base_module: types.ModuleType,
     variables: dict,
     mixins: dict = {},
-) -> NoReturn:
+) -> None:
     """Define Django models dynamically using its names and
     module with its base models provided"""
 
@@ -59,7 +59,7 @@ def define_serializers( # noqa: dangerous-default-value
     variables: dict,
     model_module: types.ModuleType,
     mixins: dict = {},
-) -> NoReturn:
+) -> None:
     """Define DRF serializers dynamically using its model names
     and module with its base serializers provided"""
 
