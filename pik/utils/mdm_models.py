@@ -12,7 +12,7 @@ def _process_mixins_meta(mixin_meta: Type,
     return mixin_meta
 
 
-def define_models(  # noqa: dangerous-default-value
+def define_models( # noqa: dangerous-default-value
     names: List[str],
     base_module: types.ModuleType,
     variables: dict,
