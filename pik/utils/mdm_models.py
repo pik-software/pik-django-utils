@@ -12,12 +12,12 @@ def _process_mixins_meta(mixin_meta: Type,
     return mixin_meta
 
 
-def define_models( # noqa: dangerous-default-value
+def define_models(  # noqa: dangerous-default-value
     names: List[str],
     base_module: types.ModuleType,
     variables: dict,
     mixins: dict = {},
-) -> None:
+) -> None:  # https://github.com/python/mypy/issues/8401
     """Define Django models dynamically using its names and
     module with its base models provided"""
 
@@ -53,13 +53,13 @@ def _process_lazy_fields(new_serializer):
     return new_serializer
 
 
-def define_serializers( # noqa: dangerous-default-value
+def define_serializers(  # noqa: dangerous-default-value
     names: List[str],
     base_module: types.ModuleType,
     variables: dict,
     model_module: types.ModuleType,
     mixins: dict = {},
-) -> None:
+) -> None:  # https://github.com/python/mypy/issues/8401
     """Define DRF serializers dynamically using its model names
     and module with its base serializers provided"""
 
