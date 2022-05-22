@@ -14,10 +14,10 @@ def _process_mixins_meta(mixin_meta: Type,
 
 def define_model(  # noqa: dangerous-default-value
     base_model: Type,
-    mixin_classes: Union[Type, Tuple[Type]] = (),
-    variables: Optional[dict] = {},
+    mixin_classes: Union[Type, Tuple[Type], tuple] = (),
+    variables={},
     name: Optional[str] = None,
-    excluded_fields: Optional[tuple] = (),
+    excluded_fields=(),
 ) -> None:  # https://github.com/python/mypy/issues/8401
     """Define Django model dynamically"""
 
@@ -71,11 +71,11 @@ def _process_lazy_fields(new_serializer):
 
 def define_serializer(  # noqa: dangerous-default-value
     base_serializer: Type,
-    mixin_classes: Union[Type, Tuple[Type]] = (),
+    mixin_classes: Union[Type, Tuple[Type], tuple] = (),
     model: Type = None,
-    variables: Optional[dict] = {},
+    variables={},
     name: Optional[str] = None,
-    excluded_fields: Optional[tuple] = (),
+    excluded_fields=(),
 ) -> None:  # https://github.com/python/mypy/issues/8401
     """Define DRF serializer dynamically"""
 
@@ -113,3 +113,19 @@ def define_serializers(  # noqa: dangerous-default-value
         mixin_classes = mixins.get(name, ())
         define_serializer(base_serializer, mixin_classes,
                           model, variables, name)
+
+# pik/utils/mdm_models.py:17: error: Incompatible default for argument "mixin_classes" (default has type "Tuple[]", argument has type "Union[Type[Any], Tuple[Type[Any]]]")
+# pik/utils/mdm_models.py:24: error: Value of type "Optional[Dict[Any, Any]]" is not indexable
+# pik/utils/mdm_models.py:30: error: Incompatible types in assignment (expression has type "Dict[Any, None]", variable has type "Optional[Tuple[Any, ...]]")
+# pik/utils/mdm_models.py:30: error: Item "None" of "Optional[Tuple[Any, ...]]" has no attribute "__iter__" (not iterable)
+# pik/utils/mdm_models.py:34: error: Argument 1 to "update" of "MutableMapping" has incompatible type "Optional[Tuple[Any, ...]]"; expected "Iterable[Tuple[str, Type[Any]]]"
+# pik/utils/mdm_models.py:34: error: Argument 1 to "update" of "MutableMapping" has incompatible type "Optional[Tuple[Any, ...]]"; expected "Iterable[Tuple[str, Any]]"
+# pik/utils/mdm_models.py:35: error: Unsupported target for indexed assignment ("Optional[Dict[Any, Any]]")
+# pik/utils/mdm_models.py:74: error: Incompatible default for argument "mixin_classes" (default has type "Tuple[]", argument has type "Union[Type[Any], Tuple[Type[Any]]]")
+# pik/utils/mdm_models.py:85: error: Value of type "Optional[Dict[Any, Any]]" is not indexable
+# pik/utils/mdm_models.py:91: error: Incompatible types in assignment (expression has type "Dict[Any, None]", variable has type "Optional[Tuple[Any, ...]]")
+# pik/utils/mdm_models.py:91: error: Item "None" of "Optional[Tuple[Any, ...]]" has no attribute "__iter__" (not iterable)
+# pik/utils/mdm_models.py:94: error: Argument 1 to "update" of "MutableMapping" has incompatible type "Optional[Tuple[Any, ...]]"; expected "Iterable[Tuple[str, Type[Any]]]"
+# pik/utils/mdm_models.py:94: error: Argument 1 to "update" of "MutableMapping" has incompatible type "Optional[Tuple[Any, ...]]"; expected "Iterable[Tuple[str, Any]]"
+# pik/utils/mdm_models.py:96: error: Unsupported target for indexed assignment ("Optional[Dict[Any, Any]]")
+# Found 14 errors in 1 file (checked 119 source files)
