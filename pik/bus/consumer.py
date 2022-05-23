@@ -58,10 +58,11 @@ class MessageConsumer:
     def _bind_queues(self):
         for queue in self._queues:
             self._channel.basic_consume(
-                on_message_callback=partial(self._handle_message, queue=queue))
+                on_message_callback=partial(self._handle_message, queue=queue),
+                queue=queue)
 
     @staticmethod
-    def _handle_message(queue, channel, method, properties, body):
+    def _handle_message(channel, method, properties, body, queue):
         try:
             MessageHandler(body, queue).handle()
         except Exception as exc:  # noqa: too-broad-except
