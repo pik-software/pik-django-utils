@@ -1,4 +1,7 @@
+import json
+
 from django.contrib import admin, messages
+from prettyjson.templatetags.prettyjson import prettyjson
 
 from .consumer import MessageHandler
 from .models import PIKMessageException
@@ -20,7 +23,11 @@ class PIKMessageExceptionAdmin(admin.ModelAdmin):
 
     @admin.display(description='Тело сообщения')
     def _message(self, obj):  # noqa: no-self-use
-        return bytes(obj.message)
+        try:
+            return prettyjson(json.loads(
+                bytes(obj.message)), initial='parsed', disabled='disabled')
+        except json.JSONDecodeError:
+            return bytes(bytes(obj.message))
 
     @admin.action(description='Обработать сообщение')
     def _process_message(self, request, queryset):
