@@ -6,6 +6,7 @@ include requirements.txt
 include requirements.dev.txt
 include .coveragerc
 include pytest.ini
+include mypy.ini
 
 # Include the data files
 recursive-include data *

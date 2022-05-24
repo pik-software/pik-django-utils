@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'pik.cors',
+    'pik.bus',
     'test_core_models',
     'test_core_models_fields',
     'test_core_shortcuts',
@@ -123,7 +124,8 @@ STATIC_URL = '/static/'
 # when SOFT_DELETE_SAFE_MODE is True - not soft deletion restricted
 SOFT_DELETE_SAFE_MODE = True
 SOFT_DELETE_EXCLUDE = [
-    'sessions.Session'
+    'sessions.Session',
+    'bus.PIKMessageException'
 ]
 
 

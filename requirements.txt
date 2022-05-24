@@ -13,6 +13,7 @@ django-cors-headers
 drf_yasg
 django-autocomplete-light
 dal_admin_filters
+django-prettyjson
 
 # OIDC
 social-auth-app-django

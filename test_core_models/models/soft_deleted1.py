@@ -1,6 +1,6 @@
 from django.db import models
 
-from pik.core.models import SoftDeleted
+from pik.core.models import SoftDeleted, Uided
 
 
 # Based on https://github.com/MnogoByte/django-permanent/blob/
@@ -20,7 +20,7 @@ class MyPermanentModel(SoftDeleted, BaseTestModel):
     name = models.CharField(max_length=255, blank=True, null=True)
 
 
-class RegularModel(BaseTestModel):
+class RegularModel(Uided, BaseTestModel):
     name = models.CharField(max_length=255, blank=True, null=True)
 
 
