@@ -31,6 +31,7 @@ def log_after_retry_connect(retry_state):
 
 class MessageConsumer:
     RECONNECT_WAIT = 1
+    PREFETCH_COUNT = 1
 
     _consumer_name = None
     _connection_url = None
@@ -44,6 +45,7 @@ class MessageConsumer:
 
     def consume(self):
         self._connect()
+        self._config_channel()
         self._bind_queues()
         self._channel.start_consuming()
 
@@ -54,6 +56,9 @@ class MessageConsumer:
     def _connect(self):
         self._channel = BlockingConnection(URLParameters(
             self._connection_url)).channel()
+
+    def _config_channel(self):
+        self._channel.basic_qos(prefetch_count=self.PREFETCH_COUNT)
 
     def _bind_queues(self):
         for queue in self._queues:
