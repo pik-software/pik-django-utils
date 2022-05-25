@@ -5,6 +5,8 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import set_rollback
 
+from pik.api.exceptions import extract_exception_data
+
 
 def standardized_handler(exc, context):  # noqa
     """
@@ -32,21 +34,7 @@ def standardized_handler(exc, context):  # noqa
         if getattr(exc, 'wait', None):
             headers['Retry-After'] = f'{exc.wait}'
 
-        code = exc.default_code
-        if hasattr(exc.detail, 'code') and exc.detail.code:
-            code = exc.detail.code
-
-        if isinstance(exc.detail, (list, dict)):
-            data = {
-                'code': code,
-                'detail': exc.get_full_details(),
-                'message': str(exc.default_detail),
-            }
-        else:
-            data = {
-                'code': code,
-                'message': str(exc.detail),
-            }
+        data = extract_exception_data(exc)
 
         set_rollback()
 
