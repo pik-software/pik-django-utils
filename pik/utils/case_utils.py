@@ -4,7 +4,7 @@ from collections import OrderedDict
 from django.core.files import File
 from django.http import QueryDict
 from django.utils.datastructures import MultiValueDict
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.functional import Promise
 
 from rest_framework.utils.serializer_helpers import ReturnDict
@@ -31,9 +31,10 @@ def underscore_to_camel(value: str) -> str:
 
 def camelize(data, **options):
     # Handle lazy translated strings.
-    ignore_fields = options.get("ignore_fields") or ()
+    ignore_fields = options.get("ignore_fields", ())
+    lower_camel_case = options.get("lower_camel_case", False)
     if isinstance(data, Promise):
-        data = force_text(data)
+        data = force_str(data)
     if isinstance(data, dict):
         if isinstance(data, ReturnDict):
             new_dict = ReturnDict(serializer=data.serializer)
@@ -41,9 +42,11 @@ def camelize(data, **options):
             new_dict = OrderedDict()
         for key, value in data.items():
             if isinstance(key, Promise):
-                key = force_text(key)
+                key = force_str(key)
             if isinstance(key, str) and "_" in key:
                 new_key = underscore_to_camel(key)
+                if new_key and lower_camel_case:
+                    new_key = f'{new_key[0].lower()}{new_key[1:]}'
             else:
                 new_key = key
             if key not in ignore_fields and new_key not in ignore_fields:
