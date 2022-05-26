@@ -8,7 +8,7 @@ USER_SETTINGS = getattr(settings, "JSON_CAMEL_CASE", {})
 DEFAULTS = {
     "RENDERER_CLASS": "rest_framework.renderers.JSONRenderer",
     "PARSER_CLASS": "rest_framework.parsers.JSONParser",
-    "JSON_UNDERSCOREIZE": {"ignore_fields": None},
+    "JSON_UNDERSCOREIZE": {"ignore_fields": None, "lower_camel_case": False},
 }
 
 # List of settings that may be in string import notation.
