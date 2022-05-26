@@ -1,5 +1,4 @@
 import inspect
-import re
 
 from django.conf import settings
 from django.utils.translation import gettext
@@ -11,7 +10,6 @@ from rest_framework.fields import (
     NullBooleanField, _UnvalidatedField, )
 from rest_framework.serializers import ModelSerializer
 from rest_framework.schemas.openapi import AutoSchema, SchemaGenerator
-from djangorestframework_camel_case.util import camelize, underscore_to_camel
 # TODO: klimenkoas: Drop `drf_yasg` dependency
 from drf_yasg.inspectors.field import (
     get_basic_type_info_from_hint, typing, inspect_signature, )
@@ -305,40 +303,6 @@ class PIKAutoSchema(
         RESTQLOperationParametersAutoSchema,
         MethodTagAutoSchema,
         SerializerMethodFieldAutoSchema):
-    pass
-
-
-class CamelCaseAutoSchema(AutoSchema):
-    RE = re.compile(
-        r'(((?=[^_])[a-z0-9])_[a-z0-9])' r'|(^_[a-z0-9])' r'|(\W_[a-z0-9])')
-
-    def map_serializer(self, serializer):
-        result = camelize(super().map_serializer(
-            serializer))
-        return result
-
-    def camelize(self, value):
-        """ Correct filter modificators camelization
-
-        >>> dict(camelize({'_with__filter': ''}))
-        {'With_Filter': ''}
-
-        >>> CamelCaseAutoSchema().camelize('_with__filter')
-        'With__filter'
-        """
-        return self.RE.sub(underscore_to_camel, value)
-
-    def get_operation(self, path, method):
-        """ Camelizing url params escaping `__` construction """
-        schema = super().get_operation(path, method)
-        for param in schema['parameters']:
-            param['name'] = self.camelize(param['name'])
-        return schema
-
-
-class PIKCamelCaseAutoSchema(
-        CamelCaseAutoSchema,
-        PIKAutoSchema):
     pass
 
 
