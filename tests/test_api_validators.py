@@ -6,14 +6,14 @@ from rest_framework import serializers
 from pik.api.validators import NonChangeableValidator
 
 
-class TestModel(models.Model):
+class ModelForTest(models.Model):
     uid = UUIDField()
 
     class Meta:
         app_label = ''
 
 
-class TestSerializer(serializers.ModelSerializer):
+class SerializerForTest(serializers.ModelSerializer):
     uid = serializers.UUIDField(
         validators=[
             NonChangeableValidator(),
@@ -21,7 +21,7 @@ class TestSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        model = TestModel
+        model = ModelForTest
         fields = ['uid']
 
 
@@ -30,6 +30,6 @@ def test_non_changeable_validator():
     payload = {
         'uid': str(uuid.uuid4())
     }
-    instance = TestModel(uid=payload['uid'])
-    serializer = TestSerializer(instance, payload)
+    instance = ModelForTest(uid=payload['uid'])
+    serializer = SerializerForTest(instance, payload)
     serializer.is_valid(raise_exception=True)
