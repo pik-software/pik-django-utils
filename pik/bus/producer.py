@@ -10,8 +10,6 @@ from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
 from rest_framework.renderers import JSONRenderer
 from rest_framework import status
-from pik.settings import api_settings
-from pik.utils.case_utils import camelize
 from sentry_sdk import capture_exception
 from pika import BlockingConnection, URLParameters
 from pika.exceptions import (
@@ -20,6 +18,8 @@ from tenacity import (
     retry, retry_if_exception_type, stop_after_attempt, wait_fixed, )
 
 from pik.api.camelcase.viewsets import camelcase_type_field_hook
+from pik.settings import api_settings
+from pik.utils.case_utils import camelize
 
 
 logger = logging.getLogger(__name__)

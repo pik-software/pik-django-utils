@@ -1,8 +1,8 @@
 import re
 
-from pik.utils.case_utils import camelize, capitalize
 from rest_framework.schemas import AutoSchema
 
+from pik.utils.case_utils import camelize, capitalize
 from pik.api.openapi.openapi import PIKAutoSchema
 
 

@@ -22,8 +22,7 @@ def capitalize(match):
     group = match.group()
     if len(group) == 3:
         return group[0] + group[2].upper()
-    else:
-        return group[1].upper()
+    return group[1].upper()
 
 
 def underscore_to_camel(value: str) -> str:
