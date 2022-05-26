@@ -1,7 +1,7 @@
-from pik.utils.camelization import camel_to_underscore, underscoreize
+from pik.utils.case_utils import camel_to_underscore, underscoreize
 from .parsers import (
     CamelCaseJSONParser, CamelCaseFormParser, CamelCaseMultiPartParser)
-from .renderers import CalemizeJSONRenderer
+from .renderers import CamelizeJSONRenderer
 from .openapi import PIKCamelCaseAutoSchema
 
 
@@ -13,7 +13,7 @@ def camelcase_type_field_hook(serializer, obj):
 
 class CamelCaseViewSetMixIn:
     renderer_classes = [
-        CalemizeJSONRenderer]
+        CamelizeJSONRenderer]
 
     parser_classes = [
         CamelCaseFormParser,
