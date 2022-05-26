@@ -118,12 +118,7 @@ class MessageHandler:
                 self._payload)
 
     def _update_instance(self):
-        self._serializer.is_valid(raise_exception=True)
-        self._serializer.save()
-
-    @cached_property
-    def _serializer(self):
-        return self._serializer_class(self._instance, self._payload)
+        self._serializer_class().update(self._instance, self._payload)
 
     @cached_property
     def _instance(self):
