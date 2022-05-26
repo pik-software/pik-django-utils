@@ -10,8 +10,8 @@ from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
 from rest_framework.renderers import JSONRenderer
 from rest_framework import status
-from djangorestframework_camel_case.settings import api_settings
-from djangorestframework_camel_case.util import camelize
+from pik.settings import api_settings
+from pik.utils.case_utils import camelize
 from sentry_sdk import capture_exception
 from pika import BlockingConnection, URLParameters
 from pika.exceptions import (

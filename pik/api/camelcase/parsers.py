@@ -9,10 +9,8 @@ from rest_framework.exceptions import ParseError
 from rest_framework.parsers import (
     FormParser, MultiPartParser, DataAndFiles, )
 
-from djangorestframework_camel_case.parser import (
-    CamelCaseJSONParser as BaseCamelCaseJSONParser)
-
-from pik.utils.camelization import underscoreize
+from pik.settings import api_settings
+from pik.utils.case_utils import underscoreize
 
 
 class CamelCaseFormParser(FormParser):
@@ -48,7 +46,9 @@ class CamelCaseMultiPartParser(MultiPartParser):
                 f"Multipart form parse error - {str(exc)}") from exc
 
 
-class CamelCaseJSONParser(BaseCamelCaseJSONParser):
+class CamelCaseJSONParser(api_settings.PARSER_CLASS):
+    json_underscoreize = api_settings.JSON_UNDERSCOREIZE
+
     def parse(self, stream, media_type=None, parser_context=None):
         parser_context = parser_context or {}
         encoding = parser_context.get("encoding", settings.DEFAULT_CHARSET)

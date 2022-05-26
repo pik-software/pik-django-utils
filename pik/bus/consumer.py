@@ -11,7 +11,7 @@ from sentry_sdk import capture_exception
 from pika import BlockingConnection, URLParameters
 from pika.exceptions import AMQPConnectionError
 from tenacity import retry, retry_if_exception_type, wait_fixed
-from pik.utils.camelization import underscoreize
+from pik.utils.case_utils import underscoreize
 
 from pik.api.exceptions import extract_exception_data
 from pik.core.shortcuts import update_or_create_object

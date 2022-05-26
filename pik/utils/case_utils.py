@@ -1,16 +1,63 @@
 import re
+from collections import OrderedDict
 
 from django.core.files import File
 from django.http import QueryDict
 from django.utils.datastructures import MultiValueDict
+from django.utils.encoding import force_text
+from django.utils.functional import Promise
 
-PATTERNS = [
+from rest_framework.utils.serializer_helpers import ReturnDict
+
+
+UNDERSOCREIZE_PATTERNS = [
     re.compile(r'(?<=[a-zA-Z_\d])(?=[A-Z])'),
     re.compile(r'(?<=[a-zA-Z_])(?=(\d+_|\d+$))')
 ]
 
+CAMELIZE_RE = re.compile(r"[a-z0-9]?_[a-z0-9]")
 
-def camel_to_underscore(word: str) -> str:
+
+def capitalize(match):
+    group = match.group()
+    if len(group) == 3:
+        return group[0] + group[2].upper()
+    else:
+        return group[1].upper()
+
+
+def underscore_to_camel(value: str) -> str:
+    return re.sub(CAMELIZE_RE, capitalize, value)
+
+
+def camelize(data, **options):
+    # Handle lazy translated strings.
+    ignore_fields = options.get("ignore_fields") or ()
+    if isinstance(data, Promise):
+        data = force_text(data)
+    if isinstance(data, dict):
+        if isinstance(data, ReturnDict):
+            new_dict = ReturnDict(serializer=data.serializer)
+        else:
+            new_dict = OrderedDict()
+        for key, value in data.items():
+            if isinstance(key, Promise):
+                key = force_text(key)
+            if isinstance(key, str) and "_" in key:
+                new_key = underscore_to_camel(key)
+            else:
+                new_key = key
+            if key not in ignore_fields and new_key not in ignore_fields:
+                new_dict[new_key] = camelize(value, **options)
+            else:
+                new_dict[new_key] = value
+        return new_dict
+    if is_iterable(data) and not isinstance(data, str):
+        return [camelize(item, **options) for item in data]
+    return data
+
+
+def camel_to_underscore(value: str) -> str:
     """
     Make an underscored, lowercase form from the expression in the string.
 
@@ -48,9 +95,9 @@ def camel_to_underscore(word: str) -> str:
         'created__gte'
 
     """
-    for pattern in PATTERNS:
-        word = re.sub(pattern, '_', word)
-    return word.replace('-', '_').lower()
+    for pattern in UNDERSOCREIZE_PATTERNS:
+        value = re.sub(pattern, '_', value)
+    return value.replace('-', '_').lower()
 
 
 def _get_iterable(data):
