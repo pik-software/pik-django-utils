@@ -1,4 +1,4 @@
-from pik.settings import api_settings
+from pik.api_settings import api_settings
 from pik.utils.case_utils import camelize
 
 

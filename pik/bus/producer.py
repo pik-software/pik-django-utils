@@ -18,7 +18,7 @@ from tenacity import (
     retry, retry_if_exception_type, stop_after_attempt, wait_fixed, )
 
 from pik.api.camelcase.viewsets import camelcase_type_field_hook
-from pik.settings import api_settings
+from pik.api_settings import api_settings
 from pik.utils.case_utils import camelize
 
 

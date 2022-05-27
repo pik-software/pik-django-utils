@@ -9,7 +9,7 @@ from rest_framework.exceptions import ParseError
 from rest_framework.parsers import (
     FormParser, MultiPartParser, DataAndFiles, )
 
-from pik.settings import api_settings
+from pik.api_settings import api_settings
 from pik.utils.case_utils import underscoreize
 
 
