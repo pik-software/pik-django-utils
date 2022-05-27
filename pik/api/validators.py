@@ -15,5 +15,5 @@ class NonChangeableValidator:
         if instance:
             old_value = getattr(instance, serializer_field.source)
 
-            if old_value != str(value):
+            if old_value != type(old_value)(value):
                 raise ValidationError(self.error_msg)
