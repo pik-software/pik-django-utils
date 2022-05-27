@@ -1,19 +1,11 @@
 import uuid
 import pytest
-from django.db import models
-from django.db.models import UUIDField
 from rest_framework import serializers
 from pik.api.validators import NonChangeableValidator
+from test_core_models.models.uided import MyPUided
 
 
-class ModelForTest(models.Model):
-    uid = UUIDField()
-
-    class Meta:
-        app_label = ''
-
-
-class SerializerForTest(serializers.ModelSerializer):
+class MyPUidedSerializer(serializers.ModelSerializer):
     uid = serializers.UUIDField(
         validators=[
             NonChangeableValidator(),
@@ -21,7 +13,7 @@ class SerializerForTest(serializers.ModelSerializer):
     )
 
     class Meta:
-        model = ModelForTest
+        model = MyPUided
         fields = ['uid']
 
 
@@ -30,6 +22,6 @@ def test_non_changeable_validator():
     payload = {
         'uid': str(uuid.uuid4())
     }
-    instance = ModelForTest(uid=payload['uid'])
-    serializer = SerializerForTest(instance, payload)
+    instance = MyPUided(uid=payload['uid'])
+    serializer = MyPUidedSerializer(instance, payload)
     serializer.is_valid(raise_exception=True)
