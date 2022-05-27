@@ -7,11 +7,11 @@ from django.conf import settings
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
 from rest_framework.parsers import JSONParser
-from djangorestframework_camel_case.util import underscoreize
 from sentry_sdk import capture_exception
 from pika import BlockingConnection, URLParameters
 from pika.exceptions import AMQPConnectionError
 from tenacity import retry, retry_if_exception_type, wait_fixed
+from pik.utils.case_utils import underscoreize
 
 from pik.api.exceptions import extract_exception_data
 from pik.core.shortcuts import update_or_create_object
