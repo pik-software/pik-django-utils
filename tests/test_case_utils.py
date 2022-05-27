@@ -13,4 +13,3 @@ def test_camel_snake_camel():
     assert convert('codeOIDP') == 'codeOIDP'
     assert convert('code1C') == 'code1C'
     assert convert('code1c') == 'code1c'
-    assert convert('fullName') == 'fullName'
