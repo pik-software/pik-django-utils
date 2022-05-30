@@ -15,11 +15,11 @@ class CamelizeHookMixIn:
 
         >>> d.camelization_hook( \
             data={'document_fields': ['abc_xyz', 'qwe_rty']})
-        OrderedDict([('document_fields', ['abcXyz', 'qweRty'])])
+        OrderedDict([('documentFields', ['abcXyz', 'qweRty'])])
 
         >>> d.camelization_hook( \
             data={'document_fields':['abc_xyz'], 'f': ['asd_zxc']})
-        OrderedDict([('document_fields', ['abcXyz']), ('f', ['asd_zxc'])])
+        OrderedDict([('documentFields', ['abcXyz']), ('f', ['asd_zxc'])])
 
         >>> d.camelization_hook( \
             data={'document_fields': ['abc_xyz', 'qwe_rty']})
