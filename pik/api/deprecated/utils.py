@@ -25,11 +25,11 @@ class UnderscorizeHookMixIn:
 
         >>> d.underscorize_hook( \
             data={'documentFields': ['abcXyz', 'qweRty']})
-        OrderedDict([('documentFields', ['abc_xyz', 'qwe_rty'])])
+        OrderedDict([('document_fields', ['abc_xyz', 'qwe_rty'])])
 
         >>> d.underscorize_hook( \
             data={'documentFields': ['abcXyz'], 'f': ['asdZxc']})
-        OrderedDict([('documentFields', ['abc_xyz']), ('f', ['asdZxc'])])
+        OrderedDict([('document_fields', ['abc_xyz']), ('f', ['asdZxc'])])
 
         >>> d.underscorize_hook( \
             data={'document_fields': ['abcXyz', 'qweRty']})
@@ -43,9 +43,9 @@ class UnderscorizeHookMixIn:
         if isinstance(data, dict):
             new_dict = OrderedDict()
             for key, value in data.items():
-                new_key = key
+                new_key = camel_to_underscore(key)
                 new_value = self.underscorize_hook(value)
-                if key == 'document_fields' and isinstance(value, list):
+                if new_key == 'document_fields' and isinstance(value, list):
                     new_value = [self._underscorize(elem) for elem in value]
                 new_dict[new_key] = new_value
             return new_dict

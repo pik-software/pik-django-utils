@@ -33,7 +33,7 @@ class CamelizeHookMixIn:
         if isinstance(data, dict):
             new_dict = OrderedDict()
             for key, value in data.items():
-                new_key = key
+                new_key = self._camelize(key)
                 new_value = self.camelization_hook(value)
                 if key == 'document_fields' and isinstance(value, list):
                     new_value = [self._camelize(elem) for elem in value]
