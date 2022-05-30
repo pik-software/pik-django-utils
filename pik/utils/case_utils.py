@@ -31,7 +31,7 @@ def underscore_to_camel(value: str) -> str:
 
 def camelize(data, **options):
     # Handle lazy translated strings.
-    ignore_fields = options.get("ignore_fields", ())
+    ignore_fields = options.get("ignore_fields") or ()
     lower_camel_case = options.get("lower_camel_case", False)
     if isinstance(data, Promise):
         data = force_str(data)
