@@ -314,9 +314,9 @@ class StandardizedSnapshotSerializer(CamelizeHookMixIn, UnderscorizeHookMixIn,
         fields = BaseSnapshotSerializer.Meta.fields + SOFT_DELETE_FIELDS
 
 
-class StandardizedSnapshotLinkSerializer(CamelizeHookMixIn, UnderscorizeHookMixIn,
-                                         BaseSnapshotLinkSerializer,
-                                         StandardizedModelSerializer):
+class StandardizedSnapshotLinkSerializer(
+        CamelizeHookMixIn, UnderscorizeHookMixIn,
+        BaseSnapshotLinkSerializer, StandardizedModelSerializer):
 
     class Meta(BaseSnapshotLinkSerializer.Meta):
         fields = BaseSnapshotLinkSerializer.Meta.fields + SOFT_DELETE_FIELDS
