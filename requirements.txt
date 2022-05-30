@@ -7,8 +7,7 @@ django-filter
 djangorestframework-filters==1.0.0.dev0
 django-model-utils
 django-private-storage
-#django-documents-tools
--e git+https://github.com/pik-software/django-documents-tools.git@move-hooks-to-pik-django-utils#egg=django_documents_tools
+django-documents-tools
 django-cors-headers
 drf_yasg
 django-autocomplete-light
