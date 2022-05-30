@@ -10,7 +10,7 @@ from rest_framework.parsers import (
     FormParser, MultiPartParser, DataAndFiles, )
 
 from pik.api_settings import api_settings
-from pik.utils.case_utils import underscoreize
+from pik.utils.case_utils import underscorize
 
 
 class CamelCaseFormParser(FormParser):
@@ -47,7 +47,7 @@ class CamelCaseMultiPartParser(MultiPartParser):
 
 
 class CamelCaseJSONParser(api_settings.PARSER_CLASS):
-    json_underscoreize = api_settings.JSON_UNDERSCOREIZE
+    json_underscorize = api_settings.JSON_UNDERSCORIZE
 
     def parse(self, stream, media_type=None, parser_context=None):
         parser_context = parser_context or {}
@@ -55,8 +55,8 @@ class CamelCaseJSONParser(api_settings.PARSER_CLASS):
 
         try:
             data = stream.read().decode(encoding)
-            json_data = underscoreize(
-                json.loads(data), **self.json_underscoreize)
+            json_data = underscorize(
+                json.loads(data), **self.json_underscorize)
             view = parser_context['view']
             if hasattr(view.serializer_class, 'underscorize_hook'):
                 json_data = view.serializer_class().underscorize_hook(
