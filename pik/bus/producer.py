@@ -109,7 +109,7 @@ class InstanceHandler:
     def payload(self):
         data = self.serializer(
             self._instance, context=self.get_serializer_context()).data
-        data = camelize(data, **api_settings.JSON_UNDERSCOREIZE)
+        data = camelize(data, **api_settings.JSON_UNDERSCORIZE)
         if hasattr(self.serializer, 'camelization_hook'):
             return self.serializer.camelization_hook(data)
         return data

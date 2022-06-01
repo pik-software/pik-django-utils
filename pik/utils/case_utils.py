@@ -108,7 +108,7 @@ def _get_iterable(data):
     return data.items()
 
 
-def underscoreize(data, **options):
+def underscorize(data, **options):
     ignore_fields = options.get("ignore_fields") or ()
     if isinstance(data, dict):
         new_dict = {}
@@ -125,7 +125,7 @@ def underscoreize(data, **options):
                 new_key = key
 
             if key not in ignore_fields and new_key not in ignore_fields:
-                new_dict[new_key] = underscoreize(value, **options)
+                new_dict[new_key] = underscorize(value, **options)
             else:
                 new_dict[new_key] = value
 
@@ -136,7 +136,7 @@ def underscoreize(data, **options):
             return new_query
         return new_dict
     if is_iterable(data) and not isinstance(data, (str, File)):
-        return [underscoreize(item, **options) for item in data]
+        return [underscorize(item, **options) for item in data]
 
     return data
 

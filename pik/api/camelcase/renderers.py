@@ -9,5 +9,5 @@ class CamelizeJSONRenderer(api_settings.RENDERER_CLASS):
             data = view.serializer_class().camelization_hook(data)
 
         return super().render(
-            camelize(data, **api_settings.JSON_UNDERSCOREIZE),
+            camelize(data, **api_settings.JSON_UNDERSCORIZE),
             accepted_media_type, renderer_context)

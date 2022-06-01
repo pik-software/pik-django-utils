@@ -1,4 +1,4 @@
-from pik.utils.case_utils import camel_to_underscore, underscoreize
+from pik.utils.case_utils import camel_to_underscore, underscorize
 from .parsers import (
     CamelCaseJSONParser, CamelCaseFormParser, CamelCaseMultiPartParser)
 from .renderers import CamelizeJSONRenderer
@@ -25,7 +25,7 @@ class CamelCaseViewSetMixIn:
     lookup_url_kwarg = 'guid'
 
     def dispatch(self, request, *args, **kwargs):
-        request.GET = underscoreize(request.GET)
+        request.GET = underscorize(request.GET)
         for param in ['query', 'ordering']:
             if param in request.GET:
                 request.GET[param] = camel_to_underscore(request.GET[param])

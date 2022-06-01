@@ -12,7 +12,9 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ModelSerializer
 
+from .camelcase.serializers import CamelizeSerializerHookMixIn
 from .constants import SOFT_DELETE_FIELDS
+from .deprecated.serializers import UnderscorizeSerializerHookMixIn
 from .lazy_field import LazyFieldHandlerMixIn
 from .restql import DefaultRequestQueryParserMixin
 
@@ -295,29 +297,33 @@ class StandardizedModelSerializer(
         return bool(obj.deleted)
 
 
-class StandardizedChangeSerializer(BaseChangeSerializer,
-                                   StandardizedModelSerializer):
+class StandardizedChangeSerializer(
+        CamelizeSerializerHookMixIn, UnderscorizeSerializerHookMixIn,
+        BaseChangeSerializer, StandardizedModelSerializer):
 
     class Meta(BaseChangeSerializer.Meta):
         fields = BaseChangeSerializer.Meta.fields + SOFT_DELETE_FIELDS
         extra_kwargs: dict = {}
 
 
-class StandardizedSnapshotSerializer(BaseSnapshotSerializer,
-                                     StandardizedModelSerializer):
+class StandardizedSnapshotSerializer(
+        CamelizeSerializerHookMixIn, UnderscorizeSerializerHookMixIn,
+        BaseSnapshotSerializer, StandardizedModelSerializer):
 
     class Meta(BaseSnapshotSerializer.Meta):
         fields = BaseSnapshotSerializer.Meta.fields + SOFT_DELETE_FIELDS
 
 
-class StandardizedSnapshotLinkSerializer(BaseSnapshotLinkSerializer,
-                                         StandardizedModelSerializer):
+class StandardizedSnapshotLinkSerializer(
+        CamelizeSerializerHookMixIn, UnderscorizeSerializerHookMixIn,
+        BaseSnapshotLinkSerializer, StandardizedModelSerializer):
 
     class Meta(BaseSnapshotLinkSerializer.Meta):
         fields = BaseSnapshotLinkSerializer.Meta.fields + SOFT_DELETE_FIELDS
 
 
 class StandardizedDocumentedModelLinkSerializer(
+        CamelizeSerializerHookMixIn, UnderscorizeSerializerHookMixIn,
         BaseDocumentedModelLinkSerializer, StandardizedModelSerializer):
 
     class Meta(BaseDocumentedModelLinkSerializer.Meta):
@@ -325,8 +331,9 @@ class StandardizedDocumentedModelLinkSerializer(
             BaseDocumentedModelLinkSerializer.Meta.fields + SOFT_DELETE_FIELDS)
 
 
-class StandardizedChangeAttachmentSerializer(BaseChangeAttachmentSerializer,
-                                             StandardizedModelSerializer):
+class StandardizedChangeAttachmentSerializer(
+        CamelizeSerializerHookMixIn, UnderscorizeSerializerHookMixIn,
+        BaseChangeAttachmentSerializer, StandardizedModelSerializer):
 
     class Meta(BaseChangeAttachmentSerializer.Meta):
         fields = (
@@ -334,6 +341,7 @@ class StandardizedChangeAttachmentSerializer(BaseChangeAttachmentSerializer,
 
 
 class StandardizedChangeAttachmentLinkSerializer(
+        CamelizeSerializerHookMixIn, UnderscorizeSerializerHookMixIn,
         BaseChangeAttachmentLinkSerializer, StandardizedModelSerializer):
 
     class Meta(BaseChangeAttachmentLinkSerializer.Meta):
