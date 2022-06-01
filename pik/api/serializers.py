@@ -12,9 +12,9 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ModelSerializer
 
-from .camelcase.utils import CamelizeHookMixIn
+from .camelcase.serializers import CamelizeSerializerHookMixIn
 from .constants import SOFT_DELETE_FIELDS
-from .deprecated.utils import UnderscorizeHookMixIn
+from .deprecated.serializers import UnderscorizeSerializerHookMixIn
 from .lazy_field import LazyFieldHandlerMixIn
 from .restql import DefaultRequestQueryParserMixin
 
@@ -297,25 +297,25 @@ class StandardizedModelSerializer(
         return bool(obj.deleted)
 
 
-class StandardizedChangeSerializer(CamelizeHookMixIn, UnderscorizeHookMixIn,
-                                   BaseChangeSerializer,
-                                   StandardizedModelSerializer):
+class StandardizedChangeSerializer(
+        CamelizeSerializerHookMixIn, UnderscorizeSerializerHookMixIn,
+        BaseChangeSerializer, StandardizedModelSerializer):
 
     class Meta(BaseChangeSerializer.Meta):
         fields = BaseChangeSerializer.Meta.fields + SOFT_DELETE_FIELDS
         extra_kwargs: dict = {}
 
 
-class StandardizedSnapshotSerializer(CamelizeHookMixIn, UnderscorizeHookMixIn,
-                                     BaseSnapshotSerializer,
-                                     StandardizedModelSerializer):
+class StandardizedSnapshotSerializer(
+        CamelizeSerializerHookMixIn, UnderscorizeSerializerHookMixIn,
+        BaseSnapshotSerializer, StandardizedModelSerializer):
 
     class Meta(BaseSnapshotSerializer.Meta):
         fields = BaseSnapshotSerializer.Meta.fields + SOFT_DELETE_FIELDS
 
 
 class StandardizedSnapshotLinkSerializer(
-        CamelizeHookMixIn, UnderscorizeHookMixIn,
+        CamelizeSerializerHookMixIn, UnderscorizeSerializerHookMixIn,
         BaseSnapshotLinkSerializer, StandardizedModelSerializer):
 
     class Meta(BaseSnapshotLinkSerializer.Meta):
@@ -323,7 +323,7 @@ class StandardizedSnapshotLinkSerializer(
 
 
 class StandardizedDocumentedModelLinkSerializer(
-        CamelizeHookMixIn, UnderscorizeHookMixIn,
+        CamelizeSerializerHookMixIn, UnderscorizeSerializerHookMixIn,
         BaseDocumentedModelLinkSerializer, StandardizedModelSerializer):
 
     class Meta(BaseDocumentedModelLinkSerializer.Meta):
@@ -332,7 +332,7 @@ class StandardizedDocumentedModelLinkSerializer(
 
 
 class StandardizedChangeAttachmentSerializer(
-        CamelizeHookMixIn, UnderscorizeHookMixIn,
+        CamelizeSerializerHookMixIn, UnderscorizeSerializerHookMixIn,
         BaseChangeAttachmentSerializer, StandardizedModelSerializer):
 
     class Meta(BaseChangeAttachmentSerializer.Meta):
@@ -341,7 +341,7 @@ class StandardizedChangeAttachmentSerializer(
 
 
 class StandardizedChangeAttachmentLinkSerializer(
-        CamelizeHookMixIn, UnderscorizeHookMixIn,
+        CamelizeSerializerHookMixIn, UnderscorizeSerializerHookMixIn,
         BaseChangeAttachmentLinkSerializer, StandardizedModelSerializer):
 
     class Meta(BaseChangeAttachmentLinkSerializer.Meta):

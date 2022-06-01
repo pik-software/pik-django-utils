@@ -2,7 +2,7 @@ from collections import OrderedDict
 from pik.utils.case_utils import underscore_to_camel
 
 
-class CamelizeSerizlierHookMixIn:
+class CamelizeSerializerHookMixIn:
     @staticmethod
     def _camelize(data):
         if isinstance(data, str):
