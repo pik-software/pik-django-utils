@@ -11,7 +11,7 @@ class UnderscorizeSerializerHookMixIn:
 
     def underscorize_hook(self, data):
         """
-        >>> d = UnderscorizeHookMixIn()
+        >>> d = UnderscorizeSerializerHookMixIn()
 
         >>> d.underscorize_hook( \
             data={'documentFields': ['abcXyz', 'qweRty']})

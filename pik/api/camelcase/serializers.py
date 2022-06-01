@@ -11,7 +11,7 @@ class CamelizeSerializerHookMixIn:
 
     def camelization_hook(self, data):
         """
-        >>> d = CamelizeHookMixIn()
+        >>> d = CamelizeSerializerHookMixIn()
 
         >>> d.camelization_hook( \
             data={'document_fields': ['abc_xyz', 'qwe_rty']})
