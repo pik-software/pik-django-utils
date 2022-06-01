@@ -12,7 +12,7 @@ from pik.api.deprecated.consts import (
 from pik.utils.case_utils import camel_to_underscore
 
 
-class UnderscorizeHookMixIn:
+class UnderscorizeSerializerHookMixIn:
     @staticmethod
     def _underscorize(data):
         if isinstance(data, str):
