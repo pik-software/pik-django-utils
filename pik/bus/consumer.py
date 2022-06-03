@@ -167,8 +167,8 @@ class MessageHandler:
         dependants = PIKMessageException.objects.filter(**{
             f'dependencies__{self._payload["type"]}': self._payload["guid"]})
         for dependant in dependants:
-            self.__class__(dependant.message, dependant.queue).handle()
-            dependant.delete()
+            if self.__class__(dependant.message, dependant.queue).handle():
+                dependant.delete()
 
     def _capture_exception(self, exc):
         from .models import PIKMessageException  # noqa: cyclic import workaround
