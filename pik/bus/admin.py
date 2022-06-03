@@ -59,16 +59,17 @@ class PIKMessageExceptionAdmin(admin.ModelAdmin):
 
     @admin.action(description='Обработать сообщение')
     def _process_message(self, request, queryset):
-        for obj in queryset:
+        for obj in queryset.order_by('created'):
             handler = MessageHandler(obj.message, obj.queue)
             if handler.handle():
                 self.message_user(
                     request,
                     f'Сообщение {obj.uid} обработано', messages.SUCCESS)
+                obj.delete()
                 continue
 
             self.message_user(
                 request, (
-                    f'Ошибка обратки сообщения {obj.uid}: '
+                    f'Ошибка обработки сообщения {obj.uid}: '
                     f'{handler.exc_data["message"]}'),
                 level=messages.ERROR)
