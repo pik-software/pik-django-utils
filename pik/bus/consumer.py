@@ -15,6 +15,8 @@ from pik.utils.case_utils import underscorize
 
 from pik.api.exceptions import extract_exception_data
 from pik.core.shortcuts import update_or_create_object
+import pik.bus.es_logging as es_logging
+
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +103,7 @@ class MessageHandler:
             self._prepare_payload()
             self._update_instance()
             self._process_dependants()
+            es_logging.add_to_elastic_log()
             return True
         except Exception as exc:  # noqa: broad-except
             self._capture_exception(exc)
