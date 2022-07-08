@@ -83,13 +83,15 @@ class InstanceHandler:
 
     @cached_property
     def models_info(self):  # noqa: no-self-used Unable to combine static @method & @cached_property
-        """```{
+        """
+        {
             model: {
                'serializer': serializer,
                'exchange': exchange
            },
            ...
-        }```"""
+        }
+        """
         return {
             import_string(serializer).Meta.model.__name__: {  # type: ignore
                 'serializer': import_string(serializer),
@@ -99,6 +101,18 @@ class InstanceHandler:
             in settings.RABBITMQ_PRODUCES.items()
         }
 
+    def _statistic_captor(self, **kwargs):
+        pass
+
+    def _statistic_logging(self, error):
+        self._statistic_captor(**{
+            'event': 'deserialization',
+            'objectType': getattr(self._instance, 'type', None),
+            'objectGuid': getattr(self._instance, 'guid', None),
+            'success': not error,
+            'error': error,
+        })
+
     def handle(self):
         try:
             producer.produce(self.exchange, self.json_message)
@@ -106,13 +120,30 @@ class InstanceHandler:
             pass
 
     @property
-    def payload(self):
-        data = self.serializer(
-            self._instance, context=self.get_serializer_context()).data
-        data = camelize(data, **api_settings.JSON_UNDERSCORIZE)
-        if hasattr(self.serializer, 'camelization_hook'):
-            return self.serializer.camelization_hook(data)
-        return data
+    def exchange(self):
+        try:
+            return self.models_info[self.model_name]['exchange']
+        except KeyError as exc:
+            raise BusModelNotFound() from exc
+
+    @property
+    def model_name(self):
+        return self._instance.__class__.__name__
+
+    @property
+    def json_message(self):
+        error = None
+        json_message = {}
+        try:
+            json_message = self.renderer_class().render(self.message)
+        except Exception as exc:
+            error = exc
+
+        self._statistic_logging(error)
+
+        if error:
+            raise error
+        return json_message
 
     @property
     def message(self):
@@ -122,6 +153,15 @@ class InstanceHandler:
             'message': payload,
             'host': self.host,
         }
+
+    @property
+    def payload(self):
+        data = self.serializer(
+            self._instance, context=self.get_serializer_context()).data
+        data = camelize(data, **api_settings.JSON_UNDERSCORIZE)
+        if hasattr(self.serializer, 'camelization_hook'):
+            return self.serializer.camelization_hook(data)
+        return data
 
     @property
     def host(self):
@@ -139,21 +179,6 @@ class InstanceHandler:
             return self.models_info[self.model_name]['serializer']
         except KeyError as exc:
             raise BusModelNotFound() from exc
-
-    @property
-    def exchange(self):
-        try:
-            return self.models_info[self.model_name]['exchange']
-        except KeyError as exc:
-            raise BusModelNotFound() from exc
-
-    @property
-    def model_name(self):
-        return self._instance.__class__.__name__
-
-    @property
-    def json_message(self):
-        return self.renderer_class().render(self.message)
 
     @staticmethod
     def get_serializer_context():
