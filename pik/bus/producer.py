@@ -20,6 +20,7 @@ from tenacity import (
 from pik.api.camelcase.viewsets import camelcase_type_field_hook
 from pik.api_settings import api_settings
 from pik.utils.case_utils import camelize
+from pik.bus.logging import statistic_captor
 
 
 logger = logging.getLogger(__name__)
@@ -77,9 +78,13 @@ producer = MessageProducer(settings.RABBITMQ_URL)
 class InstanceHandler:
     renderer_class = JSONRenderer
     _instance = NotImplemented
+    _type = None
+    _guid = None
 
     def __init__(self, instance):
         self._instance = instance
+        self._type = None
+        self._guid = None
 
     @cached_property
     def models_info(self):  # noqa: no-self-used Unable to combine static @method & @cached_property
@@ -101,26 +106,28 @@ class InstanceHandler:
             in settings.RABBITMQ_PRODUCES.items()
         }
 
-    def _statistic_captor(self, **kwargs):
-        pass
-
-    def _statistic_logging(self, error):
-        self._statistic_captor(**{
-            'event': 'deserialization',
-            'objectType': getattr(self._instance, 'type', None),
-            'objectGuid': getattr(self._instance, 'guid', None),
-            'success': not error,
-            'error': error,
-        })
-
     def handle(self):
         try:
-            producer.produce(self.exchange, self.json_message)
+            exchange = self.get_exchange()
         except BusModelNotFound:
-            pass
+            return
 
-    @property
-    def exchange(self):
+        error = None
+        try:
+            producer.produce(exchange, self.json_message)
+        except Exception as exc:
+            error = exc
+            raise error from exc
+        finally:
+            statistic_captor(**{
+                'event': 'serialization',
+                'objectType': self._type,
+                'objectGuid': self._guid,
+                'success': not error,
+                'error': error,
+            })
+
+    def get_exchange(self):
         try:
             return self.models_info[self.model_name]['exchange']
         except KeyError as exc:
@@ -132,18 +139,7 @@ class InstanceHandler:
 
     @property
     def json_message(self):
-        error = None
-        json_message = {}
-        try:
-            json_message = self.renderer_class().render(self.message)
-        except Exception as exc:
-            error = exc
-
-        self._statistic_logging(error)
-
-        if error:
-            raise error
-        return json_message
+        return self.renderer_class().render(self.message)
 
     @property
     def message(self):
@@ -161,6 +157,10 @@ class InstanceHandler:
         data = camelize(data, **api_settings.JSON_UNDERSCORIZE)
         if hasattr(self.serializer, 'camelization_hook'):
             return self.serializer.camelization_hook(data)
+
+        self._type = data['type']
+        self._guid = str(data['guid'])
+
         return data
 
     @property
