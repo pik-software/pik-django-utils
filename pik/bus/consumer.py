@@ -63,6 +63,7 @@ class MessageConsumer:
 
     def _bind_queues(self):
         for queue in self._queues:
+            logger.info('Starting consume for queue %s', queue)
             self._channel.basic_consume(
                 on_message_callback=partial(self._handle_message, queue=queue),
                 queue=queue)

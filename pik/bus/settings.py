@@ -68,9 +68,15 @@ class LogstashLoggingSettingsExtendor:
         parsed = urlparse(logstash_url)
         self._host, self._port, self._username, self._password = (
             parsed.hostname, parsed.port, parsed.username, parsed.password)
+        self._username = self._username or ''
+        self._password = self._password or ''
 
-        for param in (self._host, self._port, self._username, self._password):
+        # TODO: username и password могут быть пустыми
+        #  если не указан юзер или пароль возвращается None, а не '' как для
+        #  hostname
+        for param in (self._host, self._port):
             if not param:
+                # TODO: правь _url_warning
                 logger.warning(self._url_warning)
                 return False
         return True
