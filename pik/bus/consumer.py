@@ -16,6 +16,7 @@ from pik.utils.case_utils import underscorize
 from pik.api.exceptions import extract_exception_data
 from pik.core.shortcuts import update_or_create_object
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -62,6 +63,7 @@ class MessageConsumer:
 
     def _bind_queues(self):
         for queue in self._queues:
+            logger.info('Starting consume for queue %s', queue)
             self._channel.basic_consume(
                 on_message_callback=partial(self._handle_message, queue=queue),
                 queue=queue)
@@ -96,6 +98,7 @@ class MessageHandler:
         self._queue = queue
 
     def handle(self):
+        logger.info('MessageHandler.handle()')
         try:
             self._fetch_payload()
             self._prepare_payload()
