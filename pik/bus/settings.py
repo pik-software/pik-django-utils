@@ -3,14 +3,18 @@ import os
 from urllib.parse import urlparse
 from logstash_async.transport import HttpTransport
 
-
+LOGGER_NAME = 'logstash'
 logger = logging.getLogger(__name__)
+
+
+class DuplicateLoggingKey(Exception):
+    pass
 
 
 class LogstashLoggingSettingsExtendor:
     _LOGGING = {
         'formatters': {
-            'logstash': {
+            LOGGER_NAME: {
                 '()': 'logstash_async.formatter.LogstashFormatter',
                 'message_type': 'python-logstash',
                 'extra_prefix': '',
@@ -18,32 +22,25 @@ class LogstashLoggingSettingsExtendor:
             },
         },
         'handlers': {
-            'logstash': {
+            LOGGER_NAME: {
                 'class': 'logstash_async.handler.AsynchronousLogstashHandler',
                 'transport': None,
-                'formatter': 'logstash',
+                'formatter': LOGGER_NAME,
                 'host': None,
                 'port': None,
                 'database_path': None,
             },
         },
         'loggers': {
-            'logstash': {
-                'handlers': ['logstash'],
+            LOGGER_NAME: {
+                'handlers': [LOGGER_NAME],
                 'level': 'INFO',
             },
         },
     }
 
-    _dependency_warning = '"Python Logstash Async" package is not found. ' \
-                          'Install via pip: ' \
-                          '"pip install python-logstash-async".'
-
-    _url_warning = 'One of param user, pass, host or port in not set. ' \
-                   'logstash_url must be in url format, for example ' \
+    _url_warning = 'logstash_url must be in url format, for example ' \
                    '"https://user:pass@127.0.0.1:5044"'
-
-    _settings_warning = '"LOGGING" setting is not found.'
 
     _host = None
     _port = None
@@ -52,14 +49,6 @@ class LogstashLoggingSettingsExtendor:
 
     def __init__(self, settings):
         self._settings = settings
-
-    # def _check_dependency(self):
-    #     try:
-    #         import logstash_async
-    #     except ImportError:
-    #         logger.warning(self._dependency_warning)
-    #         return False
-    #     return True
 
     def _check_url(self):
         logstash_url = os.environ.get(
@@ -71,38 +60,19 @@ class LogstashLoggingSettingsExtendor:
         self._username = self._username or ''
         self._password = self._password or ''
 
-        # TODO: username и password могут быть пустыми
-        #  если не указан юзер или пароль возвращается None, а не '' как для
-        #  hostname
         for param in (self._host, self._port):
             if not param:
-                # TODO: правь _url_warning
                 logger.warning(self._url_warning)
                 return False
         return True
 
-    def _check_settings(self):
-        if 'LOGGING' not in self._settings:
-            logger.warning(self._settings_warning)
+    def _check(self):
+        if not self._check_url():
             return False
         return True
 
-    def _check(self):
-        # for method in (
-        #         self._check_dependency, self._check_url, self._check_settings):
-        for method in (self._check_url, self._check_settings):
-            if not method():
-                return False
-        return True
-
     def _configure(self):
-        # self._LOGGING['handlers']['logstash'].update(
-        #     host=self._host,
-        #     port=self._port,
-        #     username=self._username,
-        #     password=self._password,
-        # )
-        self._LOGGING['handlers']['logstash']['transport'] = HttpTransport(
+        self._LOGGING['handlers'][LOGGER_NAME]['transport'] = HttpTransport(
             host=self._host,
             port=self._port,
             ssl_verify=True,
@@ -111,20 +81,22 @@ class LogstashLoggingSettingsExtendor:
         )
 
     def _merge(self):
-        _key_not_found_warning = '"{}" key not found in LOGGING setting.'
-        _key_exist_warning = '"logstash" key is already in "{}" setting.'
-
+        if 'LOGGING' not in self._settings:
+            self._settings['LOGGING'] = {}
         dst_logging = self._settings['LOGGING']
 
         for key, value in self._LOGGING.items():
             if key not in dst_logging:
-                logger.warning(_key_not_found_warning.format(key))
-            if 'logstash' in dst_logging[key]:
-                logger.warning(_key_exist_warning.format(key))
-            dst_logging[key]['logstash'] = value['logstash']
+                dst_logging[key] = value
+                continue
+            if LOGGER_NAME in dst_logging[key]:
+                raise DuplicateLoggingKey(
+                    f'"{LOGGER_NAME}" key is already in "{key}" setting.')
+            dst_logging[key][LOGGER_NAME] = value[LOGGER_NAME]
 
     def extend(self):
         if not self._check():
             return
         self._configure()
         self._merge()
+        return self._settings

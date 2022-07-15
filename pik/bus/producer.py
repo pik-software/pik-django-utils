@@ -1,4 +1,5 @@
 import os
+import sys
 import platform
 import logging
 
@@ -9,7 +10,7 @@ from django.conf import settings
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
 from rest_framework.renderers import JSONRenderer
-from rest_framework import status
+from pika import spec
 from sentry_sdk import capture_exception
 from pika import BlockingConnection, URLParameters
 from pika.exceptions import (
@@ -20,13 +21,12 @@ from tenacity import (
 from pik.api.camelcase.viewsets import camelcase_type_field_hook
 from pik.api_settings import api_settings
 from pik.utils.case_utils import camelize
-from pik.bus.logging import statistic_captor
+from pik.bus.logging import capture_stats
 
-
-logger = logging.getLogger(__name__)
 
 AMQP_ERRORS = (
     AMQPConnectionError, ChannelWrongStateError, ChannelClosedByBroker)
+logger = logging.getLogger(__name__)
 
 
 class BusModelNotFound(Exception):
@@ -68,7 +68,7 @@ class MessageProducer:
                 routing_key='',
                 body=json_message)
         except ChannelClosedByBroker as exc:
-            if exc.reply_code != status.HTTP_502_BAD_GATEWAY:
+            if exc.reply_code != spec.SYNTAX_ERROR:
                 raise ChannelClosedByBroker from exc
 
 
@@ -80,15 +80,22 @@ class InstanceHandler:
     _instance = NotImplemented
     _type = None
     _guid = None
+    _exchange = None
+    _serializer = None
+    _json_message = None
 
     def __init__(self, instance):
         self._instance = instance
         self._type = None
         self._guid = None
+        self._exchange = None
+        self._serializer = None
+        self._json_message = None
 
     @cached_property
-    def models_info(self):  # noqa: no-self-used Unable to combine static @method & @cached_property
-        """
+    def models_info(
+            self):  # noqa: no-self-used Unable to combine static @method & @cached_property
+        """```
         {
             model: {
                'serializer': serializer,
@@ -96,7 +103,7 @@ class InstanceHandler:
            },
            ...
         }
-        """
+        ```"""
         return {
             import_string(serializer).Meta.model.__name__: {  # type: ignore
                 'serializer': import_string(serializer),
@@ -106,30 +113,59 @@ class InstanceHandler:
             in settings.RABBITMQ_PRODUCES.items()
         }
 
-    def handle(self):
+    def _capture_stats(self, event, **kwargs):
+        capture_stats(
+            event=event,
+            entity_type=self._type,
+            entity_guid=self._guid,
+            **kwargs
+        )
+
+    def _serialize(self):
         try:
-            exchange = self.get_exchange()
+            self.get_serializer()
         except BusModelNotFound:
             return
 
         error = None
         try:
-            producer.produce(exchange, self.json_message)
-        except Exception as exc:
-            error = exc
-            raise error from exc
+            self.get_json_message()
+        except Exception as error:
+            raise error
         finally:
-            statistic_captor(**{
-                'event': 'serialization',
-                'objectType': self._type,
-                'objectGuid': self._guid,
-                'success': not error,
-                'error': error,
-            })
+            self._capture_stats(
+                event='serialization',
+                **{
+                    'success': not error,
+                    'error': error,
+                })
+
+    def _produce(self):
+        try:
+            self.get_exchange()
+        except BusModelNotFound:
+            return
+
+        error = None
+        try:
+            producer.produce(self._exchange, self._json_message)
+        except Exception as error:
+            raise error
+        finally:
+            self._capture_stats(
+                event='publishing',
+                **{
+                    'success': not error,
+                    'error': error,
+                })
+
+    def handle(self):
+        self._serialize()
+        self._produce()
 
     def get_exchange(self):
         try:
-            return self.models_info[self.model_name]['exchange']
+            self._exchange = self.models_info[self.model_name]['exchange']
         except KeyError as exc:
             raise BusModelNotFound() from exc
 
@@ -137,9 +173,8 @@ class InstanceHandler:
     def model_name(self):
         return self._instance.__class__.__name__
 
-    @property
-    def json_message(self):
-        return self.renderer_class().render(self.message)
+    def get_json_message(self):
+        self._json_message = self.renderer_class().render(self.message)
 
     @property
     def message(self):
@@ -152,11 +187,11 @@ class InstanceHandler:
 
     @property
     def payload(self):
-        data = self.serializer(
+        data = self._serializer(
             self._instance, context=self.get_serializer_context()).data
         data = camelize(data, **api_settings.JSON_UNDERSCORIZE)
-        if hasattr(self.serializer, 'camelization_hook'):
-            return self.serializer.camelization_hook(data)
+        if hasattr(self._serializer, 'camelization_hook'):
+            return self._serializer.camelization_hook(data)
 
         self._type = data['type']
         self._guid = str(data['guid'])
@@ -173,10 +208,9 @@ class InstanceHandler:
                 f'{platform.system()} {platform.version()}')
         }
 
-    @property
-    def serializer(self):
+    def get_serializer(self):
         try:
-            return self.models_info[self.model_name]['serializer']
+            self._serializer = self.models_info[self.model_name]['serializer']
         except KeyError as exc:
             raise BusModelNotFound() from exc
 
