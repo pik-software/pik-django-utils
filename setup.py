@@ -50,6 +50,8 @@ setup(
     install_requires=requirements,
     python_requires='~=3.6',
 
+    include_package_data=True,
+
     # List additional groups of dependencies here
     #   $ pip install sampleproject[dev]
     extras_require={

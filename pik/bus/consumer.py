@@ -98,6 +98,7 @@ class MessageHandler:
         self._queue = queue
 
     def handle(self):
+        logger.info('MessageHandler.handle()')
         try:
             self._fetch_payload()
             self._prepare_payload()
