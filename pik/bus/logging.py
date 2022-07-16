@@ -24,8 +24,9 @@ def capture_stats(event, entity_type, entity_guid, **kwargs):
     logstash_logger.info(msg=message, extra={
         **{
             'logger': settings.RABBITMQ_ACCOUNT_NAME,
-            'type': entity_type,
-            'guid': entity_guid,
+            'event': event,
+            'objectType': entity_type,
+            'objectGuid': entity_guid,
         },
         **kwargs,
     })
