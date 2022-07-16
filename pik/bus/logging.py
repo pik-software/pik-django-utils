@@ -6,22 +6,27 @@ from .settings import LOGGER_NAME
 logger = logging.getLogger(__name__)
 
 
-logstash_logger = None
-if 'handlers' in settings.LOGGING and LOGGER_NAME in settings.LOGGING['handlers']:
-    logstash_logger = logging.getLogger(LOGGER_NAME)
+LOGSTASH_LOGGER = None
+handler = getattr(
+    settings, 'LOGGING', {}).get('handlers', {}).get(LOGGER_NAME, None)
+if handler:
+    LOGSTASH_LOGGER = logging.getLogger(LOGGER_NAME)
 
 
 if not hasattr(settings, 'RABBITMQ_ACCOUNT_NAME'):
-    raise AttributeError('RABBITMQ_ACCOUNT_NAME must be define in settings')
+    LOGSTASH_LOGGER = None
+    logger.warning(
+        'RABBITMQ_ACCOUNT_NAME param is necessary for logstash logger, '
+        'but not set in settings.')
 
 
 def capture_stats(event, entity_type, entity_guid, **kwargs):
-    if not logstash_logger:
+    if not LOGSTASH_LOGGER:
         return
 
     message = f'Send to logstash data at event "{event}" ' \
               f'for object "{entity_type}" with guid "{entity_guid}"'
-    logstash_logger.info(msg=message, extra={
+    LOGSTASH_LOGGER.info(msg=message, extra={
         **{
             'logger': settings.RABBITMQ_ACCOUNT_NAME,
             'event': event,

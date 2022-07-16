@@ -1,5 +1,4 @@
 import os
-import sys
 import platform
 import logging
 
@@ -10,11 +9,10 @@ from django.conf import settings
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
 from rest_framework.renderers import JSONRenderer
-from pika import spec
-from sentry_sdk import capture_exception
-from pika import BlockingConnection, URLParameters
+from pika import BlockingConnection, URLParameters, spec
 from pika.exceptions import (
     AMQPConnectionError, ChannelWrongStateError, ChannelClosedByBroker, )
+from sentry_sdk import capture_exception
 from tenacity import (
     retry, retry_if_exception_type, stop_after_attempt, wait_fixed, )
 
@@ -93,8 +91,7 @@ class InstanceHandler:
         self._json_message = None
 
     @cached_property
-    def models_info(
-            self):  # noqa: no-self-used Unable to combine static @method & @cached_property
+    def models_info(self):  # noqa: no-self-used Unable to combine static @method & @cached_property
         """```
         {
             model: {

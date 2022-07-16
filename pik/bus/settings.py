@@ -39,7 +39,9 @@ class LogstashLoggingSettingsExtendor:
         },
     }
 
-    _url_warning = 'logstash_url must be in url format, for example ' \
+    _url_warning = 'LOGSTASH_URL is not set or set in incorrect format in ' \
+                   'environment variables and settings param. ' \
+                   'LOGSTASH_URL must be in url format, for example ' \
                    '"https://user:pass@127.0.0.1:5044"'
 
     _host = None
@@ -96,7 +98,7 @@ class LogstashLoggingSettingsExtendor:
 
     def extend(self):
         if not self._check():
-            return
+            return None
         self._configure()
         self._merge()
         return self._settings
