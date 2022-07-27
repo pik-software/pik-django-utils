@@ -1,7 +1,7 @@
 import logging
-from functools import cached_property
 
 from django.conf import settings
+from django.utils.functional import cached_property
 from pika import URLParameters
 
 from pik.bus.settings import BUS_EVENT_LOGGER
