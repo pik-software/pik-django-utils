@@ -12,15 +12,16 @@ from rest_framework.renderers import JSONRenderer
 from pika import BlockingConnection, URLParameters, spec
 from pika.exceptions import (
     AMQPConnectionError, ChannelWrongStateError, ChannelClosedByBroker, )
-from sentry_sdk import capture_exception
+
 from tenacity import (
     retry, retry_if_exception_type, stop_after_attempt, wait_fixed, )
 
+from pik.utils.sentry import capture_exception
 from pik.api.camelcase.viewsets import camelcase_type_field_hook
 from pik.api_settings import api_settings
 from pik.utils.case_utils import camelize
-from pik.bus.logging import capture_stats
 
+from .mdm import mdm_event_captor
 
 AMQP_ERRORS = (
     AMQPConnectionError, ChannelWrongStateError, ChannelClosedByBroker)
@@ -35,7 +36,8 @@ def after_fail_retry(retry_state):
     logger.warning(
         'Reconnecting to RabbitMQ. Attempt number: %s',
         retry_state.attempt_number)
-    delattr(retry_state.args[0], '_channel')
+    if hasattr(retry_state.args[0], '_channel'):
+        delattr(retry_state.args[0], '_channel')
 
 
 class MessageProducer:
@@ -82,8 +84,9 @@ class InstanceHandler:
     _serializer = None
     _json_message = None
 
-    def __init__(self, instance):
+    def __init__(self, instance, event_captor):
         self._instance = instance
+        self._event_captor = event_captor
         self._type = None
         self._guid = None
         self._exchange = None
@@ -110,8 +113,8 @@ class InstanceHandler:
             in settings.RABBITMQ_PRODUCES.items()
         }
 
-    def _capture_stats(self, event, **kwargs):
-        capture_stats(
+    def _capture_event(self, event, **kwargs):
+        self._event_captor.capture(
             event=event,
             entity_type=self._type,
             entity_guid=self._guid,
@@ -130,7 +133,7 @@ class InstanceHandler:
         except Exception as error:
             raise error
         finally:
-            self._capture_stats(
+            self._capture_event(
                 event='serialization',
                 **{
                     'success': not error,
@@ -146,10 +149,10 @@ class InstanceHandler:
         error = None
         try:
             producer.produce(self._exchange, self._json_message)
-        except Exception as error:
-            raise error
+        except Exception:  # noqa broad-except
+            raise
         finally:
-            self._capture_stats(
+            self._capture_event(
                 event='publishing',
                 **{
                     'success': not error,
@@ -221,10 +224,9 @@ def push_model_instance_to_rabbit_queue(instance, **kwargs):
     if not settings.RABBITMQ_PRODUCER_ENABLE:
         return
     try:
-        InstanceHandler(instance).handle()
+        InstanceHandler(instance, mdm_event_captor).handle()
     except Exception as exc:  # noqa: broad-except
-        logger.error(
+        logger.info(
             'Reconnecting to RabbitMQ after %s attempt is fail',
             MessageProducer.RECONNECT_ATTEMPT_COUNT)
-        logger.exception(exc)
         capture_exception(exc)

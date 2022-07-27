@@ -1,35 +1,36 @@
-import pytest
-
 from logstash_async.transport import HttpTransport
 
 from pik.bus.settings import (
-    LogstashLoggingSettingsExtendor, DuplicateLoggingKey)
+    LogstashBusLoggingSettingsExtender, BUS_EVENT_FORMATTER, BUS_EVENT_LOGGER,
+    BUS_EVENT_HANDLER)
 
 
 class TestSettings:
-    def _compare(self, actual_logging):
-        assert actual_logging['formatters']['logstash'] == {
+    @staticmethod
+    def _compare(actual_logging):
+        assert actual_logging['formatters'][BUS_EVENT_FORMATTER] == {
             '()': 'logstash_async.formatter.LogstashFormatter',
             'extra': {},
             'extra_prefix': '',
             'message_type': 'python-logstash'
         }
-        assert actual_logging['loggers']['logstash'] == {
-            'handlers': ['logstash'],
+        assert actual_logging['loggers'][BUS_EVENT_LOGGER] == {
+            'handlers': [BUS_EVENT_HANDLER],
             'level': 'INFO'
         }
-        transport = actual_logging['handlers']['logstash'].pop('transport')
+        transport = actual_logging['handlers'][BUS_EVENT_HANDLER].pop(
+            'transport')
         assert isinstance(transport, HttpTransport)
-        assert actual_logging['handlers']['logstash'] == {
+        assert actual_logging['handlers'][BUS_EVENT_HANDLER] == {
             'class': 'logstash_async.handler.AsynchronousLogstashHandler',
             'database_path': None,
-            'formatter': 'logstash',
+            'formatter': BUS_EVENT_FORMATTER,
             'host': None,
             'port': None,
         }
 
     def test_with_logging_setting(self):
-        actual_settings = LogstashLoggingSettingsExtendor({
+        settings = {
             'LOGGING': {
                 'loggers': {
                     'django': {'level': 'debug'},
@@ -46,18 +47,20 @@ class TestSettings:
                     }
                 },
             },
-            'LOGSTASH_URL': 'https://username:password@host:1024'
-        }).extend()
-        self._compare(actual_settings['LOGGING'])
+            'BUS_EVENT_LOGSTASH_URL': 'https://username:password@host:1024'
+        }
+        LogstashBusLoggingSettingsExtender(settings).extend()
+        self._compare(settings['LOGGING'])
 
     def test_without_logging_setting(self):
-        actual_settings = LogstashLoggingSettingsExtendor({
-            'LOGSTASH_URL': 'https://username:password@host:1024'
-        }).extend()
-        self._compare(actual_settings['LOGGING'])
+        settings = {
+            'BUS_EVENT_LOGSTASH_URL': 'https://username:password@host:1024'
+        }
+        LogstashBusLoggingSettingsExtender(settings).extend()
+        self._compare(settings['LOGGING'])
 
     def test_with_partly_logging_setting(self):
-        actual_settings = LogstashLoggingSettingsExtendor({
+        settings = {
             'LOGGING': {
                 'loggers': {
                     'django': {'level': 'debug'},
@@ -69,26 +72,7 @@ class TestSettings:
                     },
                 },
             },
-            'LOGSTASH_URL': 'https://username:password@host:1024'
-        }).extend()
-        self._compare(actual_settings['LOGGING'])
-
-    def test_duplicate_logging_key_exception(self):
-        with pytest.raises(
-                DuplicateLoggingKey,
-                match='"logstash" key is already in "loggers" setting.'):
-            LogstashLoggingSettingsExtendor({
-                'LOGGING': {
-                    'loggers': {
-                        'django': {'level': 'debug'},
-                        'logstash': {'level': 'debug'},
-                    },
-                    'handlers': {
-                        'console': {
-                            'class': 'logging.StreamHandler',
-                            'formatter': 'verbose'
-                        },
-                    },
-                },
-                'LOGSTASH_URL': 'https://username:password@host:1024'
-            }).extend()
+            'BUS_EVENT_LOGSTASH_URL': 'https://username:password@host:1024'
+        }
+        LogstashBusLoggingSettingsExtender(settings).extend()
+        self._compare(settings['LOGGING'])
