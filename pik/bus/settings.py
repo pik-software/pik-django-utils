@@ -3,16 +3,12 @@ from logging import getLogger
 from typing import Optional
 from urllib.parse import urlparse
 
-from django.conf import settings as django_settings
 from logstash_async.transport import HttpTransport
 
 
-BUS_EVENT_LOGGER = getattr(
-    django_settings, 'BUS_EVENT_LOGGER', 'bus_event_logstash_logger')
-BUS_EVENT_HANDLER = getattr(
-    django_settings, 'BUS_EVENT_HANDLER', 'bus_event_logstash_handler')
-BUS_EVENT_FORMATTER = getattr(
-    django_settings, 'BUS_EVENT_FORMATTER', 'bus_event_logstash_logger')
+BUS_EVENT_LOGGER = 'bus_event_logstash_logger'
+BUS_EVENT_HANDLER = 'bus_event_logstash_handler'
+BUS_EVENT_FORMATTER = 'bus_event_logstash_logger'
 
 
 logger = getLogger(__name__)
