@@ -25,11 +25,11 @@ class MDMEventCaptor:
         })
 
     @cached_property
-    def _client_name(self):
+    def _client_name(self):  # noqa: no-self-use, to use cached_property
         return URLParameters(settings.RABBITMQ_URL).credentials.username
 
     @cached_property
-    def _mdm_logger(self):
+    def _mdm_logger(self):  # noqa: no-self-use, to use cached_property
         return logging.getLogger(getattr(
             settings, BUS_EVENT_LOGGER, 'bus_event_logstash_logger'))
 
