@@ -1,5 +1,6 @@
 import os
 from logging import getLogger
+from typing import Optional
 from urllib.parse import urlparse
 
 from django.conf import settings as django_settings
@@ -44,7 +45,7 @@ class LogstashBusLoggingSettingsExtender:
                    'BUS_EVENT_LOGSTASH_URL must be in url format, for ' \
                    'example "https://user:pass@127.0.0.1:5044"'
 
-    _host: str = None
+    _host: Optional[str] = None
     _port = None
     _username = None
     _password = None
