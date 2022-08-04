@@ -11,10 +11,10 @@ from django.dispatch import receiver
 from django.conf import settings
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
-from rest_framework.renderers import JSONRenderer
 from pika import BlockingConnection, URLParameters, spec
 from pika.exceptions import (
     AMQPConnectionError, ChannelWrongStateError, ChannelClosedByBroker, )
+from rest_framework.renderers import JSONRenderer
 from rest_framework.serializers import Serializer
 
 from tenacity import (
