@@ -35,11 +35,11 @@ def test_transaction_publish():
 
 @override_settings(RABBITMQ_PRODUCES={
     'test_exchange': 'rest_framework.serializers.Serializer'})
+@patch('pik.bus.producer.InstanceHandler._model_info_cache', {})
 def test_instance_handler_models_info():
     serializer = Mock(Meta=Mock(model=Mock(__name__='test_model')))
     # to restore cache
-    with (patch('pik.bus.producer.InstanceHandler._model_info_cache', {}),
-          patch('rest_framework.serializers.Serializer', serializer)):
+    with patch('rest_framework.serializers.Serializer', serializer):
         assert InstanceHandler(None, None).models_info == {'test_model': {
             'exchange': 'test_exchange', 'serializer': serializer}}
 
