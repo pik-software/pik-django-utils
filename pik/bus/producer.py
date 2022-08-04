@@ -3,6 +3,7 @@ import platform
 import logging
 import uuid
 from contextlib import ContextDecorator
+from typing import Dict, Union
 
 import django
 from django.db.models.signals import post_save
@@ -14,6 +15,7 @@ from rest_framework.renderers import JSONRenderer
 from pika import BlockingConnection, URLParameters, spec
 from pika.exceptions import (
     AMQPConnectionError, ChannelWrongStateError, ChannelClosedByBroker, )
+from rest_framework.serializers import Serializer
 
 from tenacity import (
     retry, retry_if_exception_type, stop_after_attempt, wait_fixed, )
@@ -121,7 +123,7 @@ producer = MessageProducer(settings.RABBITMQ_URL, mdm_event_captor)
 
 class InstanceHandler:
     _instance = NotImplemented
-    _model_info_cache = {}
+    _model_info_cache: Dict[str, Dict[str, Union[str, Serializer]]] = {}
 
     def __init__(self, instance, event_captor):
         self._instance = instance
