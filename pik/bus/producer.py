@@ -1,6 +1,8 @@
 import os
 import platform
 import logging
+import uuid
+from contextlib import ContextDecorator
 
 import django
 from django.db.models.signals import post_save
@@ -32,6 +34,10 @@ class BusModelNotFound(Exception):
     pass
 
 
+class MDMTransactionIsAlreadyStarted(Exception):
+    pass
+
+
 def after_fail_retry(retry_state):
     logger.warning(
         'Reconnecting to RabbitMQ. Attempt number: %s',
@@ -41,11 +47,14 @@ def after_fail_retry(retry_state):
 
 
 class MessageProducer:
+    renderer_class = JSONRenderer
     RECONNECT_ATTEMPT_COUNT = 32
     RECONNECT_WAIT_DELAY = 1
+    _transaction_messages = None
 
-    def __init__(self, connection_url):
+    def __init__(self, connection_url, event_captor):
         self.connection_url = connection_url
+        self._event_captor = event_captor
 
     @cached_property
     def _channel(self):
@@ -54,6 +63,11 @@ class MessageProducer:
         channel.confirm_delivery()
         return channel
 
+    def _publish(self, exchange, envelope):
+        self._channel.basic_publish(
+            exchange=exchange, routing_key='',
+            body=self.renderer_class().render(envelope))
+
     @retry(
         wait=wait_fixed(RECONNECT_WAIT_DELAY),
         stop=stop_after_attempt(RECONNECT_ATTEMPT_COUNT),
@@ -61,141 +75,115 @@ class MessageProducer:
         after=after_fail_retry,
         reraise=True,
     )
-    def produce(self, exchange, json_message):
+    def _produce(self, exchange, envelope):
         try:
-            self._channel.basic_publish(
-                exchange=exchange,
-                routing_key='',
-                body=json_message)
-        except ChannelClosedByBroker as exc:
-            if exc.reply_code != spec.SYNTAX_ERROR:
-                raise ChannelClosedByBroker from exc
+            self._publish(exchange, envelope)
+        except ChannelClosedByBroker as error:
+            self._capture_event(envelope, success=False, error=error)
+            if error.reply_code != spec.SYNTAX_ERROR:
+                raise ChannelClosedByBroker from error
+        except Exception as error:  # noqa: board-except
+            self._capture_event(envelope, success=False, error=error)
+        else:
+            self._capture_event(envelope, success=True, error=None)
+
+    def produce(self, exchange, message):
+        if self._transaction_messages is not None:
+            self._transaction_messages.append((exchange, message))
+            return
+        self._produce(exchange, message)
+
+    def start_transaction(self):
+        if self._transaction_messages is not None:
+            raise MDMTransactionIsAlreadyStarted()
+        self._transaction_messages = []
+
+    def finish_transaction(self):
+        transaction_guid = str(uuid.uuid4())
+        for exchange, message in self._transaction_messages:
+            message.setdefault('headers', {})
+            message['headers']['transactionGUID'] = transaction_guid
+            message['headers']['transactionMessageCount'] = len(
+                self._transaction_messages)
+            self._produce(exchange, message)
+        self._transaction_messages = None
+
+    def _capture_event(self, envelope, **kwargs):
+        self._event_captor.capture(
+            entity_type=envelope.get('message', {}).get('type'),
+            entity_guid=envelope.get('message', {}).get('guid'),
+            event='publishing',
+            **kwargs)
 
 
-producer = MessageProducer(settings.RABBITMQ_URL)
+producer = MessageProducer(settings.RABBITMQ_URL, mdm_event_captor)
 
 
 class InstanceHandler:
-    renderer_class = JSONRenderer
     _instance = NotImplemented
-    _type = None
-    _guid = None
-    _exchange = None
-    _serializer = None
-    _json_message = None
+    _model_info_cache = {}
 
     def __init__(self, instance, event_captor):
         self._instance = instance
         self._event_captor = event_captor
-        self._type = None
-        self._guid = None
-        self._exchange = None
-        self._serializer = None
-        self._json_message = None
 
-    @cached_property
-    def models_info(self):  # noqa: no-self-used Unable to combine static @method & @cached_property
-        """```
-        {
+    @property
+    def models_info(self):
+        """```{
             model: {
                'serializer': serializer,
                'exchange': exchange
            },
            ...
-        }
-        ```"""
-        return {
-            import_string(serializer).Meta.model.__name__: {  # type: ignore
-                'serializer': import_string(serializer),
-                'exchange': exchange,
-            }
-            for exchange, serializer
-            in settings.RABBITMQ_PRODUCES.items()
-        }
+        }```"""
+        if not self.__class__._model_info_cache:  # noqa: protect-access
+            self.__class__._model_info_cache.update({  # noqa: protect-access
+                import_string(serializer).Meta.model.__name__: {
+                    'serializer': import_string(serializer),
+                    'exchange': exchange}
+                for exchange, serializer in settings.RABBITMQ_PRODUCES.items()
+            })
+        return self.__class__._model_info_cache  # noqa: protect-access
 
-    def _capture_event(self, event, **kwargs):
+    def handle(self):
+        try:
+            envelope = self._envelope
+        except Exception as error:  # noqa broad-except
+            self._capture_event(success=False, error=error)
+            return
+        else:
+            self._capture_event(success=True, error=None)
+
+        producer.produce(self._exchange, envelope)
+
+    def _capture_event(self, **kwargs):
+        try:
+            _type = self._message['type']
+            _guid = str(self._message['guid'])
+        except Exception:  # noqa: exception already captured
+            _type, _guid = None, None
         self._event_captor.capture(
-            event=event,
-            entity_type=self._type,
-            entity_guid=self._guid,
+            event='serialization',
+            entity_type=_type,
+            entity_guid=_guid,
             **kwargs
         )
 
-    def _serialize(self):
-        try:
-            self.get_serializer()
-        except BusModelNotFound:
-            return
-
-        error = None
-        try:
-            self.get_json_message()
-        except Exception as error:
-            raise error
-        finally:
-            self._capture_event(
-                event='serialization',
-                **{
-                    'success': not error,
-                    'error': error,
-                })
-
-    def _produce(self):
-        try:
-            self.get_exchange()
-        except BusModelNotFound:
-            return
-
-        error = None
-        try:
-            producer.produce(self._exchange, self._json_message)
-        except Exception:  # noqa broad-except
-            raise
-        finally:
-            self._capture_event(
-                event='publishing',
-                **{
-                    'success': not error,
-                    'error': error,
-                })
-
-    def handle(self):
-        self._serialize()
-        self._produce()
-
-    def get_exchange(self):
-        try:
-            self._exchange = self.models_info[self.model_name]['exchange']
-        except KeyError as exc:
-            raise BusModelNotFound() from exc
-
     @property
-    def model_name(self):
-        return self._instance.__class__.__name__
-
-    def get_json_message(self):
-        self._json_message = self.renderer_class().render(self.message)
-
-    @property
-    def message(self):
-        payload = self.payload
+    def _envelope(self):
+        message = self._message
         return {
-            'messageType': [payload['type'], ],
-            'message': payload,
-            'host': self.host,
-        }
+            'messageType': [message['type'], ],
+            'message': message,
+            'host': self.host}
 
-    @property
-    def payload(self):
+    @cached_property  # to avoid 2nd serialization via _capture_event
+    def _message(self):
         data = self._serializer(
-            self._instance, context=self.get_serializer_context()).data
+            self._instance, context=self.serializer_context).data
         data = camelize(data, **api_settings.JSON_UNDERSCORIZE)
         if hasattr(self._serializer, 'camelization_hook'):
             return self._serializer.camelization_hook(data)
-
-        self._type = data['type']
-        self._guid = str(data['guid'])
-
         return data
 
     @property
@@ -205,17 +193,28 @@ class InstanceHandler:
             'processId': os.getpid(),
             'frameworkVersion': django.get_version(),
             'operatingSystemVersion': (
-                f'{platform.system()} {platform.version()}')
-        }
+                f'{platform.system()} {platform.version()}')}
 
-    def get_serializer(self):
+    @property
+    def _serializer(self):
         try:
-            self._serializer = self.models_info[self.model_name]['serializer']
+            return self.models_info[self.model_name]['serializer']
         except KeyError as exc:
             raise BusModelNotFound() from exc
 
-    @staticmethod
-    def get_serializer_context():
+    @property
+    def _exchange(self):
+        try:
+            return self.models_info[self.model_name]['exchange']
+        except KeyError as exc:
+            raise BusModelNotFound() from exc
+
+    @property
+    def model_name(self):
+        return self._instance.__class__.__name__
+
+    @property
+    def serializer_context(self):  # noqa: no-self-use, is property
         return {'type_field_hook': camelcase_type_field_hook}
 
 
@@ -230,3 +229,11 @@ def push_model_instance_to_rabbit_queue(instance, **kwargs):
             'Reconnecting to RabbitMQ after %s attempt is fail',
             MessageProducer.RECONNECT_ATTEMPT_COUNT)
         capture_exception(exc)
+
+
+class MDMTransaction(ContextDecorator):
+    def __enter__(self):
+        producer.start_transaction()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        producer.finish_transaction()
