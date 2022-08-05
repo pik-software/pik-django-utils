@@ -47,9 +47,10 @@ def test_instance_handler_models_info():
 @patch('pik.bus.producer.InstanceHandler._envelope', property(Mock(
     side_effect=ZeroDivisionError)))
 @patch('pik.bus.producer.InstanceHandler._capture_event', Mock())
+@patch('pik.bus.producer.InstanceHandler._model_info_cache', {'Mock': {}})
 @patch('pik.bus.producer.MessageProducer.produce', Mock())
 def test_serialization_event_failed():
-    InstanceHandler(None, Mock()).handle()
+    InstanceHandler(Mock(), 'test_exchange').handle()
     assert str(InstanceHandler._capture_event.call_args_list) == str([  # noqa: protect-access
         call(success=False, error=ZeroDivisionError())])
 
@@ -59,8 +60,9 @@ def test_serialization_event_failed():
 @patch('pik.bus.producer.MessageProducer._publish', Mock())
 @patch('pik.bus.producer.InstanceHandler._capture_event', Mock())
 @patch('pik.bus.producer.InstanceHandler._exchange', Mock())
+@patch('pik.bus.producer.InstanceHandler._model_info_cache', {'Mock': {}})
 def test_serialization_event_ok():
-    InstanceHandler(None, Mock()).handle()
+    InstanceHandler(Mock(), 'test_exchange').handle()
     assert InstanceHandler._capture_event.call_args_list == [  # noqa: protect-access
         call(success=True, error=None)]
 

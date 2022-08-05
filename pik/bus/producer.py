@@ -148,6 +148,9 @@ class InstanceHandler:
         return self.__class__._model_info_cache  # noqa: protect-access
 
     def handle(self):
+        if self.model_name not in self.models_info:
+            return
+
         try:
             envelope = self._envelope
         except Exception as error:  # noqa broad-except
