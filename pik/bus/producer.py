@@ -91,8 +91,7 @@ class MessageProducer:
                 raise ChannelClosedByBroker from error
         except Exception as error:  # noqa: board-except
             self._capture_event(envelope, success=False, error=error)
-            if isinstance(error, AMQP_RETRY_ERRORS):
-                raise error
+            raise error
         else:
             self._capture_event(envelope, success=True, error=None)
 
