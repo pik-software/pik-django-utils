@@ -27,7 +27,7 @@ from pik.utils.case_utils import camelize
 
 from .mdm import mdm_event_captor
 
-AMQP_ERRORS = (
+AMQP_RETRY_ERRORS = (
     AMQPConnectionError, ChannelWrongStateError, ChannelClosedByBroker)
 logger = logging.getLogger(__name__)
 
@@ -44,6 +44,11 @@ def after_fail_retry(retry_state):
     logger.warning(
         'Reconnecting to RabbitMQ. Attempt number: %s',
         retry_state.attempt_number)
+    if retry_state.attempt_number == MessageProducer.RECONNECT_ATTEMPT_COUNT:
+        logger.warning(
+            'Reconnecting to RabbitMQ after %s attempt is fail',
+            MessageProducer.RECONNECT_ATTEMPT_COUNT)
+
     if hasattr(retry_state.args[0], '_channel'):
         delattr(retry_state.args[0], '_channel')
 
@@ -73,7 +78,7 @@ class MessageProducer:
     @retry(
         wait=wait_fixed(RECONNECT_WAIT_DELAY),
         stop=stop_after_attempt(RECONNECT_ATTEMPT_COUNT),
-        retry=retry_if_exception_type(AMQP_ERRORS),
+        retry=retry_if_exception_type(AMQP_RETRY_ERRORS),
         after=after_fail_retry,
         reraise=True,
     )
@@ -86,6 +91,8 @@ class MessageProducer:
                 raise ChannelClosedByBroker from error
         except Exception as error:  # noqa: board-except
             self._capture_event(envelope, success=False, error=error)
+            if isinstance(error, AMQP_RETRY_ERRORS):
+                raise error
         else:
             self._capture_event(envelope, success=True, error=None)
 
@@ -230,9 +237,6 @@ def push_model_instance_to_rabbit_queue(instance, **kwargs):
     try:
         InstanceHandler(instance, mdm_event_captor).handle()
     except Exception as exc:  # noqa: broad-except
-        logger.info(
-            'Reconnecting to RabbitMQ after %s attempt is fail',
-            MessageProducer.RECONNECT_ATTEMPT_COUNT)
         capture_exception(exc)
 
 
