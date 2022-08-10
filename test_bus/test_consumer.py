@@ -1,16 +1,15 @@
 import json
-from unittest.mock import Mock, patch, call
+from unittest.mock import Mock, patch
 from uuid import UUID
 
 import pytest
-from django.db.models import QuerySet, Manager
+from django.db.models import Manager
 from rest_framework.exceptions import ParseError, ValidationError, ErrorDetail
-from rest_framework.fields import UUIDField, DateTimeField
-from rest_framework.serializers import ModelSerializer, CharField
+from rest_framework.fields import DateTimeField
+from rest_framework.serializers import CharField
 
 from pik.api.serializers import StandardizedModelSerializer
-from pik.bus.consumer import MessageConsumer, MessageHandler, \
-    QueueSerializerMissingExcpetion
+from pik.bus.consumer import (MessageHandler, QueueSerializerMissingExcpetion)
 from pik.bus.models import PIKMessageException
 from test_core_models.models import RegularModel, RemovableRegularDepended
 
@@ -33,124 +32,139 @@ class RemovableRegularDependedSerializer(StandardizedModelSerializer):
 
 
 class TestMessageHandlerFetch:
-    def test_ok(self):
+    @staticmethod
+    def test_ok():
         handler = MessageHandler(b'{"message": {}}', Mock(name='queue'))
-        handler._fetch_payload()
-        assert handler._payload == {}
+        handler._fetch_payload()  # noqa: protected-access
+        assert handler._payload == {}  # noqa: protected-access
 
-    def test__not_json(self):
+    @staticmethod
+    def test__not_json():
         handler = MessageHandler(b'', Mock(name='queue'))
         with pytest.raises(ParseError):
-            handler._fetch_payload()
-        assert handler._payload is None
+            handler._fetch_payload()  # noqa: protected-access
+        assert handler._payload is None  # noqa: protected-access
 
-    def test_message_missing(self):
+    @staticmethod
+    def test_message_missing():
         handler = MessageHandler(b'{}', Mock(name='queue'))
         with pytest.raises(KeyError):
-            handler._fetch_payload()
-        assert handler._payload is None
+            handler._fetch_payload()  # noqa: protected-access
+        assert handler._payload is None  # noqa: protected-access
 
-    def test_not_bytes(self):
+    @staticmethod
+    def test_not_bytes():
         handler = MessageHandler(42, Mock(name='queue'))
         with pytest.raises(TypeError):
-            handler._fetch_payload()
-        assert handler._payload is None
+            handler._fetch_payload()  # noqa: protected-access
+        assert handler._payload is None  # noqa: protected-access
 
 
 class TestMessageHandlerPrepare:
-    def test_ok(self):
+    @staticmethod
+    def test_ok():
         handler = MessageHandler(Mock(name='message'), Mock(name='queue'))
-        handler._payload = {'someValue': 42}
-        with patch.object(
-                MessageHandler, '_serializer_class',
-                Mock(underscorize_hook=Mock(side_effect=lambda x: x))
-                ) as serializer:
-            handler._prepare_payload()
-        assert handler._payload == {'some_value': 42}
+        handler._payload = {'someValue': 42}  # noqa: protected-access
+        with patch.object(MessageHandler, '_serializer_class', Mock(
+                underscorize_hook=Mock(
+                    side_effect=lambda x: x))) as serializer:
+            handler._prepare_payload()  # noqa: protected-access
+        assert handler._payload == {'some_value': 42}  # noqa: protected-access
         assert serializer.underscorize_hook.called
 
-    def test_serializer_missing(self):
+    @staticmethod
+    def test_serializer_missing():
         handler = MessageHandler(Mock(name='message'), Mock(name='queue'))
-        handler._payload = {'someValue': 42}
-        handler._serializers = {}
+        handler._payload = {'someValue': 42}  # noqa: protected-access
+        handler._serializers = {}  # noqa: protected-access
         with pytest.raises(QueueSerializerMissingExcpetion):
-            handler._prepare_payload()
-        assert handler._payload == {'some_value': 42}
+            handler._prepare_payload()  # noqa: protected-access
+        assert handler._payload == {'some_value': 42}  # noqa: protected-access
 
-    def test_invalid_payload(self):
+    @staticmethod
+    def test_invalid_payload():
         handler = MessageHandler(Mock(name='message'), Mock(name='queue'))
         payload = Exception()
-        handler._payload = payload
+        handler._payload = payload  # noqa: protected-access
         with patch.object(
                 MessageHandler, '_serializer_class',
                 Mock(underscorize_hook=Mock(side_effect=lambda x: x))):
-            handler._prepare_payload()
-        assert handler._payload == payload
+            handler._prepare_payload()  # noqa: protected-access
+        assert handler._payload == payload  # noqa: protected-access
 
 
 class TestMessageHandlerUpdateInstance:
+    @staticmethod
     @pytest.mark.django_db
-    def test_instance_exists(self):
+    def test_instance_exists():
         RegularModel(
             uid=UUID('b24d988e-42aa-477d-a8c3-a88b127b9b31'),
             name='Existing').save()
         handler = MessageHandler(Mock(name='message'), Mock(name='queue'))
-        handler._payload = {'guid': 'b24d988e-42aa-477d-a8c3-a88b127b9b31'}
-        with patch.object(MessageHandler, '_serializer_class', RegularModelSerializer):
-            assert isinstance(handler._instance, RegularModel)
-            assert handler._instance.uid == UUID('b24d988e-42aa-477d-a8c3-a88b127b9b31')
-            assert not handler._instance._state.adding
+        handler._payload = {'guid': 'b24d988e-42aa-477d-a8c3-a88b127b9b31'}  # noqa: protected-access
+        with patch.object(
+                MessageHandler, '_serializer_class', RegularModelSerializer):
+            assert isinstance(handler._instance, RegularModel)  # noqa: protected-access
+            assert handler._instance.uid == UUID(  # noqa: protected-access
+                'b24d988e-42aa-477d-a8c3-a88b127b9b31')
+            assert not handler._instance._state.adding  # noqa: protected-access
 
+    @staticmethod
     @pytest.mark.django_db
-    def test_instance_missing(self):
+    def test_instance_missing():
         handler = MessageHandler(Mock(name='message'), Mock(name='queue'))
-        handler._payload = {'guid': 42}
+        handler._payload = {'guid': 42}  # noqa: protected-access
         with patch.object(
                 MessageHandler, '_serializer_class', RegularModelSerializer):
-            assert isinstance(handler._instance, RegularModel)
-            assert handler._instance.uid == 42
-            assert handler._instance._state.adding
+            assert isinstance(handler._instance, RegularModel)  # noqa: protected-access
+            assert handler._instance.uid == 42  # noqa: protected-access
+            assert handler._instance._state.adding  # noqa: protected-access
 
-    def test_queryset(self):
-        handler = MessageHandler(Mock(name='message'), Mock(name='queue'))
-        with patch.object(
-                MessageHandler, '_serializer_class', RegularModelSerializer):
-            assert isinstance(handler._queryset, Manager)
-
-    def test_model(self):
+    @staticmethod
+    def test_queryset():
         handler = MessageHandler(Mock(name='message'), Mock(name='queue'))
         with patch.object(
                 MessageHandler, '_serializer_class', RegularModelSerializer):
-            assert handler._model == RegularModel
+            assert isinstance(handler._queryset, Manager)  # noqa: protected-access
 
+    @staticmethod
+    def test_model():
+        handler = MessageHandler(Mock(name='message'), Mock(name='queue'))
+        with patch.object(
+                MessageHandler, '_serializer_class', RegularModelSerializer):
+            assert handler._model == RegularModel  # noqa: protected-access
+
+    @staticmethod
     @pytest.mark.django_db
-    def test_ok(self):
+    def test_ok():
         handler = MessageHandler(Mock(name='message'), Mock(name='queue'))
-        handler._payload = {
+        handler._payload = {  # noqa: protected-access
             'guid': 'b24d988e-42aa-477d-a8c3-a88b127b9b31', 'name': 'Test'}
         with patch.object(
                 MessageHandler, '_serializer_class', RegularModelSerializer):
-                    handler._update_instance()
+                    handler._update_instance()  # noqa: protected-access
 
         assert list(RegularModel.objects.values('name', 'uid')) == [{
             'uid': UUID('b24d988e-42aa-477d-a8c3-a88b127b9b31'), 'name': 'Test'
         }]
 
+    @staticmethod
     @pytest.mark.django_db
     @patch.object(
         MessageHandler, '_serializer_class',
         RemovableRegularDependedSerializer)
-    def test_missing_depended_model(self):
+    def test_missing_depended_model():
         handler = MessageHandler(Mock(name='message'), Mock(name='queue'))
-        handler._payload = {
+        handler._payload = {  # noqa: protected-access
             'guid': 'b24d988e-42aa-477d-a8c3-a88b127b9b31',
             'dependence': {
                 'guid': 'b24d988e-42aa-477d-a8c3-a88b127b9b31',
                 'type': 'regularmodel'}}
 
-        with patch.object(MessageHandler, '_instance', RemovableRegularDepended()):
+        with patch.object(
+                MessageHandler, '_instance', RemovableRegularDepended()):
             with pytest.raises(ValidationError) as exc:
-                handler._update_instance()
+                handler._update_instance()  # noqa: protected-access
             assert exc.value.detail == {'dependence': [
                 ErrorDetail(
                     string=('Недопустимый guid '
@@ -158,59 +172,60 @@ class TestMessageHandlerUpdateInstance:
                             'объект не существует.'),
                     code='does_not_exist')]}
 
+    @staticmethod
     @pytest.mark.django_db
     @patch.object(
         MessageHandler, '_serializer_class',
         RemovableRegularDependedSerializer)
-    def test_multiple_error_model(self):
+    def test_multiple_error_model():
         handler = MessageHandler(Mock(name='message'), Mock(name='queue'))
-        handler._payload = {
+        handler._payload = {  # noqa: protected-access
             'guid': 'b24d988e-42aa-477d-a8c3-a88b127b9b31',
             'created': 'zzzz',
             'dependence': {
                 'guid': 'b24d988e-42aa-477d-a8c3-a88b127b9b31',
                 'type': 'regularmodel'}}
 
-        with patch.object(MessageHandler, '_instance', RemovableRegularDepended()):
+        with patch.object(
+                MessageHandler, '_instance', RemovableRegularDepended()):
             with pytest.raises(ValidationError) as exc:
-                handler._update_instance()
-            assert exc.value.detail == {'created': [ErrorDetail(
-                string=(
-                    'Datetime has wrong format. Use one of these formats '
-                    'instead: '
-                    'YYYY-MM-DDThh:mm[:ss[.uuuuuu]][+HH:MM|-HH:MM|Z].'),
-                code='invalid')], 'dependence': [ErrorDetail(
-                string='Недопустимый guid "b24d988e-42aa-477d-a8c3-a88b127b9b31" - объект не существует.',
-                code='does_not_exist')]}
+                handler._update_instance()  # noqa: protected-access
+            assert exc.value.detail == {'created': [ErrorDetail(string=(
+                'Datetime has wrong format. Use one of these formats '
+                'instead: YYYY-MM-DDThh:mm[:ss[.uuuuuu]][+HH:MM|-HH:MM|Z].'),
+                code='invalid')], 'dependence': [ErrorDetail(string=(
+                    'Недопустимый guid "b24d988e-42aa-477d-a8c3-a88b127b9b31" '
+                    '- объект не существует.'), code='does_not_exist')]}
 
 
 @pytest.mark.django_db
 class TestMessageHandlerException:
-    def test_unexpected_error(self):
+    @staticmethod
+    def test_unexpected_error():
         PIKMessageException(
             uid='dbef014c-1ece-f8f9-9e5e-fa78cf01680d',
             exception='', queue='test_queue').save()
         handler = MessageHandler(b'test_message', 'test_queue')
-        handler._capture_exception(Exception('test'))
+        handler._capture_exception(Exception('test'))  # noqa: protected-access
         assert list(PIKMessageException.objects.values(
             'queue', 'message', 'exception', 'exception_type',
-            'exception_message', 'uid')) == [
-                   {'exception': {'code': 'Exception',
-                                  'message': 'test'},
-                    'uid': UUID('dbef014c-1ece-f8f9-9e5e-fa78cf01680d'),
-                    'exception_message': 'test',
-                    'exception_type': 'Exception',
-                    'message': b'test_message',
-                    'queue': 'test_queue'}]
+            'exception_message', 'uid')) == [{
+                'exception': {'code': 'Exception', 'message': 'test'},
+                'uid': UUID('dbef014c-1ece-f8f9-9e5e-fa78cf01680d'),
+                'exception_message': 'test',
+                'exception_type': 'Exception',
+                'message': b'test_message',
+                'queue': 'test_queue'}]
 
-    def test_validation_error(self):
+    @staticmethod
+    def test_validation_error():
         PIKMessageException(
             uid='dbef014c-1ece-f8f9-9e5e-fa78cf01680d',
             entity_uid='dbef014c-1ece-f8f9-9e5e-fa78cf01680d',
             exception='', queue='test_queue').save()
         handler = MessageHandler(b'test_message', 'test_queue')
-        handler._payload = {'guid': 'dbef014c-1ece-f8f9-9e5e-fa78cf01680d'}
-        handler._capture_exception(ValidationError({'name': [
+        handler._payload = {'guid': 'dbef014c-1ece-f8f9-9e5e-fa78cf01680d'}  # noqa: protected-access
+        handler._capture_exception(ValidationError({'name': [  # noqa: protected-access
             ErrorDetail(string='This field is required.', code='required')]}))
         assert list(PIKMessageException.objects.values(
             'queue', 'message', 'exception', 'exception_type',
@@ -225,16 +240,17 @@ class TestMessageHandlerException:
                 'message': b'test_message',
                 'queue': 'test_queue'}]
 
-    def test_dependency_error(self):
+    @staticmethod
+    def test_dependency_error():
         PIKMessageException(
             uid='dbef014c-1ece-f8f9-9e5e-fa78cf01680d',
             entity_uid='dbef014c-1ece-f8f9-9e5e-fa78cf01680d',
             exception='', queue='test_queue').save()
         handler = MessageHandler(b'test_message', 'test_queue')
-        handler._payload = {
+        handler._payload = {  # noqa: protected-access
             'guid': 'dbef014c-1ece-f8f9-9e5e-fa78cf01680d',
             'dependence': {'guid': 'DependencyGuid', 'type': 'DependencyType'}}
-        handler._capture_exception(ValidationError({'created': [
+        handler._capture_exception(ValidationError({'created': [  # noqa: protected-access
             ErrorDetail(string=(
                 'Datetime has wrong format. Use one of these formats instead: '
                 'YYYY-MM-DDThh:mm[:ss[.uuuuuu]][+HH:MM|-HH:MM|Z].'),
@@ -245,36 +261,40 @@ class TestMessageHandlerException:
         assert list(PIKMessageException.objects.values(
             'queue', 'message', 'exception', 'exception_type',
             'exception_message', 'dependencies')) == [{
-            'dependencies': {'DependencyType': 'DependencyGuid'},
-            'exception': {'code': 'invalid',
-                          'detail': {'created': [{
-                              'code': 'invalid',
-                              'message': 'Datetime has wrong format. '
-                                         'Use one of these formats '
-                                         'instead: '
-                                         'YYYY-MM-DDThh:mm[:ss[.uuuuuu]][+HH:MM|-HH:MM|Z].'}],
-                              'dependence': [{
-                                  'code': 'does_not_exist',
-                                  'message': 'Недопустимый guid '
-                                             '"b24d988e-42aa-477d-a8c3-a88b127b9b31" '
-                                             '- объект не '
-                                             'существует.'}]},
-                          'message': 'Invalid input.'},
-            'exception_message': 'Invalid input.',
-            'exception_type': 'invalid',
-            'message': b'test_message',
-            'queue': 'test_queue'}]
+                'dependencies': {'DependencyType': 'DependencyGuid'},
+                'exception': {
+                    'code': 'invalid',
+                    'detail': {
+                        'created': [{
+                            'code': 'invalid',
+                            'message': (
+                                'Datetime has wrong format. Use one of these '
+                                'formats instead: YYYY-MM-DDThh:mm'
+                                '[:ss[.uuuuuu]][+HH:MM|-HH:MM|Z].')}],
+                        'dependence': [{
+                            'code': 'does_not_exist',
+                            'message': (
+                                'Недопустимый guid '
+                                '"b24d988e-42aa-477d-a8c3-a88b127b9b31" '
+                                '- объект не существует.')}]},
+                    'message': 'Invalid input.'},
+                'exception_message': 'Invalid input.',
+                'exception_type': 'invalid',
+                'message': b'test_message',
+                'queue': 'test_queue'}]
 
 
 @pytest.mark.django_db
 class TestMessageHandlerDependencies:
-    def test_missing_dependency(self):
+    @staticmethod
+    def test_missing_dependency():
         handler = MessageHandler(Mock(name='message'), Mock(name='queue'))
-        handler._payload = {'guid': 42, 'type': 'RegularModel'}
-        handler._process_dependants()
+        handler._payload = {'guid': 42, 'type': 'RegularModel'}  # noqa: protected-access
+        handler._process_dependants()  # noqa: protected-access
 
+    @staticmethod
     @patch.object(MessageHandler, '_serializer_class', RegularModelSerializer)
-    def test_process_dependency(self):
+    def test_process_dependency():
         PIKMessageException(
             message=json.dumps({'message': {
                 'type': 'Dependency',
@@ -287,8 +307,8 @@ class TestMessageHandlerDependencies:
             dependencies={'DependantModel': 42}).save()
 
         handler = MessageHandler(Mock(name='message'), Mock(name='queue'))
-        handler._payload = {'guid': 42, 'type': 'DependantModel'}
-        handler._process_dependants()
+        handler._payload = {'guid': 42, 'type': 'DependantModel'}  # noqa: protected-access
+        handler._process_dependants()  # noqa: protected-access
 
         assert list(RegularModel.objects.values('uid', 'name')) == [{
             'uid': UUID('00000000-0000-0000-0000-000000000000'),

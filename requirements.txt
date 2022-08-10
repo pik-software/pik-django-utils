@@ -36,5 +36,8 @@ cucco
 pika
 tenacity
 
-# sentry
+# Sentry
 sentry-sdk
+
+# Logstash
+python-logstash-async
