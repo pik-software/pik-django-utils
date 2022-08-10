@@ -85,8 +85,8 @@ TEMPLATES = [
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'NAME': 'pik_django_utils',
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
     }
 }
 
@@ -146,3 +146,5 @@ RABBITMQ_CONSUMER_ENABLE = False
 RABBITMQ_URL = ''
 RABBITMQ_PRODUCES = {}
 RABBITMQ_CONSUMES = {}
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'

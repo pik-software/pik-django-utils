@@ -1,4 +1,5 @@
 import json
+from io import BytesIO
 from unittest.mock import Mock, patch, call
 from uuid import UUID
 
@@ -193,15 +194,16 @@ class TestMessageHandlerException:
         handler = MessageHandler(b'test_message', 'test_queue')
         handler._capture_exception(Exception('test'))
         assert list(PIKMessageException.objects.values(
-            'queue', 'message', 'exception', 'exception_type',
+            'queue', 'exception', 'exception_type',
             'exception_message', 'uid')) == [
                    {'exception': {'code': 'Exception',
                                   'message': 'test'},
                     'uid': UUID('dbef014c-1ece-f8f9-9e5e-fa78cf01680d'),
                     'exception_message': 'test',
                     'exception_type': 'Exception',
-                    'message': b'test_message',
                     'queue': 'test_queue'}]
+        message = PIKMessageException.objects.values_list('message').first()[0]
+        assert (BytesIO(message).read() == b'test_message')
 
     def test_validation_error(self):
         PIKMessageException(
@@ -213,7 +215,7 @@ class TestMessageHandlerException:
         handler._capture_exception(ValidationError({'name': [
             ErrorDetail(string='This field is required.', code='required')]}))
         assert list(PIKMessageException.objects.values(
-            'queue', 'message', 'exception', 'exception_type',
+            'queue', 'exception', 'exception_type',
             'exception_message')) == [{
                 'exception': {'code': 'invalid',
                               'detail': {'name': [{
@@ -222,8 +224,9 @@ class TestMessageHandlerException:
                               'message': 'Invalid input.'},
                 'exception_message': 'Invalid input.',
                 'exception_type': 'invalid',
-                'message': b'test_message',
                 'queue': 'test_queue'}]
+        message = PIKMessageException.objects.values_list('message').first()[0]
+        assert (BytesIO(message).read() == b'test_message')
 
     def test_dependency_error(self):
         PIKMessageException(
@@ -243,7 +246,7 @@ class TestMessageHandlerException:
                 'Недопустимый guid "b24d988e-42aa-477d-a8c3-a88b127b9b31"'
                 ' - объект не существует.'), code='does_not_exist')]}))
         assert list(PIKMessageException.objects.values(
-            'queue', 'message', 'exception', 'exception_type',
+            'queue', 'exception', 'exception_type',
             'exception_message', 'dependencies')) == [{
             'dependencies': {'DependencyType': 'DependencyGuid'},
             'exception': {'code': 'invalid',
@@ -262,8 +265,10 @@ class TestMessageHandlerException:
                           'message': 'Invalid input.'},
             'exception_message': 'Invalid input.',
             'exception_type': 'invalid',
-            'message': b'test_message',
             'queue': 'test_queue'}]
+
+        message = PIKMessageException.objects.values_list('message').first()[0]
+        assert (BytesIO(message).read() == b'test_message')
 
 
 @pytest.mark.django_db
