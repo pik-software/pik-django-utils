@@ -44,7 +44,7 @@ def after_fail_retry(retry_state):
         'Reconnecting to RabbitMQ. Attempt number: %s',
         retry_state.attempt_number)
     if retry_state.attempt_number == MessageProducer.RECONNECT_ATTEMPT_COUNT:
-        logger.warning(
+        logger.error(
             'Reconnecting to RabbitMQ after %s attempt is fail',
             MessageProducer.RECONNECT_ATTEMPT_COUNT)
 
