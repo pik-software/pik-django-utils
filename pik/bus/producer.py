@@ -27,8 +27,7 @@ from pik.utils.case_utils import camelize
 
 from .mdm import mdm_event_captor
 
-AMQP_RETRY_ERRORS = (
-    AMQPConnectionError, ChannelWrongStateError, ChannelClosedByBroker)
+
 logger = logging.getLogger(__name__)
 
 
@@ -57,6 +56,8 @@ class MessageProducer:
     renderer_class = JSONRenderer
     RECONNECT_ATTEMPT_COUNT = 32
     RECONNECT_WAIT_DELAY = 1
+
+    transaction_guid = None
     _transaction_messages = None
 
     def __init__(self, connection_url, event_captor):
@@ -78,7 +79,9 @@ class MessageProducer:
     @retry(
         wait=wait_fixed(RECONNECT_WAIT_DELAY),
         stop=stop_after_attempt(RECONNECT_ATTEMPT_COUNT),
-        retry=retry_if_exception_type(AMQP_RETRY_ERRORS),
+        retry=retry_if_exception_type((
+            AMQPConnectionError, ChannelWrongStateError,
+            ChannelClosedByBroker)),
         after=after_fail_retry,
         reraise=True,
     )
@@ -88,39 +91,53 @@ class MessageProducer:
         except ChannelClosedByBroker as error:
             self._capture_event(envelope, success=False, error=error)
             if error.reply_code != spec.SYNTAX_ERROR:
-                raise ChannelClosedByBroker from error
+                raise
         except Exception as error:  # noqa: board-except
             self._capture_event(envelope, success=False, error=error)
-            raise error
+            raise
         else:
             self._capture_event(envelope, success=True, error=None)
 
-    def produce(self, exchange, message):
+    def produce(self, exchange, envelope):
         if self._transaction_messages is not None:
-            self._transaction_messages.append((exchange, message))
+            self._transaction_messages.append((exchange, envelope))
             return
-        self._produce(exchange, message)
+        self._produce(exchange, envelope)
 
     def start_transaction(self):
         if self._transaction_messages is not None:
             raise MDMTransactionIsAlreadyStarted()
+        self.transaction_guid = str(uuid.uuid4())
         self._transaction_messages = []
 
     def finish_transaction(self):
-        transaction_guid = str(uuid.uuid4())
-        for exchange, message in self._transaction_messages:
-            message.setdefault('headers', {})
-            message['headers']['transactionGUID'] = transaction_guid
-            message['headers']['transactionMessageCount'] = len(
-                self._transaction_messages)
-            self._produce(exchange, message)
-        self._transaction_messages = None
+        try:
+            self._send_transaction_messages()
+        finally:
+            self._transaction_messages = None
+            self.transaction_guid = None
+
+    def _send_transaction_messages(self):
+        for exchange, envelope in self._transaction_messages or []:
+            if len(self._transaction_messages) > 1:
+                envelope.setdefault('headers', {})
+                envelope['headers']['transactionGUID'] = self.transaction_guid
+                envelope['headers']['transactionMessageCount'] = len(
+                    self._transaction_messages)
+            self._produce(exchange, envelope)
 
     def _capture_event(self, envelope, **kwargs):
+        entity_guid = envelope.get('message', {}).get('guid')
+        # Wrong rendered uid format workaround
+        entity_guid = str(entity_guid) if entity_guid is not None else None
         self._event_captor.capture(
-            entity_type=envelope.get('message', {}).get('type'),
-            entity_guid=envelope.get('message', {}).get('guid'),
             event='publishing',
+            entity_type=envelope.get('message', {}).get('type'),
+            transactionGUID=self.transaction_guid,
+            transactionMessageCount=(
+                len(self._transaction_messages)
+                if self._transaction_messages is not None else None),
+            entity_guid=entity_guid,
             **kwargs)
 
 
@@ -131,7 +148,8 @@ class InstanceHandler:
     _instance = NotImplemented
     _model_info_cache: Dict[str, Dict[str, Union[str, Serializer]]] = {}
 
-    def __init__(self, instance, event_captor):
+    def __init__(self, instance, event_captor, _producer):
+        self._producer = _producer
         self._instance = instance
         self._event_captor = event_captor
 
@@ -165,7 +183,7 @@ class InstanceHandler:
         else:
             self._capture_event(success=True, error=None)
 
-        producer.produce(self._exchange, envelope)
+        self._producer.produce(self._exchange, envelope)
 
     def _capture_event(self, **kwargs):
         try:
@@ -234,7 +252,7 @@ def push_model_instance_to_rabbit_queue(instance, **kwargs):
     if not settings.RABBITMQ_PRODUCER_ENABLE:
         return
     try:
-        InstanceHandler(instance, mdm_event_captor).handle()
+        InstanceHandler(instance, mdm_event_captor, producer).handle()
     except Exception as exc:  # noqa: broad-except
         capture_exception(exc)
 
