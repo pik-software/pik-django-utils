@@ -1,5 +1,6 @@
 import json
-from unittest.mock import Mock, patch
+from pprint import pformat
+from unittest.mock import Mock, patch, call
 from uuid import UUID
 
 import pytest
@@ -9,7 +10,8 @@ from rest_framework.fields import DateTimeField
 from rest_framework.serializers import CharField
 
 from pik.api.serializers import StandardizedModelSerializer
-from pik.bus.consumer import (MessageHandler, QueueSerializerMissingExcpetion)
+from pik.bus.consumer import (MessageHandler, QueueSerializerMissingException,
+                              MessageConsumer)
 from pik.bus.models import PIKMessageException
 from test_core_models.models import RegularModel, RemovableRegularDepended
 
@@ -34,27 +36,23 @@ class RemovableRegularDependedSerializer(StandardizedModelSerializer):
 class TestMessageHandlerFetch:
     @staticmethod
     def test_ok():
-        handler = MessageHandler(b'{"message": {}}', Mock(name='queue'))
+        handler = MessageHandler(
+            b'{"message": {}}', Mock(name='queue'), Mock(name='event_captor'))
         handler._fetch_payload()  # noqa: protected-access
         assert handler._payload == {}  # noqa: protected-access
 
     @staticmethod
-    def test__not_json():
-        handler = MessageHandler(b'', Mock(name='queue'))
-        with pytest.raises(ParseError):
-            handler._fetch_payload()  # noqa: protected-access
-        assert handler._payload is None  # noqa: protected-access
-
-    @staticmethod
     def test_message_missing():
-        handler = MessageHandler(b'{}', Mock(name='queue'))
+        handler = MessageHandler(
+            b'{}', Mock(name='queue'), Mock(name='event_captor'))
         with pytest.raises(KeyError):
             handler._fetch_payload()  # noqa: protected-access
         assert handler._payload is None  # noqa: protected-access
 
     @staticmethod
-    def test_not_bytes():
-        handler = MessageHandler(42, Mock(name='queue'))
+    def test_not_dict():
+        handler = MessageHandler(
+            42, Mock(name='queue'), Mock(name='event_captor'))
         with pytest.raises(TypeError):
             handler._fetch_payload()  # noqa: protected-access
         assert handler._payload is None  # noqa: protected-access
@@ -63,7 +61,9 @@ class TestMessageHandlerFetch:
 class TestMessageHandlerPrepare:
     @staticmethod
     def test_ok():
-        handler = MessageHandler(Mock(name='message'), Mock(name='queue'))
+        handler = MessageHandler(
+            Mock(name='message'), Mock(name='queue'),
+            Mock(name='event_captor'))
         handler._payload = {'someValue': 42}  # noqa: protected-access
         with patch.object(MessageHandler, '_serializer_class', Mock(
                 underscorize_hook=Mock(
@@ -74,16 +74,22 @@ class TestMessageHandlerPrepare:
 
     @staticmethod
     def test_serializer_missing():
-        handler = MessageHandler(Mock(name='message'), Mock(name='queue'))
+        handler = MessageHandler(
+            Mock(name='message'),
+            Mock(name='queue'),
+            Mock(name='event_captor'))
         handler._payload = {'someValue': 42}  # noqa: protected-access
         handler._serializers = {}  # noqa: protected-access
-        with pytest.raises(QueueSerializerMissingExcpetion):
+        with pytest.raises(QueueSerializerMissingException):
             handler._prepare_payload()  # noqa: protected-access
         assert handler._payload == {'some_value': 42}  # noqa: protected-access
 
     @staticmethod
     def test_invalid_payload():
-        handler = MessageHandler(Mock(name='message'), Mock(name='queue'))
+        handler = MessageHandler(
+            Mock(name='message'),
+            Mock(name='queue'),
+            Mock(name='event_captor'))
         payload = Exception()
         handler._payload = payload  # noqa: protected-access
         with patch.object(
@@ -100,7 +106,10 @@ class TestMessageHandlerUpdateInstance:
         RegularModel(
             uid=UUID('b24d988e-42aa-477d-a8c3-a88b127b9b31'),
             name='Existing').save()
-        handler = MessageHandler(Mock(name='message'), Mock(name='queue'))
+        handler = MessageHandler(
+            Mock(name='message'),
+            Mock(name='queue'),
+            Mock(name='event_captor'))
         handler._payload = {'guid': 'b24d988e-42aa-477d-a8c3-a88b127b9b31'}  # noqa: protected-access
         with patch.object(
                 MessageHandler, '_serializer_class', RegularModelSerializer):
@@ -112,7 +121,10 @@ class TestMessageHandlerUpdateInstance:
     @staticmethod
     @pytest.mark.django_db
     def test_instance_missing():
-        handler = MessageHandler(Mock(name='message'), Mock(name='queue'))
+        handler = MessageHandler(
+            Mock(name='message'),
+            Mock(name='queue'),
+            Mock(name='event_captor'))
         handler._payload = {'guid': 42}  # noqa: protected-access
         with patch.object(
                 MessageHandler, '_serializer_class', RegularModelSerializer):
@@ -122,14 +134,17 @@ class TestMessageHandlerUpdateInstance:
 
     @staticmethod
     def test_queryset():
-        handler = MessageHandler(Mock(name='message'), Mock(name='queue'))
+        handler = MessageHandler(
+            Mock(name='message'),
+            Mock(name='queue'),
+            Mock(name='event_captor'))
         with patch.object(
                 MessageHandler, '_serializer_class', RegularModelSerializer):
             assert isinstance(handler._queryset, Manager)  # noqa: protected-access
 
     @staticmethod
     def test_model():
-        handler = MessageHandler(Mock(name='message'), Mock(name='queue'))
+        handler = MessageHandler(Mock(name='message'), Mock(name='queue'), Mock(name='event_captor'))
         with patch.object(
                 MessageHandler, '_serializer_class', RegularModelSerializer):
             assert handler._model == RegularModel  # noqa: protected-access
@@ -137,7 +152,7 @@ class TestMessageHandlerUpdateInstance:
     @staticmethod
     @pytest.mark.django_db
     def test_ok():
-        handler = MessageHandler(Mock(name='message'), Mock(name='queue'))
+        handler = MessageHandler(Mock(name='message'), Mock(name='queue'), Mock(name='event_captor'))
         handler._payload = {  # noqa: protected-access
             'guid': 'b24d988e-42aa-477d-a8c3-a88b127b9b31', 'name': 'Test'}
         with patch.object(
@@ -154,7 +169,7 @@ class TestMessageHandlerUpdateInstance:
         MessageHandler, '_serializer_class',
         RemovableRegularDependedSerializer)
     def test_missing_depended_model():
-        handler = MessageHandler(Mock(name='message'), Mock(name='queue'))
+        handler = MessageHandler(Mock(name='message'), Mock(name='queue'), Mock(name='event_captor'))
         handler._payload = {  # noqa: protected-access
             'guid': 'b24d988e-42aa-477d-a8c3-a88b127b9b31',
             'dependence': {
@@ -178,7 +193,7 @@ class TestMessageHandlerUpdateInstance:
         MessageHandler, '_serializer_class',
         RemovableRegularDependedSerializer)
     def test_multiple_error_model():
-        handler = MessageHandler(Mock(name='message'), Mock(name='queue'))
+        handler = MessageHandler(Mock(name='message'), Mock(name='queue'), Mock(name='event_captor'))
         handler._payload = {  # noqa: protected-access
             'guid': 'b24d988e-42aa-477d-a8c3-a88b127b9b31',
             'created': 'zzzz',
@@ -205,7 +220,7 @@ class TestMessageHandlerException:
         PIKMessageException(
             uid='dbef014c-1ece-f8f9-9e5e-fa78cf01680d',
             exception='', queue='test_queue').save()
-        handler = MessageHandler(b'test_message', 'test_queue')
+        handler = MessageHandler(b'test_message', 'test_queue', Mock(name='event_captor'))
         handler._capture_exception(Exception('test'))  # noqa: protected-access
         assert list(PIKMessageException.objects.values(
             'queue', 'message', 'exception', 'exception_type',
@@ -223,7 +238,7 @@ class TestMessageHandlerException:
             uid='dbef014c-1ece-f8f9-9e5e-fa78cf01680d',
             entity_uid='dbef014c-1ece-f8f9-9e5e-fa78cf01680d',
             exception='', queue='test_queue').save()
-        handler = MessageHandler(b'test_message', 'test_queue')
+        handler = MessageHandler(b'test_message', 'test_queue', Mock(name='event_captor'))
         handler._payload = {'guid': 'dbef014c-1ece-f8f9-9e5e-fa78cf01680d'}  # noqa: protected-access
         handler._capture_exception(ValidationError({'name': [  # noqa: protected-access
             ErrorDetail(string='This field is required.', code='required')]}))
@@ -246,7 +261,7 @@ class TestMessageHandlerException:
             uid='dbef014c-1ece-f8f9-9e5e-fa78cf01680d',
             entity_uid='dbef014c-1ece-f8f9-9e5e-fa78cf01680d',
             exception='', queue='test_queue').save()
-        handler = MessageHandler(b'test_message', 'test_queue')
+        handler = MessageHandler(b'test_message', 'test_queue', Mock(name='event_captor'))
         handler._payload = {  # noqa: protected-access
             'guid': 'dbef014c-1ece-f8f9-9e5e-fa78cf01680d',
             'dependence': {'guid': 'DependencyGuid', 'type': 'DependencyType'}}
@@ -288,7 +303,10 @@ class TestMessageHandlerException:
 class TestMessageHandlerDependencies:
     @staticmethod
     def test_missing_dependency():
-        handler = MessageHandler(Mock(name='message'), Mock(name='queue'))
+        handler = MessageHandler(
+            Mock(name='message'),
+            Mock(name='queue'),
+            Mock(name='event_captor'))
         handler._payload = {'guid': 42, 'type': 'RegularModel'}  # noqa: protected-access
         handler._process_dependants()  # noqa: protected-access
 
@@ -302,11 +320,13 @@ class TestMessageHandlerDependencies:
                 'guid': '00000000-0000-0000-0000-000000000000'
             }}).encode('utf8'),
             exception='',
-
             queue='test_queue',
             dependencies={'DependantModel': 42}).save()
 
-        handler = MessageHandler(Mock(name='message'), Mock(name='queue'))
+        handler = MessageHandler(
+            Mock(name='message'),
+            Mock(name='queue'),
+            Mock(name='event_captor'))
         handler._payload = {'guid': 42, 'type': 'DependantModel'}  # noqa: protected-access
         handler._process_dependants()  # noqa: protected-access
 
@@ -315,3 +335,109 @@ class TestMessageHandlerDependencies:
             'name': 'Dependency'}]
 
         assert PIKMessageException.objects.count() == 0
+
+
+class TestMessageConsumer:
+    @patch('pik.bus.consumer.MessageConsumer._capture_event', Mock())
+    def test_fail(self):
+        consumer = MessageConsumer(
+            'test_url', 'test_consumer', 'test_queue', Mock())
+        consumer._handle_message(
+            Mock(), Mock(), {}, b'{invalid', 'test_queue')
+        expected = pformat([
+            call({}, success=False, error=ParseError(
+                'JSON parse error - Expecting property name enclosed in double'
+                ' quotes: line 1 column 2 (char 1)'))])
+        assert pformat(consumer._capture_event.call_args_list) == expected
+
+    @patch('pik.bus.consumer.MessageConsumer._capture_event', Mock())
+    @patch('pik.bus.consumer.MessageHandler.handle', Mock())
+    def test_success(self):
+        consumer = MessageConsumer(
+            'test_url', 'test_consumer', 'test_queue', Mock())
+        consumer._handle_message(
+            Mock(), Mock(), {}, b'{}', 'test_queue')
+        assert consumer._capture_event.call_args_list == [
+            call({}, success=True, error=None)]
+
+    # @patch('pik.bus.consumer.MessageConsumer._capture_exception', Mock())
+    # @patch(
+    #     'pik.bus.consumer.MessageConsumer.handle',
+    #     Mock(side_effect=ZeroDivisionError))
+    @patch('pik.bus.consumer.MessageHandler.envelope', property(Mock(side_effect=ZeroDivisionError)))
+    def test_failed_consume(self):
+        event_captor = Mock(name='event_captor')
+        message_consumer = MessageConsumer(
+            'test_url', 'test_consumer', 'test_queue', Mock())
+        message_consumer.envelope = {'message': {
+                'guid': 'ABC...', 'type': 'TestType'}}
+
+        message_consumer._handle_message(
+            Mock(name='test_channel'), Mock(name='test_meth'), {}, b'{}', 'test_queue')
+        expected = pformat([call(
+            event='consumption', entity_type='TestType',
+            entity_guid='ABC...', success=False, error=ZeroDivisionError())])
+        assert pformat(event_captor.capture.call_args_list) == expected
+
+
+class TestMessageHandlerEvents:
+    @patch('pik.bus.consumer.MessageHandler._capture_exception', Mock())
+    @patch(
+        'pik.bus.consumer.MessageHandler._fetch_payload',
+        Mock(side_effect=ZeroDivisionError))
+    def test_fail_invalid(self):
+        event_captor = Mock(name='event_captor')
+        message_handler = MessageHandler(
+            b'{}', 'test_queue', event_captor)
+
+        message_handler.handle()
+        expected = pformat([call(
+            event='deserialization', entity_type=None, entity_guid=None,
+            success=False, error=ZeroDivisionError())])
+        assert pformat(event_captor.capture.call_args_list) == expected
+
+    @patch('pik.bus.consumer.MessageHandler._capture_exception', Mock())
+    @patch(
+        'pik.bus.consumer.MessageHandler._fetch_payload',
+        Mock(side_effect=ZeroDivisionError))
+    def test_failed_deserialization(self):
+        event_captor = Mock(name='event_captor')
+        message_handler = MessageHandler(
+            b'{}', 'test_queue', event_captor)
+        message_handler.envelope = {
+            'message': {
+                'guid': 'ABC...', 'type': 'TestType'
+            }
+        }
+
+        message_handler.handle()
+        expected = pformat([call(
+            event='deserialization', entity_type='TestType',
+            entity_guid='ABC...', success=False, error=ZeroDivisionError())])
+        assert pformat(event_captor.capture.call_args_list) == expected
+
+    @patch('pik.bus.consumer.MessageHandler._capture_exception', Mock())
+    @patch(
+        'pik.bus.consumer.MessageHandler._fetch_payload',
+        Mock(side_effect=ZeroDivisionError))
+    def test_failed_deserialization_transaction(self):
+        event_captor = Mock(name='event_captor')
+        message_handler = MessageHandler(
+            b'{}', 'test_queue', event_captor)
+        message_handler.envelope = {
+            'headers': {
+                'transactionGUID': 'DCEBA...',
+                'transactionMessageCount': 10,
+            },
+            'message': {
+                'guid': 'ABC...', 'type': 'TestType'
+            }
+        }
+
+        message_handler.handle()
+        expected = pformat([call(
+            event='deserialization', entity_type='TestType',
+            entity_guid='ABC...',
+            transactionGUID='DCEBA...', transactionMessageCount=10,
+            success=False, error=ZeroDivisionError())])
+        assert pformat(event_captor.capture.call_args_list) == expected

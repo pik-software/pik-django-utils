@@ -11,10 +11,13 @@ from pika import BlockingConnection, URLParameters
 from pika.exceptions import AMQPConnectionError
 from tenacity import retry, retry_if_exception_type, wait_fixed
 
+from pik.bus.mdm import mdm_event_captor
 from pik.utils.sentry import capture_exception
 from pik.utils.case_utils import underscorize
 from pik.api.exceptions import extract_exception_data
 from pik.core.shortcuts import update_or_create_object
+
+from .models import PIKMessageException
 
 
 logger = logging.getLogger(__name__)
@@ -25,7 +28,7 @@ class BusQueueNotFound(Exception):
 
 
 def log_after_retry_connect(retry_state):
-    logger.error(
+    logger.warning(
         'Connecting to RabbitMQ. Attempt number: %s',
         retry_state.attempt_number)
 
@@ -39,10 +42,11 @@ class MessageConsumer:
     _queues = None
     _channel = None
 
-    def __init__(self, connection_url, consumer_name, queues):
+    def __init__(self, connection_url, consumer_name, queues, event_captor):
         self._consumer_name = consumer_name
         self._connection_url = connection_url
         self._queues = queues
+        self._event_captor = event_captor
 
     def consume(self):
         self._connect()
@@ -68,18 +72,35 @@ class MessageConsumer:
                 on_message_callback=partial(self._handle_message, queue=queue),
                 queue=queue)
 
-    @staticmethod
-    def _handle_message(channel, method, properties, body, queue):
+    def _handle_message(self, channel, method, properties, body, queue):
+        logger.info(
+            'Handling %s bytes message from %s queue', len(body), queue)
+        handler = MessageHandler(body, queue, mdm_event_captor)
+
         try:
-            MessageHandler(body, queue).handle()
-        except Exception as exc:  # noqa: too-broad-except
-            capture_exception(exc)
+            envelope = handler.envelope
+        except Exception as error:  # noqa: too-broad-except
+            self._capture_event({}, success=False, error=error)
             channel.basic_nack(delivery_tag=method.delivery_tag)
+            return
         else:
-            channel.basic_ack(delivery_tag=method.delivery_tag)
+            self._capture_event(envelope, success=True, error=None)
+
+        handler.handle()
+        channel.basic_ack(delivery_tag=method.delivery_tag)
+
+    def _capture_event(self, envelope, **kwargs):
+        self._event_captor.capture(
+            event='consumption',
+            entity_type=envelope.get('message', {}).get('type'),
+            entity_guid=envelope.get('message', {}).get('guid'),
+            transactionGUID=envelope.get('headers', {}).get('transactionGUID'),
+            transactionMessageCount=envelope.get(
+                'headers', {}).get('transactionMessageCount'),
+            **kwargs)
 
 
-class QueueSerializerMissingExcpetion(Exception):
+class QueueSerializerMissingException(Exception):
     pass
 
 
@@ -88,32 +109,35 @@ class MessageHandler:
 
     _payload = None
     _parsed_payload = None
-    _message = None
+    _body = None
     _queue = None
     _serializers = None
     exc_data = None
 
-    def __init__(self, message, queue):
-        self._message = message
+    def __init__(self, body, queue, event_captor):
+        self._body = body
         self._queue = queue
+        self._event_captor = event_captor
 
     def handle(self):
-        logger.info(
-            'Handling %s bytes message from %s queue', len(self._message),
-            self._queue)
         try:
             self._fetch_payload()
             self._prepare_payload()
             self._update_instance()
             self._process_dependants()
+            self._capture_event(success=True, error=None)
             return True
-        except Exception as exc:  # noqa: broad-except
-            self._capture_exception(exc)
+        except Exception as error:  # noqa: too-broad-except
+            self._capture_event(success=False, error=error)
+            self._capture_exception(error)
             return False
 
+    @cached_property
+    def envelope(self):
+        return self.parser_class().parse(io.BytesIO(self._body))
+
     def _fetch_payload(self):
-        self._payload = self.parser_class().parse(
-            io.BytesIO(self._message))['message']
+        self._payload = self.envelope['message']
 
     def _prepare_payload(self):
         self._payload = underscorize(self._payload)
@@ -163,36 +187,47 @@ class MessageHandler:
                 for queue, serializer in settings.RABBITMQ_CONSUMES.items()
             }
         if not cls._serializers or queue not in cls._serializers:  # noqa: unsupported-membership-test
-            raise QueueSerializerMissingExcpetion(
+            raise QueueSerializerMissingException(
                 f'Unable to find serializer for {queue}')
         return cls._serializers[queue]  # noqa: unsupported-membership-test
 
     def _process_dependants(self):
-        from .models import PIKMessageException  # noqa: cyclic import workaround
         dependants = PIKMessageException.objects.filter(**{
             f'dependencies__{self._payload["type"]}': self._payload["guid"]})
         for dependant in dependants:
-            if self.__class__(dependant.message, dependant.queue).handle():
+            handler = self.__class__(
+                dependant.message, dependant.queue, mdm_event_captor)
+            if handler.handle():
                 dependant.delete()
 
     def _capture_exception(self, exc):
-        from .models import PIKMessageException  # noqa: cyclic import workaround
         capture_exception(exc)
         self.exc_data = extract_exception_data(exc)
 
-        if not isinstance(self._payload, dict) or 'guid' not in self._payload:
-            uid = sha1(self._message).hexdigest()[:32]
-            update_or_create_object(
-                PIKMessageException, search_keys={
-                    'queue': self._queue,
-                    'uid': uid},
-                uid=uid, queue=self._queue, message=self._message,
-                exception=extract_exception_data(exc),
-                exception_message=self.exc_data['message'],
-                exception_type=self.exc_data['code']
-            )
+        is_invalid_payload = (
+            not isinstance(self._payload, dict) or
+            'guid' not in self._payload)
+        if is_invalid_payload:
+            self._capture_invalid_payload(exc)
             return
 
+        self._capture_missing_dependencies()
+
+    def _capture_invalid_payload(self, exc):
+        uid = sha1(self._body).hexdigest()[:32]
+        update_or_create_object(
+            PIKMessageException, search_keys={
+                'queue': self._queue,
+                'uid': uid},
+            uid=uid,
+            queue=self._queue,
+            message=self._body,
+            exception=extract_exception_data(exc),
+            exception_message=self.exc_data['message'],
+            exception_type=self.exc_data['code']
+        )
+
+    def _capture_missing_dependencies(self):
         dependencies = {
             self._payload[field]['type']: self._payload[field]['guid']
             for field, errors in self.exc_data.get('detail', {}).items()
@@ -203,9 +238,21 @@ class MessageHandler:
             PIKMessageException, search_keys={
                 'entity_uid': self._payload.get('guid'),
                 'queue': self._queue},
+            entity_uid=self._payload.get('guid'),
+            queue=self._queue,
+            message=self._body,
+            exception=self.exc_data,
             exception_type=self.exc_data['code'],
             exception_message=self.exc_data['message'],
-            entity_uid=self._payload.get('guid'),
-            message=self._message, exception=self.exc_data, queue=self._queue,
             dependencies=dependencies
         )
+
+    def _capture_event(self, **kwargs):
+        self._event_captor.capture(
+            event='deserialization',
+            entity_type=self.envelope.get('message', {}).get('type'),
+            entity_guid=self.envelope.get('message', {}).get('guid'),
+            transactionGUID=self.envelope.get('headers', {}).get('transactionGUID'),
+            transactionMessageCount=self.envelope.get(
+                'headers', {}).get('transactionMessageCount'),
+            **kwargs)
