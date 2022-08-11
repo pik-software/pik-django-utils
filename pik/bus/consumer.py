@@ -234,6 +234,7 @@ class MessageHandler:
             for error in errors
             if error['code'] == 'does_not_exist'}
 
+        # TODO: catch errors
         update_or_create_object(
             PIKMessageException, search_keys={
                 'entity_uid': self._payload.get('guid'),

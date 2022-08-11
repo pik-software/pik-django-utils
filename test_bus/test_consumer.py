@@ -1,7 +1,7 @@
 import json
 from pprint import pformat
 from unittest.mock import Mock, patch, call
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 from django.db.models import Manager
@@ -338,45 +338,65 @@ class TestMessageHandlerDependencies:
 
 
 class TestMessageConsumer:
-    @patch('pik.bus.consumer.MessageConsumer._capture_event', Mock())
-    def test_fail(self):
-        consumer = MessageConsumer(
-            'test_url', 'test_consumer', 'test_queue', Mock())
-        consumer._handle_message(
-            Mock(), Mock(), {}, b'{invalid', 'test_queue')
-        expected = pformat([
-            call({}, success=False, error=ParseError(
-                'JSON parse error - Expecting property name enclosed in double'
-                ' quotes: line 1 column 2 (char 1)'))])
-        assert pformat(consumer._capture_event.call_args_list) == expected
-
-    @patch('pik.bus.consumer.MessageConsumer._capture_event', Mock())
-    @patch('pik.bus.consumer.MessageHandler.handle', Mock())
-    def test_success(self):
-        consumer = MessageConsumer(
-            'test_url', 'test_consumer', 'test_queue', Mock())
-        consumer._handle_message(
-            Mock(), Mock(), {}, b'{}', 'test_queue')
-        assert consumer._capture_event.call_args_list == [
-            call({}, success=True, error=None)]
-
-    # @patch('pik.bus.consumer.MessageConsumer._capture_exception', Mock())
-    # @patch(
-    #     'pik.bus.consumer.MessageConsumer.handle',
-    #     Mock(side_effect=ZeroDivisionError))
-    @patch('pik.bus.consumer.MessageHandler.envelope', property(Mock(side_effect=ZeroDivisionError)))
-    def test_failed_consume(self):
+    @patch('pik.bus.consumer.MessageHandler.envelope', property(
+            Mock(side_effect=ZeroDivisionError)))
+    def test_fail_invalid(self):
         event_captor = Mock(name='event_captor')
         message_consumer = MessageConsumer(
-            'test_url', 'test_consumer', 'test_queue', Mock())
-        message_consumer.envelope = {'message': {
-                'guid': 'ABC...', 'type': 'TestType'}}
+            'test_url', 'test_consumer', 'test_queue', event_captor)
 
         message_consumer._handle_message(
-            Mock(name='test_channel'), Mock(name='test_meth'), {}, b'{}', 'test_queue')
+            Mock(name='test_channel'), Mock(name='test_meth'), {}, b'{}',
+            'test_queue')
         expected = pformat([call(
-            event='consumption', entity_type='TestType',
-            entity_guid='ABC...', success=False, error=ZeroDivisionError())])
+            event='consumption', entity_type=None, entity_guid=None,
+            transactionGUID=None, transactionMessageCount=None, success=False,
+            error=ZeroDivisionError())])
+        assert pformat(event_captor.capture.call_args_list) == expected
+
+    def test_success(self):
+        event_captor = Mock(name='event_captor')
+        message_consumer = MessageConsumer(
+            'test_url', 'test_consumer', 'test_queue', event_captor)
+
+        guid = str(uuid4())
+        body = json.dumps({
+            'message': {
+                'type': 'TestType',
+                'guid': guid
+            }
+        }).encode()
+        message_consumer._handle_message(
+            Mock(name='channel'), Mock(name='method'), {}, body, 'queue')
+        expected = pformat([call(
+            event='consumption', entity_type='TestType', entity_guid=guid,
+            transactionGUID=None, transactionMessageCount=None, success=True,
+            error=None)])
+        assert pformat(event_captor.capture.call_args_list) == expected
+
+    def test_success_transactions(self):
+        event_captor = Mock(name='event_captor')
+        message_consumer = MessageConsumer(
+            'test_url', 'test_consumer', 'test_queue', event_captor)
+
+        guid = str(uuid4())
+        transaction_guid = str(uuid4())
+        body = json.dumps({
+            'headers': {
+                'transactionGUID': transaction_guid,
+                'transactionMessageCount': 42,
+            },
+            'message': {
+                'type': 'TestType',
+                'guid': guid,
+            }
+        }).encode()
+        message_consumer._handle_message(
+            Mock(name='channel'), Mock(name='method'), {}, body, 'queue')
+        expected = pformat([call(
+            event='consumption', entity_type='TestType', entity_guid=guid,
+            transactionGUID=transaction_guid, transactionMessageCount=42,
+            success=True, error=None)])
         assert pformat(event_captor.capture.call_args_list) == expected
 
 
@@ -387,12 +407,12 @@ class TestMessageHandlerEvents:
         Mock(side_effect=ZeroDivisionError))
     def test_fail_invalid(self):
         event_captor = Mock(name='event_captor')
-        message_handler = MessageHandler(
-            b'{}', 'test_queue', event_captor)
+        message_handler = MessageHandler(b'{}', 'test_queue', event_captor)
 
         message_handler.handle()
         expected = pformat([call(
             event='deserialization', entity_type=None, entity_guid=None,
+            transactionGUID=None, transactionMessageCount=None,
             success=False, error=ZeroDivisionError())])
         assert pformat(event_captor.capture.call_args_list) == expected
 
@@ -402,8 +422,7 @@ class TestMessageHandlerEvents:
         Mock(side_effect=ZeroDivisionError))
     def test_failed_deserialization(self):
         event_captor = Mock(name='event_captor')
-        message_handler = MessageHandler(
-            b'{}', 'test_queue', event_captor)
+        message_handler = MessageHandler(b'{}', 'test_queue', event_captor)
         message_handler.envelope = {
             'message': {
                 'guid': 'ABC...', 'type': 'TestType'
@@ -413,7 +432,9 @@ class TestMessageHandlerEvents:
         message_handler.handle()
         expected = pformat([call(
             event='deserialization', entity_type='TestType',
-            entity_guid='ABC...', success=False, error=ZeroDivisionError())])
+            entity_guid='ABC...', transactionGUID=None,
+            transactionMessageCount=None, success=False,
+            error=ZeroDivisionError())])
         assert pformat(event_captor.capture.call_args_list) == expected
 
     @patch('pik.bus.consumer.MessageHandler._capture_exception', Mock())
