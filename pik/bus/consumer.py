@@ -17,7 +17,10 @@ from pik.utils.case_utils import underscorize
 from pik.api.exceptions import extract_exception_data
 from pik.core.shortcuts import update_or_create_object
 
+from .models import PIKMessageException
 
+
+PARSER_CLASS = JSONParser
 logger = logging.getLogger(__name__)
 
 
@@ -32,7 +35,7 @@ def log_after_retry_connect(retry_state):
 
 
 class MessageConsumer:
-    parser_class = JSONParser
+    parser_class = PARSER_CLASS
 
     RECONNECT_WAIT = 1
     PREFETCH_COUNT = 1
@@ -82,12 +85,8 @@ class MessageConsumer:
         else:
             self._capture_event(envelope, success=True, error=None)
 
-        message_handler_success = MessageHandler(
-            envelope, queue, mdm_event_captor).handle()
-        if message_handler_success:
-            channel.basic_ack(delivery_tag=method.delivery_tag)
-        else:
-            channel.basic_nack(delivery_tag=method.delivery_tag)
+        MessageHandler(envelope, queue, mdm_event_captor).handle()
+        channel.basic_ack(delivery_tag=method.delivery_tag)
 
     def _envelope(self, body):
         envelope = self.parser_class().parse(io.BytesIO(body))
@@ -108,6 +107,8 @@ class QueueSerializerMissingException(Exception):
 
 
 class MessageHandler:
+    parser_class = PARSER_CLASS
+
     _payload = None
     _parsed_payload = None
     _serializers = None
@@ -191,31 +192,43 @@ class MessageHandler:
         return cls._serializers[queue]  # noqa: unsupported-membership-test
 
     def _process_dependants(self):
-        from .models import PIKMessageException  # noqa: cyclic import workaround
         dependants = PIKMessageException.objects.filter(**{
             f'dependencies__{self._payload["type"]}': self._payload["guid"]})
         for dependant in dependants:
-            if self.__class__(dependant.message, dependant.queue, mdm_event_captor).handle():
+            if self.__class__(
+                    self.parser_class().parse(io.BytesIO(dependant.message)),
+                    dependant.queue,
+                    mdm_event_captor).handle():
                 dependant.delete()
 
     def _capture_exception(self, exc):
-        from .models import PIKMessageException  # noqa: cyclic import workaround
         capture_exception(exc)
         self.exc_data = extract_exception_data(exc)
 
-        if not isinstance(self._payload, dict) or 'guid' not in self._payload:
+        if self._capture_invalid_payload(exc):
+            return
+        self._capture_missing_dependencies(exc)
+
+    def _capture_invalid_payload(self, exc):
+        is_invalid_payload = (
+            not isinstance(self._payload, dict) or
+            'guid' not in self._payload)
+        if is_invalid_payload:
             uid = sha1(self._raw_message).hexdigest()[:32]
             update_or_create_object(
                 PIKMessageException, search_keys={
                     'queue': self._queue,
                     'uid': uid},
-                uid=uid, queue=self._queue, message=self._raw_message,
+                uid=uid,
+                queue=self._queue,
+                message=self._raw_message,
                 exception=extract_exception_data(exc),
                 exception_message=self.exc_data['message'],
                 exception_type=self.exc_data['code']
             )
-            return
+        return is_invalid_payload
 
+    def _capture_missing_dependencies(self, exc):
         dependencies = {
             self._payload[field]['type']: self._payload[field]['guid']
             for field, errors in self.exc_data.get('detail', {}).items()
@@ -226,19 +239,18 @@ class MessageHandler:
             PIKMessageException, search_keys={
                 'entity_uid': self._payload.get('guid'),
                 'queue': self._queue},
+            entity_uid=self._payload.get('guid'),
+            queue=self._queue,
+            message=self._raw_message,
+            exception=self.exc_data,
             exception_type=self.exc_data['code'],
             exception_message=self.exc_data['message'],
-            entity_uid=self._payload.get('guid'),
-            message=self._raw_message, exception=self.exc_data, queue=self._queue,
             dependencies=dependencies
         )
 
     def _capture_event(self, **kwargs):
-        entity_guid = self._raw_message.get('message', {}).get('guid')
-        # Wrong rendered uid format workaround
-        entity_guid = str(entity_guid) if entity_guid is not None else None
         self._event_captor.capture(
             event='deserialization',
             entity_type=self._raw_message.get('message', {}).get('type'),
-            entity_guid=entity_guid,
+            entity_guid=self._raw_message.get('message', {}).get('guid'),
             **kwargs)
