@@ -26,7 +26,7 @@ class BusQueueNotFound(Exception):
 
 
 def log_after_retry_connect(retry_state):
-    logger.error(
+    logger.warning(
         'Connecting to RabbitMQ. Attempt number: %s',
         retry_state.attempt_number)
 
@@ -37,9 +37,6 @@ class MessageConsumer:
     RECONNECT_WAIT = 1
     PREFETCH_COUNT = 1
 
-    _consumer_name = None
-    _connection_url = None
-    _queues = None
     _channel = None
 
     def __init__(self, connection_url, consumer_name, queues, event_captor):
@@ -73,27 +70,37 @@ class MessageConsumer:
                 queue=queue)
 
     def _handle_message(self, channel, method, properties, body, queue):
-        handler = MessageHandler(
-            self.parser_class().parse(io.BytesIO(body)), queue,
-            self._event_captor)
+        logger.info(
+            'Handling %s bytes message from %s queue', len(body), queue)
 
         try:
-            message = handler.message['message']['guid']
-        except Exception as error:
-            self._capture_event(success=False, error=error)
-        else:
-            self._capture_event(success=True, error=None)
-
-        try:
-            handler.handle()
+            envelope = self._envelope(body)
         except Exception as error:  # noqa: too-broad-except
-            capture_exception(error)
+            self._capture_event({}, success=False, error=error)
             channel.basic_nack(delivery_tag=method.delivery_tag)
+            return
         else:
+            self._capture_event(envelope, success=True, error=None)
+
+        message_handler_success = MessageHandler(
+            envelope, queue, mdm_event_captor).handle()
+        if message_handler_success:
             channel.basic_ack(delivery_tag=method.delivery_tag)
+        else:
+            channel.basic_nack(delivery_tag=method.delivery_tag)
+
+    def _envelope(self, body):
+        envelope = self.parser_class().parse(io.BytesIO(body))
+        if not isinstance(envelope, dict):
+            raise TypeError('Body of consume message must be dict type.')
+        return self.parser_class().parse(io.BytesIO(body))
 
     def _capture_event(self, envelope, **kwargs):
-        raise
+        self._event_captor.capture(
+            event='consumption',
+            entity_type=envelope.get('message', {}).get('type'),
+            entity_guid=envelope.get('message', {}).get('guid'),
+            **kwargs)
 
 
 class QueueSerializerMissingException(Exception):
@@ -101,12 +108,8 @@ class QueueSerializerMissingException(Exception):
 
 
 class MessageHandler:
-    parser_class = JSONParser
-
     _payload = None
     _parsed_payload = None
-    _message = None
-    _queue = None
     _serializers = None
     exc_data = None
 
@@ -116,25 +119,24 @@ class MessageHandler:
         self._event_captor = event_captor
 
     def handle(self):
-        logger.info(
-            'Handling %s bytes message from %s queue', len(self._message),
-            self._queue)
         try:
             self._fetch_payload()
             self._prepare_payload()
             self._update_instance()
             self._process_dependants()
+            self._capture_event(success=True, error=None)
             return True
-        except Exception as exc:  # noqa: broad-except
-            self._capture_exception(exc)
+        except Exception as error:  # noqa: too-broad-except
+            self._capture_event(success=False, error=error)
+            self._capture_exception(error)
             return False
 
-    @cached_property
-    def message(self):
-        return self.parser_class().parse(io.BytesIO(self._raw_message))
+    # @cached_property
+    # def message(self):
+    #     return self.parser_class().parse(io.BytesIO(self._raw_message))
 
     def _fetch_payload(self):
-        self._payload = self._message['message']
+        self._payload = self._raw_message['message']
 
     def _prepare_payload(self):
         self._payload = underscorize(self._payload)
@@ -202,12 +204,12 @@ class MessageHandler:
         self.exc_data = extract_exception_data(exc)
 
         if not isinstance(self._payload, dict) or 'guid' not in self._payload:
-            uid = sha1(self._message).hexdigest()[:32]
+            uid = sha1(self._raw_message).hexdigest()[:32]
             update_or_create_object(
                 PIKMessageException, search_keys={
                     'queue': self._queue,
                     'uid': uid},
-                uid=uid, queue=self._queue, message=self._message,
+                uid=uid, queue=self._queue, message=self._raw_message,
                 exception=extract_exception_data(exc),
                 exception_message=self.exc_data['message'],
                 exception_type=self.exc_data['code']
@@ -227,6 +229,16 @@ class MessageHandler:
             exception_type=self.exc_data['code'],
             exception_message=self.exc_data['message'],
             entity_uid=self._payload.get('guid'),
-            message=self._message, exception=self.exc_data, queue=self._queue,
+            message=self._raw_message, exception=self.exc_data, queue=self._queue,
             dependencies=dependencies
         )
+
+    def _capture_event(self, **kwargs):
+        entity_guid = self._raw_message.get('message', {}).get('guid')
+        # Wrong rendered uid format workaround
+        entity_guid = str(entity_guid) if entity_guid is not None else None
+        self._event_captor.capture(
+            event='deserialization',
+            entity_type=self._raw_message.get('message', {}).get('type'),
+            entity_guid=entity_guid,
+            **kwargs)
