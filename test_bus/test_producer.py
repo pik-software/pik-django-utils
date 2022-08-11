@@ -157,3 +157,14 @@ def test_nested_transaction_fail():
             with MDMTransaction():
                 producer.produce(None, {'message': 1})
                 producer.produce(None, {'message': 2})
+
+
+@patch('pik.bus.producer.uuid.uuid4', Mock(return_value='0ABC..'))
+@patch('pik.bus.producer.MessageProducer._publish', Mock())
+@patch('pik.bus.producer.MessageProducer._capture_event', Mock())
+def test_single_transaction_event():
+    with MDMTransaction():
+        producer.produce(None, {'message': 1})
+    assert producer._publish.call_args_list == [call(None, {'message': 1})]  # noqa: protected-access
+    assert producer._capture_event.call_args_list == [call(  # noqa: protected-access
+        {'message': 1}, success=True, error=None)]

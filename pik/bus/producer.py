@@ -130,13 +130,16 @@ class MessageProducer:
         entity_guid = envelope.get('message', {}).get('guid')
         # Wrong rendered uid format workaround
         entity_guid = str(entity_guid) if entity_guid is not None else None
+        if envelope.get('headers', {}).get('transactionGUID'):
+            kwargs = {
+                'transactionGUID': envelope.get(
+                    'headers', {}).get('transactionGUID'),
+                'transactionMessageCount': envelope.get('headers', {}).get(
+                    'transactionMessageCount'), **kwargs}
+
         self._event_captor.capture(
             event='publishing',
             entity_type=envelope.get('message', {}).get('type'),
-            transactionGUID=self.transaction_guid,
-            transactionMessageCount=(
-                len(self._transaction_messages)
-                if self._transaction_messages is not None else None),
             entity_guid=entity_guid,
             **kwargs)
 
