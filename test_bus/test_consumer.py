@@ -214,29 +214,29 @@ class TestMessageHandlerUpdateInstance:
                     'Недопустимый guid "b24d988e-42aa-477d-a8c3-a88b127b9b31" '
                     '- объект не существует.'), code='does_not_exist')]}
 
-    @staticmethod
-    @pytest.mark.django_db
-    @patch.object(
-        MessageHandler, '_serializer_class',
-        RemovableRegularDependedSerializer)
-    def test_not_dict1():
-        # handler = MessageHandler(
-        #     b'{"message": {"type": "TestType", "guid": "ABC..."}}', Mock(name='queue'), Mock(name='event_captor'))
-
-        handler = MessageHandler(
-            Mock(name='test_body'), Mock(name='test_queue'),
-            Mock(name='test_event_captor'))
-        handler._payload = {  # noqa: protected-access
-            'type': 'TestType',
-            'guid': 'invalid',
-        }
-
-        # with pytest.raises(TypeError):
-        #     handler._fetch_payload()  # noqa: protected-access
-        # assert handler._payload is None  # noqa: protected-access
-        with patch.object(
-                MessageHandler, '_instance', RemovableRegularDepended()):
-            handler._update_instance()  # noqa: protected-access
+    # @staticmethod
+    # @pytest.mark.django_db
+    # @patch.object(
+    #     MessageHandler, '_serializer_class',
+    #     RemovableRegularDependedSerializer)
+    # def test_not_dict1():
+    #     # handler = MessageHandler(
+    #     #     b'{"message": {"type": "TestType", "guid": "ABC..."}}', Mock(name='queue'), Mock(name='event_captor'))
+    #
+    #     handler = MessageHandler(
+    #         Mock(name='test_body'), Mock(name='test_queue'),
+    #         Mock(name='test_event_captor'))
+    #     handler._payload = {  # noqa: protected-access
+    #         'type': 'TestType',
+    #         'guid': 'invalid',
+    #     }
+    #
+    #     # with pytest.raises(TypeError):
+    #     #     handler._fetch_payload()  # noqa: protected-access
+    #     # assert handler._payload is None  # noqa: protected-access
+    #     with patch.object(
+    #             MessageHandler, '_instance', RemovableRegularDepended()):
+    #         handler._update_instance()  # noqa: protected-access
 
 
 @pytest.mark.django_db

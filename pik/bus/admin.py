@@ -71,5 +71,5 @@ class PIKMessageExceptionAdmin(admin.ModelAdmin):
             self.message_user(
                 request, (
                     f'Ошибка обработки сообщения {obj.uid}: '
-                    f'{handler.exc_data["message"]}'),
+                    f'{handler._exc_data["message"]}'),
                 level=messages.ERROR)

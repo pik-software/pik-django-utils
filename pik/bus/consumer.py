@@ -112,7 +112,7 @@ class MessageHandler:
     _body = None
     _queue = None
     _serializers = None
-    exc_data = None
+    _exc_data = None
 
     def __init__(self, body, queue, event_captor):
         self._body = body
@@ -202,12 +202,9 @@ class MessageHandler:
 
     def _capture_exception(self, exc):
         capture_exception(exc)
-        self.exc_data = extract_exception_data(exc)
+        self._exc_data = extract_exception_data(exc)
 
-        is_invalid_payload = (
-            not isinstance(self._payload, dict) or
-            'guid' not in self._payload)
-        if is_invalid_payload:
+        if not isinstance(self._payload, dict) or 'guid' not in self._payload:
             self._capture_invalid_payload(exc)
             return
 
@@ -223,14 +220,14 @@ class MessageHandler:
             queue=self._queue,
             message=self._body,
             exception=extract_exception_data(exc),
-            exception_message=self.exc_data['message'],
-            exception_type=self.exc_data['code']
+            exception_message=self._exc_data['message'],
+            exception_type=self._exc_data['code']
         )
 
     def _capture_missing_dependencies(self):
         dependencies = {
             self._payload[field]['type']: self._payload[field]['guid']
-            for field, errors in self.exc_data.get('detail', {}).items()
+            for field, errors in self._exc_data.get('detail', {}).items()
             for error in errors
             if error['code'] == 'does_not_exist'}
 
@@ -242,9 +239,9 @@ class MessageHandler:
             entity_uid=self._payload.get('guid'),
             queue=self._queue,
             message=self._body,
-            exception=self.exc_data,
-            exception_type=self.exc_data['code'],
-            exception_message=self.exc_data['message'],
+            exception=self._exc_data,
+            exception_type=self._exc_data['code'],
+            exception_message=self._exc_data['message'],
             dependencies=dependencies
         )
 
@@ -253,7 +250,8 @@ class MessageHandler:
             event='deserialization',
             entity_type=self.envelope.get('message', {}).get('type'),
             entity_guid=self.envelope.get('message', {}).get('guid'),
-            transactionGUID=self.envelope.get('headers', {}).get('transactionGUID'),
+            transactionGUID=self.envelope.get(
+                'headers', {}).get('transactionGUID'),
             transactionMessageCount=self.envelope.get(
                 'headers', {}).get('transactionMessageCount'),
             **kwargs)
