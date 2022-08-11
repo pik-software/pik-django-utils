@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 
 import os
 
+import dj_database_url
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -80,14 +82,20 @@ TEMPLATES = [
     },
 ]
 
+BASE_DIR_NAME = os.path.basename(BASE_DIR)
+SERVICE_NAME = os.environ.get('SERVICE_NAME', BASE_DIR_NAME)
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
+DATABASE_URL = os.environ.get(
+    'DATABASE_URL',
+    'postgres://@127.0.0.1:5432/' + SERVICE_NAME)
+
 DATABASES = {
-    'default': {
-        'NAME': 'pik_django_utils',
-        'ENGINE': 'django.contrib.gis.db.backends.postgis',
-    }
+    'default': dj_database_url.parse(
+        DATABASE_URL,
+        engine='django.contrib.gis.db.backends.postgis'
+    )
 }
 
 CACHES = {
