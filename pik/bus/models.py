@@ -18,3 +18,7 @@ class PIKMessageException(PUided, Dated):
     class Meta:
         verbose_name = _('Сообщение шины')
         verbose_name_plural = _('Сообщения шины')
+
+    def save(self, *args, **kwargs):
+        self.has_dependencies = bool(self.dependencies)
+        super().save(*args, **kwargs)
