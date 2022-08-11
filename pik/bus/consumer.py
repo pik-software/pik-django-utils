@@ -11,7 +11,6 @@ from pika import BlockingConnection, URLParameters
 from pika.exceptions import AMQPConnectionError
 from tenacity import retry, retry_if_exception_type, wait_fixed
 
-from pik.bus.mdm import mdm_event_captor
 from pik.utils.sentry import capture_exception
 from pik.utils.case_utils import underscorize
 from pik.api.exceptions import extract_exception_data
@@ -32,8 +31,6 @@ def log_after_retry_connect(retry_state):
 
 
 class MessageConsumer:
-    parser_class = JSONParser
-
     RECONNECT_WAIT = 1
     PREFETCH_COUNT = 1
 
@@ -42,11 +39,10 @@ class MessageConsumer:
     _queues = None
     _channel = None
 
-    def __init__(self, connection_url, consumer_name, queues, event_captor):
+    def __init__(self, connection_url, consumer_name, queues):
         self._consumer_name = consumer_name
         self._connection_url = connection_url
         self._queues = queues
-        self._event_captor = event_captor
 
     def consume(self):
         self._connect()
@@ -72,31 +68,18 @@ class MessageConsumer:
                 on_message_callback=partial(self._handle_message, queue=queue),
                 queue=queue)
 
-    def _handle_message(self, channel, method, properties, body, queue):
-        handler = MessageHandler(
-            self.parser_class().parse(io.BytesIO(body)), queue,
-            self._event_captor)
-
+    @staticmethod
+    def _handle_message(channel, method, properties, body, queue):
         try:
-            message = handler.message['message']['guid']
-        except Exception as error:
-            self._capture_event(success=False, error=error)
-        else:
-            self._capture_event(success=True, error=None)
-
-        try:
-            handler.handle()
-        except Exception as error:  # noqa: too-broad-except
-            capture_exception(error)
+            MessageHandler(body, queue).handle()
+        except Exception as exc:  # noqa: too-broad-except
+            capture_exception(exc)
             channel.basic_nack(delivery_tag=method.delivery_tag)
         else:
             channel.basic_ack(delivery_tag=method.delivery_tag)
 
-    def _capture_event(self, envelope, **kwargs):
-        raise
 
-
-class QueueSerializerMissingException(Exception):
+class QueueSerializerMissingExcpetion(Exception):
     pass
 
 
@@ -110,10 +93,9 @@ class MessageHandler:
     _serializers = None
     exc_data = None
 
-    def __init__(self, message, queue, event_captor):
-        self._raw_message = message
+    def __init__(self, message, queue):
+        self._message = message
         self._queue = queue
-        self._event_captor = event_captor
 
     def handle(self):
         logger.info(
@@ -129,12 +111,9 @@ class MessageHandler:
             self._capture_exception(exc)
             return False
 
-    @cached_property
-    def message(self):
-        return self.parser_class().parse(io.BytesIO(self._raw_message))
-
     def _fetch_payload(self):
-        self._payload = self._message['message']
+        self._payload = self.parser_class().parse(
+            io.BytesIO(self._message))['message']
 
     def _prepare_payload(self):
         self._payload = underscorize(self._payload)
@@ -184,7 +163,7 @@ class MessageHandler:
                 for queue, serializer in settings.RABBITMQ_CONSUMES.items()
             }
         if not cls._serializers or queue not in cls._serializers:  # noqa: unsupported-membership-test
-            raise QueueSerializerMissingException(
+            raise QueueSerializerMissingExcpetion(
                 f'Unable to find serializer for {queue}')
         return cls._serializers[queue]  # noqa: unsupported-membership-test
 
@@ -193,7 +172,7 @@ class MessageHandler:
         dependants = PIKMessageException.objects.filter(**{
             f'dependencies__{self._payload["type"]}': self._payload["guid"]})
         for dependant in dependants:
-            if self.__class__(dependant.message, dependant.queue, mdm_event_captor).handle():
+            if self.__class__(dependant.message, dependant.queue).handle():
                 dependant.delete()
 
     def _capture_exception(self, exc):
