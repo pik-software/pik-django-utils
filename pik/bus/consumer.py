@@ -72,7 +72,7 @@ class MessageConsumer:
                 on_message_callback=partial(self._handle_message, queue=queue),
                 queue=queue)
 
-    def _handle_message(self, channel, method, properties, body, queue):
+    def _handle_message(self, channel, method, properties, body, queue):  # noqa: too-many-arguments
         logger.info(
             'Handling %s bytes message from %s queue', len(body), queue)
         handler = MessageHandler(body, queue, mdm_event_captor)
@@ -204,11 +204,15 @@ class MessageHandler:
         capture_exception(exc)
         self._exc_data = extract_exception_data(exc)
 
-        if not isinstance(self._payload, dict) or 'guid' not in self._payload:
-            self._capture_invalid_payload(exc)
+        is_missing_dependency = (
+            'detail' in self._exc_data and
+            'does_not_exist' in [
+                detail[0]['code']
+                for detail in self._exc_data['detail'].values()])
+        if is_missing_dependency:
+            self._capture_missing_dependencies()
             return
-
-        self._capture_missing_dependencies()
+        self._capture_invalid_payload(exc)
 
     def _capture_invalid_payload(self, exc):
         uid = sha1(self._body).hexdigest()[:32]
@@ -231,7 +235,6 @@ class MessageHandler:
             for error in errors
             if error['code'] == 'does_not_exist'}
 
-        # TODO: catch errors
         update_or_create_object(
             PIKMessageException, search_keys={
                 'entity_uid': self._payload.get('guid'),
