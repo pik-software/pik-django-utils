@@ -77,17 +77,17 @@ class MessageConsumer:
             'Handling %s bytes message from %s queue', len(body), queue)
         handler = MessageHandler(body, queue, mdm_event_captor)
 
+        envelope = {}
         try:
             envelope = handler.envelope
+            handler.handle()
         except Exception as error:  # noqa: too-broad-except
-            self._capture_event({}, success=False, error=error)
+            self._capture_event(envelope, success=False, error=error)
             channel.basic_nack(delivery_tag=method.delivery_tag)
             return
         else:
+            channel.basic_ack(delivery_tag=method.delivery_tag)
             self._capture_event(envelope, success=True, error=None)
-
-        handler.handle()
-        channel.basic_ack(delivery_tag=method.delivery_tag)
 
     def _capture_event(self, envelope, **kwargs):
         self._event_captor.capture(

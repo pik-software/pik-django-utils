@@ -220,6 +220,9 @@ class TestMessageHandlerUpdateInstance:
 class TestMessageHandlerException:
     @staticmethod
     def test_unexpected_error():
+        PIKMessageException(
+            uid='dbef014c-1ece-f8f9-9e5e-fa78cf01680d',
+            exception='', queue='test_queue').save()
         handler = MessageHandler(
             b'test_message', 'test_queue', Mock(name='event_captor'))
         handler._capture_exception(Exception('test'))  # noqa: protected-access
@@ -287,6 +290,10 @@ class TestMessageHandlerException:
 
     @staticmethod
     def test_dependency_error():
+        PIKMessageException(
+            uid='dbef014c-1ece-f8f9-9e5e-fa78cf01680d',
+            entity_uid='dbef014c-1ece-f8f9-9e5e-fa78cf01680d',
+            exception='', queue='test_queue').save()
         handler = MessageHandler(
             b'test_message', 'test_queue', Mock(name='event_captor'))
         handler._payload = {  # noqa: protected-access
@@ -440,12 +447,10 @@ class TestMessageConsumerEvents:
         envelope = {
             'headers': {
                 'transactionGUID': 'DEF...',
-                'transactionMessageCount': 42,
-            },
+                'transactionMessageCount': 42},
             'message': {
                 'type': 'TestType',
-                'guid': 'ABC...',
-            }}
+                'guid': 'ABC...'}}
         with patch.object(MessageHandler, 'envelope', property(Mock(
                 return_value=envelope))):
             message_consumer._handle_message(  # noqa: protected-access
@@ -491,10 +496,7 @@ class TestMessageHandlerEvents:
         message_handler = MessageHandler(
             b'test_message', 'test_queue', event_captor)
 
-        envelope = {
-            'message': {
-                'guid': 'ABC...',
-                'type': 'TestType'}}
+        envelope = {'message': {'guid': 'ABC...', 'type': 'TestType'}}
         with patch.object(MessageHandler, 'envelope', property(
                 Mock(return_value=envelope))):
             message_handler.handle()
@@ -516,10 +518,7 @@ class TestMessageHandlerEvents:
         message_handler = MessageHandler(
             b'test_message', 'test_queue', event_captor)
 
-        envelope = {
-            'message': {
-                'guid': 'ABC...',
-                'type': 'TestType'}}
+        envelope = {'message': {'guid': 'ABC...', 'type': 'TestType'}}
         with patch.object(MessageHandler, 'envelope', property(
                 Mock(return_value=envelope))):
             message_handler.handle()
