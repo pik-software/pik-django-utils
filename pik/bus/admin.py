@@ -3,6 +3,8 @@ import json
 from django.contrib import admin, messages
 from prettyjson.templatetags.prettyjson import prettyjson
 
+from pik.bus.mdm import mdm_event_captor
+
 from .consumer import MessageHandler
 from .models import PIKMessageException
 
@@ -60,7 +62,7 @@ class PIKMessageExceptionAdmin(admin.ModelAdmin):
     @admin.action(description='Обработать сообщение')
     def _process_message(self, request, queryset):
         for obj in queryset.order_by('created'):
-            handler = MessageHandler(obj.message, obj.queue)
+            handler = MessageHandler(obj.message, obj.queue, mdm_event_captor)
             if handler.handle():
                 self.message_user(
                     request,
@@ -71,5 +73,5 @@ class PIKMessageExceptionAdmin(admin.ModelAdmin):
             self.message_user(
                 request, (
                     f'Ошибка обработки сообщения {obj.uid}: '
-                    f'{handler._exc_data["message"]}'),
+                    f'{handler.exc_data["message"]}'),
                 level=messages.ERROR)

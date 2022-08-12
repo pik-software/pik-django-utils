@@ -112,7 +112,7 @@ class MessageHandler:
     _body = None
     _queue = None
     _serializers = None
-    _exc_data = None
+    exc_data = None
 
     def __init__(self, body, queue, event_captor):
         self._body = body
@@ -202,13 +202,13 @@ class MessageHandler:
 
     def _capture_exception(self, exc):
         capture_exception(exc)
-        self._exc_data = extract_exception_data(exc)
+        self.exc_data = extract_exception_data(exc)
 
         is_missing_dependency = (
-            'detail' in self._exc_data and
+            'detail' in self.exc_data and
             'does_not_exist' in [
                 detail[0]['code']
-                for detail in self._exc_data['detail'].values()])
+                for detail in self.exc_data['detail'].values()])
         if is_missing_dependency:
             self._capture_missing_dependencies()
             return
@@ -224,14 +224,14 @@ class MessageHandler:
             queue=self._queue,
             message=self._body,
             exception=extract_exception_data(exc),
-            exception_message=self._exc_data['message'],
-            exception_type=self._exc_data['code']
+            exception_message=self.exc_data['message'],
+            exception_type=self.exc_data['code']
         )
 
     def _capture_missing_dependencies(self):
         dependencies = {
             self._payload[field]['type']: self._payload[field]['guid']
-            for field, errors in self._exc_data.get('detail', {}).items()
+            for field, errors in self.exc_data.get('detail', {}).items()
             for error in errors
             if error['code'] == 'does_not_exist'}
 
@@ -242,9 +242,9 @@ class MessageHandler:
             entity_uid=self._payload.get('guid'),
             queue=self._queue,
             message=self._body,
-            exception=self._exc_data,
-            exception_type=self._exc_data['code'],
-            exception_message=self._exc_data['message'],
+            exception=self.exc_data,
+            exception_type=self.exc_data['code'],
+            exception_message=self.exc_data['message'],
             dependencies=dependencies
         )
 
