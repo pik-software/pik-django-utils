@@ -3,7 +3,6 @@ Django<4.0.0
 django-simple-history
 djangorestframework
 django-restql
-djangorestframework-camel-case
 django-filter
 djangorestframework-filters==1.0.0.dev0
 django-model-utils
@@ -38,5 +37,8 @@ cucco
 pika
 tenacity
 
-# sentry
+# Sentry
 sentry-sdk
+
+# Logstash
+python-logstash-async

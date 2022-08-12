@@ -43,7 +43,7 @@ class PIKMessageExceptionAdmin(admin.ModelAdmin):
     def _process_message(self, request, queryset):
         success = 0
         failed = 0
-        for obj in queryset:
+        for obj in queryset.order_by('created'):
             handler = MessageHandler(obj.message, obj.queue)
             if not handler.handle():
                 failed += 1
@@ -52,16 +52,16 @@ class PIKMessageExceptionAdmin(admin.ModelAdmin):
             success += 1
 
         if failed and success:
-            self.message_user(
-                request, (f'Сообщений обработано успешно: {success}, '
-                          f'c ошибкой: {failed}.', messages.WARNING))
+            self.message_user(request, (
+                f'Сообщений обработано успешно: {success}, c ошибкой: '
+                f'{failed}.', messages.WARNING))
+            return
 
         if success:
-            self.message_user(
-                request,
-                f'Успешно обработано сообщений: {success}', messages.SUCCESS)
+            self.message_user(request, (
+                f'Успешно обработано сообщений: {success}', messages.SUCCESS))
+            return
 
         if failed:
-            self.message_user(
-                request,
-                f'Сбой обработки, ошибок: {failed}', messages.ERROR)
+            self.message_user(request, (
+                f'Сбой обработки, ошибок: {failed}', messages.ERROR))

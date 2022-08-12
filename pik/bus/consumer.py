@@ -7,14 +7,15 @@ from django.conf import settings
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
 from rest_framework.parsers import JSONParser
-from djangorestframework_camel_case.util import underscoreize
-from sentry_sdk import capture_exception
 from pika import BlockingConnection, URLParameters
 from pika.exceptions import AMQPConnectionError
 from tenacity import retry, retry_if_exception_type, wait_fixed
 
+from pik.utils.sentry import capture_exception
+from pik.utils.case_utils import underscorize
 from pik.api.exceptions import extract_exception_data
 from pik.core.shortcuts import update_or_create_object
+
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +63,7 @@ class MessageConsumer:
 
     def _bind_queues(self):
         for queue in self._queues:
+            logger.info('Starting %s queue consumer', queue)
             self._channel.basic_consume(
                 on_message_callback=partial(self._handle_message, queue=queue),
                 queue=queue)
@@ -96,6 +98,9 @@ class MessageHandler:
         self._queue = queue
 
     def handle(self):
+        logger.info(
+            'Handling %s bytes message from %s queue', len(self._message),
+            self._queue)
         try:
             self._fetch_payload()
             self._prepare_payload()
@@ -111,7 +116,7 @@ class MessageHandler:
             io.BytesIO(self._message))['message']
 
     def _prepare_payload(self):
-        self._payload = underscoreize(self._payload)
+        self._payload = underscorize(self._payload)
 
         if hasattr(self._serializer_class, 'underscorize_hook'):
             self._payload = self._serializer_class.underscorize_hook(
@@ -168,12 +173,11 @@ class MessageHandler:
             dependencies__contains={
                 self._payload["type"]: self._payload["guid"]})
         for dependant in dependants:
-            self.__class__(dependant.message, dependant.queue).handle()
-            dependant.delete()
+            if self.__class__(dependant.message, dependant.queue).handle():
+                dependant.delete()
 
     def _capture_exception(self, exc):
         from .models import PIKMessageException  # noqa: cyclic import workaround
-        logger.info(exc)
         capture_exception(exc)
         self.exc_data = extract_exception_data(exc)
 

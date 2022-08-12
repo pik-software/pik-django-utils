@@ -212,7 +212,7 @@ class TestCustomQSMethods(TestCase):
             name="old").name, "old")
 
     def test_get_restore_or_create__restore(self):
-        obj = MyPermanentModel.objects.create(name="old", deleted=now())
+        MyPermanentModel.objects.create(name="old", deleted=now())
         self.assertEqual(MyPermanentModel.objects.get_restore_or_create(
             name="old").name, "old")
         self.assertEqual(MyPermanentModel.objects.count(), 1)
