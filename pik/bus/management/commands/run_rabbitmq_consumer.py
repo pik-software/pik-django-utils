@@ -4,6 +4,7 @@ import django
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from pik.bus.consumer import MessageConsumer
+from pik.bus.mdm import mdm_event_captor
 
 
 logger = logging.getLogger(__name__)
@@ -31,4 +32,6 @@ class Command(BaseCommand):
         consumer_name = settings.RABBITMQ_ACCOUNT_NAME
         queues = list(settings.RABBITMQ_CONSUMES.keys())
         logger.info('Starting worker for queues %s"', queues)
-        MessageConsumer(settings.RABBITMQ_URL, consumer_name, queues).consume()
+        MessageConsumer(
+            settings.RABBITMQ_URL, consumer_name, queues,
+            mdm_event_captor).consume()
