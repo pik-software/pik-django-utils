@@ -205,10 +205,9 @@ class MessageHandler:
         self.exc_data = extract_exception_data(exc)
 
         is_missing_dependency = (
-            'detail' in self.exc_data and
             'does_not_exist' in [
                 detail[0]['code']
-                for detail in self.exc_data['detail'].values()])
+                for detail in self.exc_data.get('detail', {}).values()])
         if is_missing_dependency:
             self._capture_missing_dependencies()
             return
