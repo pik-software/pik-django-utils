@@ -39,7 +39,7 @@ class MDMEventCaptor:
             settings, BUS_EVENT_LOGGER, 'bus_event_logstash_logger'))
 
     @cached_property
-    def _mdm_models_version(self):
+    def _mdm_models_version(self):  # noqa: no-self-use, to use cached_property
         try:
             version = f"v{get_package_version('mdm_models')}"
         except PackageNotFoundError:
@@ -47,14 +47,14 @@ class MDMEventCaptor:
         return version
 
     @cached_property
-    def _schema_version(self):
+    def _schema_version(self):  # noqa: pylint - inconsistent-return-statements
         if self._mdm_models_version:
             schema_version = self._mdm_models_version.split(
                 '.', maxsplit=3)[-1].replace('+', '.')
             return f"v{schema_version}"
 
     @cached_property
-    def _versions(self):
+    def _versions(self):  # noqa: no-self-use, to use cached_property
         return {
             'mdm_models_version': self._mdm_models_version,
             'schema_version': self._schema_version,
