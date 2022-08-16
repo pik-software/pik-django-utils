@@ -6,6 +6,30 @@ from pik.core.cache import cachedmethod
 SYSTEM_GROUP_PREFIX = "sys-"
 
 
+def get_username_from_email(details, *args, response=None, **kwargs):
+    response = response or {}
+    if details.get('username', ''):
+        return {}
+
+    email = details.get('email', '')
+    if not (email and '@' in email):
+        return {}
+
+    try:
+        username, _ = email.split('@')
+    except ValueError:
+        return {}
+
+    if not username:
+        return {}
+
+    response['username'] = username
+    response['preferred_username'] = username
+    return {
+        'username': username, 'preferred_username': username,
+        'details': details, 'response': response}
+
+
 def associate_by_username(backend, response, *args, **kwargs):
     if not hasattr(backend, 'get_user_by_username'):
         return None
