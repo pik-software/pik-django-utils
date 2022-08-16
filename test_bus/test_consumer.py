@@ -1,3 +1,4 @@
+from io import BytesIO
 import json
 from pprint import pformat
 from unittest.mock import Mock, patch, call
@@ -5,13 +6,13 @@ from uuid import UUID
 
 import pytest
 from django.db.models import Manager
-from rest_framework.exceptions import ValidationError, ErrorDetail
+from rest_framework.exceptions import ParseError, ValidationError, ErrorDetail
 from rest_framework.fields import DateTimeField
 from rest_framework.serializers import CharField
 
 from pik.api.serializers import StandardizedModelSerializer
-from pik.bus.consumer import (MessageHandler, QueueSerializerMissingException,
-                              MessageConsumer)
+from pik.bus.consumer import (
+    MessageHandler, QueueSerializerMissingException, MessageConsumer)
 from pik.bus.models import PIKMessageException
 from test_core_models.models import RegularModel, RemovableRegularDepended
 
@@ -42,6 +43,14 @@ class TestMessageHandlerFetch:
         assert handler._payload == {}  # noqa: protected-access
 
     @staticmethod
+    def test__invalid_json():
+        handler = MessageHandler(
+            b'', Mock(name='queue'), Mock(name='event_captor'))
+        with pytest.raises(ParseError):
+            handler._fetch_payload()  # noqa: protected-access
+        assert handler._payload is None  # noqa: protected-access
+
+    @staticmethod
     def test_message_missing():
         handler = MessageHandler(
             b'{}', Mock(name='queue'), Mock(name='event_captor'))
@@ -50,7 +59,7 @@ class TestMessageHandlerFetch:
         assert handler._payload is None  # noqa: protected-access
 
     @staticmethod
-    def test_not_dict():
+    def test_not_bytes():
         handler = MessageHandler(
             42, Mock(name='queue'), Mock(name='event_captor'))
         with pytest.raises(TypeError):
@@ -226,67 +235,41 @@ class TestMessageHandlerException:
         handler = MessageHandler(
             b'test_message', 'test_queue', Mock(name='event_captor'))
         handler._capture_exception(Exception('test'))  # noqa: protected-access
-        excepted = [{
+        expected = [{
             'exception': {'code': 'Exception', 'message': 'test'},
             'uid': UUID('dbef014c-1ece-f8f9-9e5e-fa78cf01680d'),
-            'exception_message': 'test',
-            'exception_type': 'Exception',
-            'message': b'test_message',
+            'exception_message': 'test', 'exception_type': 'Exception',
             'queue': 'test_queue'}]
         assert list(PIKMessageException.objects.values(
-            'queue', 'message', 'exception', 'exception_type',
-            'exception_message', 'uid')) == excepted
+            'queue', 'exception', 'exception_type', 'exception_message',
+            'uid')) == expected
+        message = PIKMessageException.objects.values_list('message').first()[0]
+        assert BytesIO(message).read() == b'test_message'
 
     @staticmethod
     def test_validation_error():
-        handler = MessageHandler(
-            b'test_message', 'test_queue', Mock(name='event_captor'))
-        handler._payload = {'guid': 'dbef014c-1ece-f8f9-9e5e-fa78cf01680d'}  # noqa: protected-access
-        handler._capture_exception(ValidationError({'name': [  # noqa: protected-access
-            ErrorDetail(string='This field is required.', code='required')]}))
-        excepted = [{
-            'exception': {'code': 'invalid',
-                          'detail': {'name': [{
-                              'code': 'required',
-                              'message': 'This field is required.'}]},
-                          'message': 'Invalid input.'},
-            'exception_message': 'Invalid input.',
-            'exception_type': 'invalid',
-            'message': b'test_message',
-            'queue': 'test_queue'}]
-        assert list(PIKMessageException.objects.values(
-            'queue', 'message', 'exception', 'exception_type',
-            'exception_message')) == excepted
-
-    @staticmethod
-    def test_update_dependency_object():
         PIKMessageException(
             uid='dbef014c-1ece-f8f9-9e5e-fa78cf01680d',
             entity_uid='dbef014c-1ece-f8f9-9e5e-fa78cf01680d',
             exception='', queue='test_queue').save()
-        PIKMessageException(
-            uid='dbef014c-1ece-f8f9-9e5e-fa78cf016801',
-            entity_uid='dbef014c-1ece-f8f9-9e5e-fa78cf016801',
-            exception='', queue='test_queue').save()
         handler = MessageHandler(
             b'test_message', 'test_queue', Mock(name='event_captor'))
         handler._payload = {'guid': 'dbef014c-1ece-f8f9-9e5e-fa78cf01680d'}  # noqa: protected-access
         handler._capture_exception(ValidationError({'name': [  # noqa: protected-access
             ErrorDetail(string='This field is required.', code='required')]}))
-        excepted = {
-            'exception': {'code': 'invalid',
-                          'detail': {'name': [{
-                              'code': 'required',
-                              'message': 'This field is required.'}]},
+        expected = [{
+            'exception': {'code': 'invalid', 'detail': {'name': [{
+                  'code': 'required',
+                  'message': 'This field is required.'}]},
                           'message': 'Invalid input.'},
             'exception_message': 'Invalid input.',
             'exception_type': 'invalid',
-            'message': b'test_message',
-            'queue': 'test_queue'}
+            'queue': 'test_queue'}]
         assert list(PIKMessageException.objects.values(
-            'queue', 'message', 'exception', 'exception_type',
-            'exception_message'))[0] == excepted
-        assert PIKMessageException.objects.count() == 2
+            'exception', 'exception_message', 'exception_type',
+            'queue')) == expected
+        message = PIKMessageException.objects.values_list('message').first()[0]
+        assert BytesIO(message).read() == b'test_message'
 
     @staticmethod
     def test_dependency_error():
@@ -299,40 +282,34 @@ class TestMessageHandlerException:
         handler._payload = {  # noqa: protected-access
             'guid': 'dbef014c-1ece-f8f9-9e5e-fa78cf01680d',
             'dependence': {'guid': 'DependencyGuid', 'type': 'DependencyType'}}
-        exc = ValidationError({
-            'created': [ErrorDetail(string=(
+        handler._capture_exception(ValidationError({'created': [  # noqa: protected-access
+            ErrorDetail(string=(
                 'Datetime has wrong format. Use one of these formats instead: '
                 'YYYY-MM-DDThh:mm[:ss[.uuuuuu]][+HH:MM|-HH:MM|Z].'),
                 code='invalid')],
             'dependence': [ErrorDetail(string=(
                 'Недопустимый guid "b24d988e-42aa-477d-a8c3-a88b127b9b31"'
-                ' - объект не существует.'), code='does_not_exist')]})
-        handler._capture_exception(exc)  # noqa: protected-access
-        excepted = [{
+                ' - объект не существует.'), code='does_not_exist')]}))
+        expected = [{
             'dependencies': {'DependencyType': 'DependencyGuid'},
-            'exception': {
-                'code': 'invalid',
-                'detail': {
-                    'created': [{
-                        'code': 'invalid',
-                        'message': (
-                            'Datetime has wrong format. Use one of these '
-                            'formats instead: YYYY-MM-DDThh:mm'
-                            '[:ss[.uuuuuu]][+HH:MM|-HH:MM|Z].')}],
-                    'dependence': [{
-                        'code': 'does_not_exist',
-                        'message': (
-                            'Недопустимый guid '
-                            '"b24d988e-42aa-477d-a8c3-a88b127b9b31" '
-                            '- объект не существует.')}]},
-                'message': 'Invalid input.'},
+            'exception': {'code': 'invalid', 'detail': {'created': [{
+                'code': 'invalid', 'message': (
+                    'Datetime has wrong format. Use one of these formats '
+                    'instead: '
+                    'YYYY-MM-DDThh:mm[:ss[.uuuuuu]][+HH:MM|-HH:MM|Z].')}],
+                'dependence': [{'code': 'does_not_exist', 'message': (
+                    'Недопустимый guid '
+                    '"b24d988e-42aa-477d-a8c3-a88b127b9b31" - объект '
+                    'не существует.')}]}, 'message': 'Invalid input.'},
             'exception_message': 'Invalid input.',
             'exception_type': 'invalid',
-            'message': b'test_message',
             'queue': 'test_queue'}]
         assert list(PIKMessageException.objects.values(
-            'queue', 'message', 'exception', 'exception_type',
-            'exception_message', 'dependencies')) == excepted
+            'queue', 'exception', 'exception_type',
+            'exception_message', 'dependencies')) == expected
+
+        message = PIKMessageException.objects.values_list('message').first()[0]
+        assert BytesIO(message).read() == b'test_message'
 
     @staticmethod
     @pytest.mark.django_db
@@ -353,11 +330,13 @@ class TestMessageHandlerException:
                           'message': 'Invalid input.'},
             'exception_message': 'Invalid input.',
             'exception_type': 'invalid',
-            'message': b'test_message',
             'queue': 'test_queue'}]
         assert list(PIKMessageException.objects.values(
-            'queue', 'message', 'exception', 'exception_type',
+            'queue', 'exception', 'exception_type',
             'exception_message')) == excepted
+
+        message = PIKMessageException.objects.values_list('message').first()[0]
+        assert BytesIO(message).read() == b'test_message'
 
 
 @pytest.mark.django_db

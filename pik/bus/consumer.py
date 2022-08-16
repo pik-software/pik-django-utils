@@ -192,8 +192,10 @@ class MessageHandler:
         return cls._serializers[queue]  # noqa: unsupported-membership-test
 
     def _process_dependants(self):
-        dependants = PIKMessageException.objects.filter(**{
-            f'dependencies__{self._payload["type"]}': self._payload["guid"]})
+        from .models import PIKMessageException  # noqa: cyclic import workaround
+        dependants = PIKMessageException.objects.filter(
+            dependencies__contains={
+                self._payload["type"]: self._payload["guid"]})
         for dependant in dependants:
             handler = self.__class__(
                 dependant.message, dependant.queue, mdm_event_captor)

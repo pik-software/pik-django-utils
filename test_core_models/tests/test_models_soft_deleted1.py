@@ -31,7 +31,7 @@ class TestDelete(TestCase):
         self.permanent.delete()
         self.assertTrue(self.permanent.deleted)
         self.assertEqual(list(model.objects.all()), [permanent2])
-        self.assertEqual(list(model.all_objects.all()), [
+        self.assertEqual(list(model.all_objects.order_by('id')), [
             self.permanent, permanent2])
         self.assertEqual(list(model.deleted_objects.all()), [self.permanent])
 
@@ -209,19 +209,19 @@ class TestCustomQSMethods(TestCase):
     def test_get_restore_or_create__get(self):
         MyPermanentModel.objects.create(name="old")
         self.assertEqual(MyPermanentModel.objects.get_restore_or_create(
-            name="old").id, 1)
+            name="old").name, "old")
 
     def test_get_restore_or_create__restore(self):
-        obj = MyPermanentModel.objects.create(name="old", deleted=now())
+        MyPermanentModel.objects.create(name="old", deleted=now())
         self.assertEqual(MyPermanentModel.objects.get_restore_or_create(
-            name="old").id, obj.id)
+            name="old").name, "old")
         self.assertEqual(MyPermanentModel.objects.count(), 1)
         self.assertEqual(MyPermanentModel.all_objects.count(), 1)
 
     def test_get_restore_or_create__create(self):
         MyPermanentModel.objects.get_restore_or_create(name="old")
         self.assertEqual(MyPermanentModel.objects.get_restore_or_create(
-            name="old").id, 1)
+            name="old").name, "old")
         self.assertEqual(MyPermanentModel.objects.count(), 1)
         self.assertEqual(MyPermanentModel.all_objects.count(), 1)
 
@@ -246,6 +246,6 @@ class TestCustomQSMethods(TestCase):
     def test_update_restore_or_create__create(self):
         MyPermanentModel.objects.update_restore_or_create(name="old")
         self.assertEqual(MyPermanentModel.objects.update_restore_or_create(
-            name="old").id, 1)
+            name="old").name, "old")
         self.assertEqual(MyPermanentModel.objects.count(), 1)
         self.assertEqual(MyPermanentModel.all_objects.count(), 1)

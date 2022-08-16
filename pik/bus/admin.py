@@ -9,24 +9,6 @@ from .consumer import MessageHandler
 from .models import PIKMessageException
 
 
-class IsDependencyExceptionFilter(admin.SimpleListFilter):
-    title = 'Ошибка зависимости'
-    parameter_name = 'is_dependency_error'
-
-    def lookups(self, request, model_admin):
-        return (
-            ('true', 'Да'),
-            ('false', 'Нет'),
-        )
-
-    def queryset(self, request, queryset):
-        if self.value() and self.value().lower() in ('true', '1'):
-            return queryset.exclude(dependencies={})
-        if self.value() and self.value().lower() in ('false', '0'):
-            return queryset.filter(dependencies={})
-        return queryset
-
-
 @admin.register(PIKMessageException)
 class PIKMessageExceptionAdmin(admin.ModelAdmin):
     list_display = ('queue', 'exception_type', 'entity_uid', )
@@ -37,7 +19,7 @@ class PIKMessageExceptionAdmin(admin.ModelAdmin):
         'created', 'queue', 'entity_uid', '_exception', 'exception_type',
         'exception_message', '_dependencies', '_message', )
 
-    list_filter = ('exception_type', 'queue', IsDependencyExceptionFilter)
+    list_filter = ('exception_type', 'queue', 'has_dependencies')
     actions = ('_process_message', )
     readonly_fields = fields
 
@@ -61,17 +43,27 @@ class PIKMessageExceptionAdmin(admin.ModelAdmin):
 
     @admin.action(description='Обработать сообщение')
     def _process_message(self, request, queryset):
+        success = 0
+        failed = 0
         for obj in queryset.order_by('created'):
             handler = MessageHandler(obj.message, obj.queue, mdm_event_captor)
-            if handler.handle():
-                self.message_user(
-                    request,
-                    f'Сообщение {obj.uid} обработано', messages.SUCCESS)
-                obj.delete()
+            if not handler.handle():
+                failed += 1
                 continue
+            obj.delete()
+            success += 1
 
-            self.message_user(
-                request, (
-                    f'Ошибка обработки сообщения {obj.uid}: '
-                    f'{handler.exc_data["message"]}'),
-                level=messages.ERROR)
+        if failed and success:
+            self.message_user(request, (
+                f'Сообщений обработано успешно: {success}, c ошибкой: '
+                f'{failed}.', messages.WARNING))
+            return
+
+        if success:
+            self.message_user(request, (
+                f'Успешно обработано сообщений: {success}', messages.SUCCESS))
+            return
+
+        if failed:
+            self.message_user(request, (
+                f'Сбой обработки, ошибок: {failed}', messages.ERROR))
