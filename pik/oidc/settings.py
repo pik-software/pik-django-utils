@@ -301,10 +301,10 @@ def set_oidc_settings(settings):
         'social_core.pipeline.social_auth.auth_allowed',
         'social_core.pipeline.social_auth.social_user',
         # 'social_core.pipeline.mail.mail_validation',
+        'pik.oidc.pipeline.get_username_from_email',
         'social_core.pipeline.social_auth.associate_by_email',
         'pik.oidc.pipeline.associate_by_username',
         'social_core.pipeline.user.get_username',
-        'pik.oidc.pipeline.get_username_from_email',
 
         *((  # Custom users are replicated from permission-back
             'social_core.pipeline.user.create_user', )
