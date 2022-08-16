@@ -1,4 +1,8 @@
 import logging
+from importlib.metadata import (
+    version as get_package_version,
+    PackageNotFoundError,
+)
 
 from django.conf import settings
 from django.utils.functional import cached_property
@@ -21,6 +25,7 @@ class MDMEventCaptor:
                 'objectType': entity_type,
                 'objectGuid': entity_guid,
             },
+            **self._versions,
             **kwargs,
         })
 
@@ -32,6 +37,28 @@ class MDMEventCaptor:
     def _mdm_logger(self):  # noqa: no-self-use, to use cached_property
         return logging.getLogger(getattr(
             settings, BUS_EVENT_LOGGER, 'bus_event_logstash_logger'))
+
+    @cached_property
+    def _mdm_models_version(self):
+        try:
+            version = f"v{get_package_version('mdm_models')}"
+        except PackageNotFoundError:
+            version = None
+        return version
+
+    @cached_property
+    def _schema_version(self):
+        if self._mdm_models_version:
+            schema_version = self._mdm_models_version.split(
+                '.', maxsplit=3)[-1].replace('+', '.')
+            return f"v{schema_version}"
+
+    @cached_property
+    def _versions(self):
+        return {
+            'mdm_models_version': self._mdm_models_version,
+            'schema_version': self._schema_version,
+        } if self._mdm_models_version else {}
 
 
 mdm_event_captor = MDMEventCaptor()
