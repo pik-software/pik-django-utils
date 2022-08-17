@@ -1,4 +1,6 @@
 import re
+
+import roman
 from cucco import Cucco
 
 _CUCCO = Cucco()
