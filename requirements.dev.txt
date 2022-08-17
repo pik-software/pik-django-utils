@@ -32,3 +32,6 @@ check_manifest
 
 # typing
 mypy
+
+# converting roman numerals
+roman
