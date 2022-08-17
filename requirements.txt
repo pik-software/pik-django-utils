@@ -42,3 +42,6 @@ sentry-sdk
 
 # Logstash
 python-logstash-async
+
+# converting roman numerals
+roman
