@@ -9,7 +9,7 @@ class NumericalOrderingField(models.CharField):
         kwargs.setdefault('db_index', True)
         kwargs.setdefault('editable', False)
         kwargs.setdefault('max_length', 255)
-        super(NumericalOrderingField, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def pre_save(self, model_instance, add):
         return get_ordering_number(getattr(model_instance, self.for_field))
