@@ -1,4 +1,6 @@
 import re
+
+import roman
 from cucco import Cucco
 
 _CUCCO = Cucco()
@@ -66,3 +68,35 @@ def company_name_normalization(name: str) -> str:
     name = name.replace('PK ', 'ПК ')  # Production Cooperative
     name = name.replace('PP ', 'ПП ')  # Political party
     return name.upper()
+
+
+NUMERALS_PATTERN = re.compile(
+    r'\d+|(?<![MDCLXVI])(?=[MDCLXVI])M{0,3}(?:C[MD]|D?C{0,3})'
+    r'(?:X[CL]|L?X{0,3})(?:I[XV]|V?I{0,3})')
+
+
+def get_ordering_number(raw_number: str) -> str:
+    """
+    Get normalized number from string for ordering by numerical numbers,
+    including roman numerals, to ensure that
+    '10' > '2', '2' > '1-1', '2' > 'Кв. 1'
+    Example:
+        >>> get_ordering_number('1')
+        '00001'
+        >>> get_ordering_number('2')
+        '00002'
+        >>> get_ordering_number('10')
+        '00010'
+        >>> get_ordering_number('1-1')
+        '00001:00001'
+        >>> get_ordering_number('Кв. 010 пом1')
+        '00010:00001'
+        >>> get_ordering_number('XXVIII-1')
+        '00028:00001'
+    """
+
+    return ':'.join([
+        f'{roman.fromRoman(numeral):05d}'
+        if not re.match(r'\d+', numeral) else
+        f'{int(numeral):05d}'
+        for numeral in NUMERALS_PATTERN.findall(raw_number)])
