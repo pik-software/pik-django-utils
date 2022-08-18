@@ -1,14 +1,15 @@
 import logging
-from importlib.metadata import (
-    version as get_package_version,
-    PackageNotFoundError,
-)
+import os
+from importlib import import_module
 
 from django.conf import settings
 from django.utils.functional import cached_property
 from pika import URLParameters
 
 from pik.bus.settings import BUS_EVENT_LOGGER
+
+
+mdm_models = import_module('mdm_models')
 
 
 class MDMEventCaptor:
@@ -24,8 +25,11 @@ class MDMEventCaptor:
                 'event': event,
                 'objectType': entity_type,
                 'objectGuid': entity_guid,
+                'generator_version': f"v{mdm_models.__generator_version__}",
+                'entities_version': f"v{mdm_models.__entities_version__}",
+                'library_version': f"v{mdm_models.__version__}",
+                'service_version': os.environ.get('RELEASE'),
             },
-            **self._versions,
             **kwargs,
         })
 
@@ -37,28 +41,6 @@ class MDMEventCaptor:
     def _mdm_logger(self):  # noqa: no-self-use, to use cached_property
         return logging.getLogger(getattr(
             settings, BUS_EVENT_LOGGER, 'bus_event_logstash_logger'))
-
-    @cached_property
-    def _mdm_models_version(self):  # noqa: no-self-use, to use cached_property
-        try:
-            version = f"v{get_package_version('mdm_models')}"
-        except PackageNotFoundError:
-            version = None
-        return version
-
-    @cached_property
-    def _schema_version(self):  # noqa: pylint - inconsistent-return-statements
-        if self._mdm_models_version:
-            schema_version = self._mdm_models_version.split(
-                '.', maxsplit=3)[-1].replace('+', '.')
-            return f"v{schema_version}"
-
-    @cached_property
-    def _versions(self):  # noqa: no-self-use, to use cached_property
-        return {
-            'mdm_models_version': self._mdm_models_version,
-            'schema_version': self._schema_version,
-        } if self._mdm_models_version else {}
 
 
 mdm_event_captor = MDMEventCaptor()
