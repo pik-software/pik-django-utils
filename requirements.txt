@@ -4,7 +4,7 @@ django-simple-history
 djangorestframework
 django-restql
 django-filter
-djangorestframework-filters==1.0.0.dev2
+djangorestframework-filters==1.0.0.dev0  # TODO: move to 1.0.0.dev2
 django-model-utils
 django-private-storage
 django-documents-tools
