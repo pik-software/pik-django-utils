@@ -42,15 +42,16 @@ class MDMEventCaptor:
 
     @cached_property
     def _versions(self):  # noqa: no-self-use, to use cached_property
+        service_version = {'service_version': os.environ.get('RELEASE')}
         if mdm_models:
             return {
                 'generator_version': f"v{mdm_models.__generator_version__}",
                 'entities_version': f"v{mdm_models.__entities_version__}",
                 'library_version': f"v{mdm_models.__version__}",
-                'service_version': os.environ.get('RELEASE'),
+                **service_version,
             }
         return {
-            'service_version': os.environ.get('RELEASE'),
+            **service_version,
         }
 
 
