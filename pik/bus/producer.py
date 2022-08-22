@@ -207,7 +207,9 @@ class InstanceHandler:
         return {
             'messageType': [message['type'], ],
             'message': message,
-            'host': self.host}
+            'host': self.host,
+            **self._event_captor.versions,
+        }
 
     @cached_property  # to avoid 2nd serialization via _capture_event
     def _message(self):

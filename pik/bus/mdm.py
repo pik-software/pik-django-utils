@@ -7,6 +7,11 @@ from pika import URLParameters
 
 from pik.bus.settings import BUS_EVENT_LOGGER
 
+try:
+    import mdm_models
+except ModuleNotFoundError:
+    mdm_models = None  # noqa: invalid-name
+
 
 class MDMEventCaptor:
     def capture(self, event, entity_type, entity_guid, **kwargs):
@@ -38,16 +43,13 @@ class MDMEventCaptor:
 
     @cached_property
     def _versions(self):  # noqa: no-self-use, to use cached_property
-        try:
-            import mdm_models
-            versions = {
+        if mdm_models:
+            return {
                 'generator_version': f"v{mdm_models.__generator_version__}",
                 'entities_version': f"v{mdm_models.__entities_version__}",
                 'library_version': f"v{mdm_models.__version__}",
             }
-        except ModuleNotFoundError:
-            versions = {}
-        return versions
+        return {}
 
 
 mdm_event_captor = MDMEventCaptor()
