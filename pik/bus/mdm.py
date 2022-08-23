@@ -41,17 +41,34 @@ class MDMEventCaptor:
             settings, BUS_EVENT_LOGGER, 'bus_event_logstash_logger'))
 
     @cached_property
+    def service_version(self):  # noqa: no-self-use, to use cached_property
+        return {'serviceVersion': os.environ.get('RELEASE')}
+
+    @cached_property
+    def entities_version(self):  # noqa: no-self-use, to use cached_property
+        if not mdm_models:
+            return {}
+        return {'entitiesVersion': f"v{mdm_models.__entities_version__}"}
+
+    @cached_property
+    def generator_version(self):  # noqa: no-self-use, to use cached_property
+        if not mdm_models:
+            return {}
+        return {'generatorVersion': f"v{mdm_models.__generator_version__}"}
+
+    @cached_property
+    def lib_version(self):  # noqa: no-self-use, to use cached_property
+        if not mdm_models:
+            return {}
+        return {'libVersion': f"v{mdm_models.__version__}"}
+
+    @cached_property
     def versions(self):  # noqa: no-self-use, to use cached_property
-        service_version = {'service_version': os.environ.get('RELEASE')}
-        if mdm_models:
-            return {
-                'generator_version': f"v{mdm_models.__generator_version__}",
-                'entities_version': f"v{mdm_models.__entities_version__}",
-                'library_version': f"v{mdm_models.__version__}",
-                **service_version,
-            }
         return {
-            **service_version,
+            **self.generator_version,
+            **self.entities_version,
+            **self.lib_version,
+            **self.service_version,
         }
 
 
