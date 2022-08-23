@@ -208,7 +208,7 @@ class InstanceHandler:
             'messageType': [message['type'], ],
             'message': message,
             'host': self.host,
-            **self._event_captor.versions,
+            'headers': self._event_captor.versions,
         }
 
     @cached_property  # to avoid 2nd serialization via _capture_event
