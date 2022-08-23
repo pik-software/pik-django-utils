@@ -27,7 +27,7 @@ class MDMEventCaptor:
                 'objectType': entity_type,
                 'objectGuid': entity_guid,
             },
-            **self._versions,
+            **self.versions,
             **kwargs,
         })
 
@@ -41,7 +41,7 @@ class MDMEventCaptor:
             settings, BUS_EVENT_LOGGER, 'bus_event_logstash_logger'))
 
     @cached_property
-    def _versions(self):  # noqa: no-self-use, to use cached_property
+    def versions(self):  # noqa: no-self-use, to use cached_property
         service_version = {'service_version': os.environ.get('RELEASE')}
         if mdm_models:
             return {
