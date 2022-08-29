@@ -1,16 +1,20 @@
 import json
 
-from django.contrib import admin, messages
+from django.contrib import admin
+from django.utils.translation import gettext_lazy as _
+
 from prettyjson.templatetags.prettyjson import prettyjson
 
-from pik.bus.mdm import mdm_event_captor
-
-from .consumer import MessageHandler
 from .models import PIKMessageException
+from .tasks import task_process_messages
+from pik.modeladmin.modeladmin import AdminProgressMixIn
 
 
 @admin.register(PIKMessageException)
-class PIKMessageExceptionAdmin(admin.ModelAdmin):
+class PIKMessageExceptionAdmin(AdminProgressMixIn, admin.ModelAdmin):
+    page_contexts = ['get_progress_context']
+    progress_pages = {'processing': _('Обработка')}
+
     list_display = ('queue', 'exception_type', 'entity_uid', )
     search_fields = (
         'created', 'queue', 'exception', 'exception_message', 'exception_type',
@@ -41,29 +45,8 @@ class PIKMessageExceptionAdmin(admin.ModelAdmin):
         except json.JSONDecodeError:
             return bytes(obj.message)
 
-    @admin.action(description='Обработать сообщение')
+    @admin.action(description='Обработать сообщения')
     def _process_message(self, request, queryset):
-        success = 0
-        failed = 0
-        for obj in queryset.order_by('created'):
-            handler = MessageHandler(obj.message, obj.queue, mdm_event_captor)
-            if not handler.handle():
-                failed += 1
-                continue
-            obj.delete()
-            success += 1
-
-        if failed and success:
-            self.message_user(request, (
-                f'Сообщений обработано успешно: {success}, c ошибкой: '
-                f'{failed}.', messages.WARNING))
-            return
-
-        if success:
-            self.message_user(request, (
-                f'Успешно обработано сообщений: {success}', messages.SUCCESS))
-            return
-
-        if failed:
-            self.message_user(request, (
-                f'Сбой обработки, ошибок: {failed}', messages.ERROR))
+        return self.execute_task_progress(
+            'processing', task_process_messages, total=queryset.count(),
+            kwargs={'lookups': request.GET})

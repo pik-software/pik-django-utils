@@ -1,0 +1,60 @@
+{% extends "admin/page.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <style>
+
+    progress {
+        appearance: none;
+        -webkit-appearance: none;
+        margin: 10pt;
+        width: 100%;
+        height: 25pt;
+    }
+    progress::-webkit-progress-value {
+        background-color: var(--breadcrumbs-bg);
+    }
+
+    progress[value]::-webkit-progress-bar {
+        background-color: #eee;
+        border-radius: 2px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25) inset;
+    }
+
+    </style>
+{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    {% if not error and not total or current < total %}
+    <script>
+        window.setTimeout( function() {
+            window.location.reload();
+        }, 1 * 1000);
+    </script>
+    {% endif %}
+{% endblock %}
+
+
+{% block content %}
+    <div style="text-align: center">
+        {% if total %}
+            {{ current }} of {{ total }}
+            {{ elapsed }}
+            [{{ speed | floatformat:-2 }} it/s]
+        {% endif %}
+
+        <progress value="1" value="{{ current }}" max="{{ total }}"></progress>
+
+        {% if total %}
+            {{ progress }}%
+            ETA {{ eta }}
+        {% endif %}
+    </div>
+
+    {% if error %}
+        Error: {{ error }}
+    {% endif %}
+
+{% endblock %}

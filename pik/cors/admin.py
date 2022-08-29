@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from pik.admin import SecuredVersionedModelAdmin
+from pik.modeladmin import SecuredVersionedModelAdmin
 
 from pik.cors.models import Cors
 
