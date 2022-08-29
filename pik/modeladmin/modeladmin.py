@@ -203,7 +203,7 @@ class AdminProgressMixIn(AdminPageMixIn):
     progress_pages: Optional[Dict[str, str]] = None
 
     def execute_task_progress(
-            self, process_name, task, total=None, *args, **kwargs):
+            self, process_name, task, *args, total=None, **kwargs):
         task_id = task.apply_async(*args, **kwargs)
         register_progress(task_id, total=total)
         return HttpResponseRedirect(self.get_progress_url(

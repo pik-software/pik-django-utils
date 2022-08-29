@@ -5,9 +5,10 @@ from django.utils.translation import gettext_lazy as _
 
 from prettyjson.templatetags.prettyjson import prettyjson
 
+from pik.modeladmin.modeladmin import AdminProgressMixIn
+
 from .models import PIKMessageException
 from .tasks import task_process_messages
-from pik.modeladmin.modeladmin import AdminProgressMixIn
 
 
 @admin.register(PIKMessageException)
