@@ -45,7 +45,7 @@
             [{{ speed | floatformat:-2 }} it/s]
         {% endif %}
 
-        <progress value="1" value="{{ current }}" max="{{ total }}"></progress>
+        <progress value="{{ current }}" max="{{ total }}"></progress>
 
         {% if total %}
             {{ progress }}%
