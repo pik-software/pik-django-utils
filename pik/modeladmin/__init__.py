@@ -1,1 +1,1 @@
-# from .modeladmin import *
+from .modeladmin import *
