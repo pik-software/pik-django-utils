@@ -212,9 +212,6 @@ class AdminProgressMixIn(AdminPageMixIn):
     page_contexts = ['get_progress_context']
     progress_pages: Optional[Dict[str, str]] = None
 
-    @admin_page(
-        template='admin/progress.html',
-        url_pattern='page/progress/<path:process>/<path:task_id>')
     def execute_task_progress(
             self, process_name, task, *args, total=None, **kwargs):
         task_id = task.apply_async(*args, **kwargs)
@@ -222,6 +219,9 @@ class AdminProgressMixIn(AdminPageMixIn):
         return HttpResponseRedirect(self.get_progress_url(
             process_name, task_id))
 
+    @admin_page(
+        template='admin/progress.html',
+        url_pattern='page/progress/<path:process>/<path:task_id>')
     def get_progress_context(self, request, process, task_id):
         return self.render_progress(request, process, task_id)
 
