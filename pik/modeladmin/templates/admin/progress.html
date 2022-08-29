@@ -16,6 +16,13 @@
         background-color: var(--breadcrumbs-bg);
     }
 
+    progress.error::-webkit-progress-value {
+        background-color: var(--error-fg);
+    }
+    progress.success::-webkit-progress-value {
+        background-color: var(--header-bg);
+    }
+
     progress[value]::-webkit-progress-bar {
         background-color: #eee;
         border-radius: 2px;
@@ -43,14 +50,18 @@
             {{ current }} of {{ total }}
             {{ elapsed }}
             [{{ speed | floatformat:-2 }} it/s]
+            {% if failed %}
+                {{ failed }} failed
+            {% endif %}
         {% endif %}
 
-        <progress value="{{ current }}" max="{{ total }}"></progress>
+        <progress {% if error or failed %} class="error" {% elif finished %} class="success" {% endif %} value="{{ current }}" max="{{ total }}"></progress>
 
         {% if total %}
             {{ progress }}%
             ETA {{ eta }}
         {% endif %}
+
     </div>
 
     {% if error %}
