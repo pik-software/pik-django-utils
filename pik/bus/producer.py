@@ -207,7 +207,9 @@ class InstanceHandler:
         return {
             'messageType': [message['type'], ],
             'message': message,
-            'host': self.host}
+            'host': self.host,
+            'headers': self._event_captor.entities_version,
+        }
 
     @cached_property  # to avoid 2nd serialization via _capture_event
     def _message(self):
@@ -225,7 +227,11 @@ class InstanceHandler:
             'processId': os.getpid(),
             'frameworkVersion': django.get_version(),
             'operatingSystemVersion': (
-                f'{platform.system()} {platform.version()}')}
+                f'{platform.system()} {platform.version()}'),
+            **self._event_captor.service_version,
+            **self._event_captor.generator_version,
+            **self._event_captor.lib_version,
+        }
 
     @property
     def _serializer(self):
