@@ -122,8 +122,7 @@ def admin_page(function=None, **kwargs):
         return func
     if function is None:
         return decorator
-    else:
-        return decorator(function)
+    return decorator(function)
 
 
 class AdminPageMixIn(ModelAdmin):
