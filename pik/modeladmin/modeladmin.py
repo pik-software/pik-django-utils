@@ -115,6 +115,17 @@ class AutoSetRequestUserMixIn:
         super().save_related(request, form, formsets, change)
 
 
+def admin_page(function=None, **kwargs):
+    def decorator(func):
+        for key, value in kwargs.items():
+            setattr(func, key, value)
+        return func
+    if function is None:
+        return decorator
+    else:
+        return decorator(function)
+
+
 class AdminPageMixIn(ModelAdmin):
     """
         MixIn allowing custom admin pages creation
@@ -202,6 +213,9 @@ class AdminProgressMixIn(AdminPageMixIn):
     page_contexts = ['get_progress_context']
     progress_pages: Optional[Dict[str, str]] = None
 
+    @admin_page(
+        template='admin/progress.html',
+        url_pattern='page/progress/<path:process>/<path:task_id>')
     def execute_task_progress(
             self, process_name, task, *args, total=None, **kwargs):
         task_id = task.apply_async(*args, **kwargs)
@@ -211,9 +225,6 @@ class AdminProgressMixIn(AdminPageMixIn):
 
     def get_progress_context(self, request, process, task_id):
         return self.render_progress(request, process, task_id)
-    get_progress_context.template = 'admin/progress.html'
-    get_progress_context.url_pattern = (
-        'page/progress/<path:process>/<path:task_id>')
 
     def render_progress(self, request, process, task_id, **kwargs):
         progress = get_progress(task_id)
