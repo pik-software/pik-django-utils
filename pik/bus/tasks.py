@@ -64,7 +64,7 @@ def task_delete_messages(self, pks, *args, **kwargs):
         'started': started, 'error': None})
 
     qs = PIKMessageException.objects.filter(pk__in=pks)
-    for current, obj in enumerate(qs, 1):
+    for current, obj in enumerate(qs.iterator(), 1):
         try:
             obj.delete()
         except Exception as exc:  # noqa: broad-except
