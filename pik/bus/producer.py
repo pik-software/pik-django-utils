@@ -258,7 +258,8 @@ class InstanceHandler:
 
 @receiver(post_save)
 def push_model_instance_to_rabbit_queue(instance, **kwargs):
-    if not settings.RABBITMQ_PRODUCER_ENABLE:
+    if (not settings.RABBITMQ_PRODUCER_ENABLE
+            or instance.__module__ == '__fake__'):
         return
     try:
         InstanceHandler(instance, mdm_event_captor, producer).handle()
