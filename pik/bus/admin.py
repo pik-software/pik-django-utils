@@ -8,13 +8,13 @@ from prettyjson.templatetags.prettyjson import prettyjson
 from pik.modeladmin.modeladmin import AdminProgressMixIn
 
 from .models import PIKMessageException
-from .tasks import task_process_messages
+from .tasks import task_process_messages, task_delete_messages
 
 
 @admin.register(PIKMessageException)
 class PIKMessageExceptionAdmin(AdminProgressMixIn, admin.ModelAdmin):
     page_contexts = ['get_progress_context']
-    progress_pages = {'processing': _('Обработка')}
+    progress_pages = {'processing': _('Обработка'), 'deletion': _('Удаление')}
 
     list_display = ('queue', 'exception_type', 'entity_uid', )
     search_fields = (
@@ -25,7 +25,7 @@ class PIKMessageExceptionAdmin(AdminProgressMixIn, admin.ModelAdmin):
         'exception_message', '_dependencies', '_message', )
 
     list_filter = ('exception_type', 'queue', 'has_dependencies')
-    actions = ('_process_message', )
+    actions = ('_process_message', '_delete_selected')
     readonly_fields = fields
 
     @admin.display(description='Ошибка')
@@ -46,8 +46,20 @@ class PIKMessageExceptionAdmin(AdminProgressMixIn, admin.ModelAdmin):
         except json.JSONDecodeError:
             return bytes(obj.message)
 
-    @admin.action(description='Обработать сообщения')
+    @admin.action(description=_('Обработать сообщения'))
     def _process_message(self, request, queryset):
         return self.execute_task_progress(
             'processing', task_process_messages, total=queryset.count(),
-            kwargs={'lookups': request.GET})
+            kwargs={'pks': tuple(queryset.values_list('pk', flat=True))})
+
+    @admin.action(description=_('Удалить сообщения'))
+    def _delete_selected(self, request, queryset):
+        return self.execute_task_progress(
+            'deletion', task_delete_messages, total=queryset.count(),
+            kwargs={'pks': tuple(queryset.values_list('pk', flat=True))})
+
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        if 'delete_selected' in actions:
+            del actions['delete_selected']
+        return actions

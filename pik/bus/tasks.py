@@ -11,17 +11,17 @@ from .models import PIKMessageException
 
 
 @app.shared_task(bind=True)
-def task_process_messages(self, lookups, *args, **kwargs):
+def task_process_messages(self, pks, *args, **kwargs):
 
     current = 0
     failed = 0
     success = 0
-    total = 0
+    total = len(pks)
     started = datetime.now()
     task_id = self.request.id
     try:
         queryset = PIKMessageException.objects.filter(
-            **lookups).order_by('created')
+            pk__in=pks).order_by('created')
         total = queryset.count()
 
         for current, obj in enumerate(queryset.iterator(), 1):
@@ -48,3 +48,32 @@ def task_process_messages(self, lookups, *args, **kwargs):
             'current': current, 'total': total,
             'started': started, 'error': str(exc)})
         capture_exception(exc)
+
+
+@app.shared_task(bind=True)
+def task_delete_messages(self, pks, *args, **kwargs):
+    started = datetime.now()
+    task_id = self.request.id
+    current = 0
+    failed = 0
+    success = 0
+    total = len(pks)
+
+    register_progress(task_id, **{
+        'current': current, 'total': total,
+        'started': started, 'error': None})
+
+    qs = PIKMessageException.objects.filter(pk__in=pks)
+    for current, obj in enumerate(qs, 1):
+        try:
+            obj.delete()
+        except Exception as exc:  # noqa: broad-except
+            capture_exception(exc)
+            failed += 1
+        else:
+            success += 1
+
+    register_progress(task_id, **{
+        'finished': datetime.now(),
+        'current': current, 'total': total,
+        'started': started, 'error': None})
