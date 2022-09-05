@@ -64,6 +64,7 @@ class MessageConsumer:
 
     def _config_channel(self):
         self._channel.basic_qos(prefetch_count=self.PREFETCH_COUNT)
+        self._channel.confirm_delivery()
 
     def _bind_queues(self):
         for queue in self._queues:
