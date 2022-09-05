@@ -1,7 +1,9 @@
 import coreapi
 from django.contrib.postgres.fields import ArrayField
-from django.db.models import DateTimeField
+from django.db.models import DateTimeField, Value
+from django.db.models.functions import Lower, NullIf
 from django_filters import OrderingFilter
+from django_filters.constants import EMPTY_VALUES
 from rest_framework.filters import (
     OrderingFilter as DRFOrderingFilter, SearchFilter)
 from rest_framework_filters import (
@@ -61,6 +63,26 @@ class StandardizedSearchFilter(StandardizedAPISearchIndex, SearchFilter):
 
 class StandardizedOrderingFilter(DRFOrderingFilter):
     pass
+
+
+class NullsLastOrderingFilter(OrderingFilter):
+    """ Use Django 1.11 nulls_last feature to force nulls to bottom in all orderings. """
+
+    def get_ordering_value(self, param):
+        descending = param.startswith("-")
+        param = param[1:] if descending else param
+        field_name = self.param_map.get(param, param)
+        ordering_field = Lower(NullIf(field_name, Value('')))
+
+        return (ordering_field.desc(nulls_last=True) if descending
+                else ordering_field.asc(nulls_last=True))
+
+    def filter(self, qs, value):
+        if value in EMPTY_VALUES:
+            return qs
+
+        ordering = [self.get_ordering_value(param) for param in value]
+        return qs.order_by(*ordering)
 
 
 class ArrayFilter(BaseCSVFilter, AutoFilter):
