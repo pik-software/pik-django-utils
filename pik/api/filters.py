@@ -66,7 +66,10 @@ class StandardizedOrderingFilter(DRFOrderingFilter):
 
 
 class NullsLastOrderingFilter(OrderingFilter):
-    """ Use Django 1.11 nulls_last feature to force nulls to bottom in all orderings. """
+    """
+    Use Django 1.11 nulls_last feature to force nulls
+    to bottom in all orderings.
+    """
 
     def get_ordering_value(self, param):
         descending = param.startswith("-")
