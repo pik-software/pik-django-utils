@@ -1,6 +1,6 @@
 import coreapi
 from django.contrib.postgres.fields import ArrayField
-from django.db.models import DateTimeField, Value
+from django.db.models import DateTimeField, F, Value
 from django.db.models.functions import Lower, NullIf
 from django_filters import OrderingFilter
 from django_filters.constants import EMPTY_VALUES
@@ -71,11 +71,17 @@ class NullsLastOrderingFilter(OrderingFilter):
     to bottom in all orderings.
     """
 
+    def get_field_type(self, field_name):
+        return self.model._meta.get_field(field_name).get_internal_type()  # noqa protected-access
+
     def get_ordering_value(self, param):
         descending = param.startswith("-")
         param = param[1:] if descending else param
         field_name = self.param_map.get(param, param)
-        ordering_field = Lower(NullIf(field_name, Value('')))
+        if self.get_field_type(field_name) == 'CharField':
+            ordering_field = Lower(NullIf(field_name, Value('')))
+        else:
+            ordering_field = F(field_name)
 
         return (ordering_field.desc(nulls_last=True) if descending
                 else ordering_field.asc(nulls_last=True))
