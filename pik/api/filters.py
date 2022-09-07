@@ -3,9 +3,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.db.models import DateTimeField, F, Value
 from django.db.models.functions import Lower, NullIf
 from django_filters import OrderingFilter
-from django_filters.constants import EMPTY_VALUES
-from rest_framework.filters import (
-    OrderingFilter as DRFOrderingFilter, SearchFilter)
+from rest_framework.filters import SearchFilter
 from rest_framework_filters import (
     FilterSet, BaseCSVFilter, AutoFilter, IsoDateTimeFilter, BooleanFilter, )
 from rest_framework_filters.backends import RestFrameworkFilterBackend
@@ -61,24 +59,24 @@ class StandardizedSearchFilter(StandardizedAPISearchIndex, SearchFilter):
     pass
 
 
-class StandardizedOrderingFilter(DRFOrderingFilter):
-    pass
-
-
-class NullsLastOrderingFilter(OrderingFilter):
+class NullsLastOrderMixIn:
     """
     Use Django 1.11 nulls_last feature to force nulls
     to bottom in all orderings.
     """
 
-    def get_field_type(self, field_name):
-        return self.model._meta.get_field(field_name).get_internal_type()  # noqa protected-access
+    def __init__(self, *args, nulls_last_fields=(), **kwargs):
+        self.nulls_last_fields = set(nulls_last_fields)
+        super().__init__(*args, **kwargs)
 
     def get_ordering_value(self, param):
+        if param not in self.nulls_last_fields:
+            return super().get_ordering_value(param)
+
         descending = param.startswith("-")
         param = param[1:] if descending else param
         field_name = self.param_map.get(param, param)
-        if self.get_field_type(field_name) == 'CharField':
+        if self._get_field_type(field_name) == 'CharField':
             ordering_field = Lower(NullIf(field_name, Value('')))
         else:
             ordering_field = F(field_name)
@@ -86,12 +84,12 @@ class NullsLastOrderingFilter(OrderingFilter):
         return (ordering_field.desc(nulls_last=True) if descending
                 else ordering_field.asc(nulls_last=True))
 
-    def filter(self, qs, value):
-        if value in EMPTY_VALUES:
-            return qs
+    def _get_field_type(self, field_name):
+        return self.model._meta.get_field(field_name).get_internal_type()  # noqa protected-access
 
-        ordering = [self.get_ordering_value(param) for param in value]
-        return qs.order_by(*ordering)
+
+class StandardizedOrderingFilter(NullsLastOrderMixIn, OrderingFilter):
+    pass
 
 
 class ArrayFilter(BaseCSVFilter, AutoFilter):
