@@ -285,7 +285,21 @@ class MethodTagAutoSchema(AutoSchema):
         return super().get_tags(path, method)
 
 
+class CustomizableViewSchemaMixIn:
+    def get_operation(self, path, method):
+        operation = super().get_operation(path, method)
+        if hasattr(self.view, 'update_schema'):
+            operation = self._update_operation(operation)
+        return operation
+
+    def _update_operation(self, operation):
+        if callable(self.view.update_schema):
+            return self.view.update_schema(operation)
+        return deepmerge(self.view.update_schema, operation)
+
+
 class PIKAutoSchema(
+        CustomizableViewSchemaMixIn,
         CustomizableSerializerAutoSchema,
         JSONFieldAutoSchema,
         ListFieldAutoSchema,
