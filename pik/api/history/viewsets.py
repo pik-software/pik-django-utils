@@ -10,8 +10,8 @@ from .serializers import get_history_serializer_class
 
 class HistoryViewSetBase(ListModelMixin, GenericViewSet):
     pagination_class = StandardizedCursorPagination
-    ordering = ('-updated', )
-    ordering_fields = ('updated', 'uid', )
+    ordering = ('-history_date', )
+    ordering_fields = ('updated', 'uid', 'history_date')
 
     serializer_class = None
     filterset_class = None
