@@ -2,15 +2,14 @@ from rest_framework.mixins import ListModelMixin
 from rest_framework.viewsets import GenericViewSet
 
 from ..filters import StandardizedFieldFilters, StandardizedSearchFilter
-from ..pagination import StandardizedCursorPagination
+from ..pagination import HistoryStandardizedCursorPagination
 
 from .filters import get_history_filterset_class
 from .serializers import get_history_serializer_class
 
 
 class HistoryViewSetBase(ListModelMixin, GenericViewSet):
-    pagination_class = StandardizedCursorPagination
-    ordering = ('-history_date', )
+    pagination_class = HistoryStandardizedCursorPagination
     ordering_fields = ('updated', 'uid', 'history_date')
 
     serializer_class = None
