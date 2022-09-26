@@ -160,6 +160,7 @@ class SoftDeletedStandardizedFilterSet(StandardizedFilterSet):
         ('created', 'created'),
         ('version', 'version'),
         ('deleted', 'deleted'),
+        ('uid', 'name')
     ))
     is_deleted = BooleanQuerySetFilter(
         on_true='is_deleted', on_false='is_not_deleted')
