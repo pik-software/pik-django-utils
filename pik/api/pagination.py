@@ -11,6 +11,10 @@ class StandardizedCursorPagination(CursorPagination):
     max_page_size = 1000
 
 
+class HistoryStandardizedCursorPagination(StandardizedCursorPagination):
+    ordering = '-history_date'
+
+
 class StandardizedPagination(PageNumberPagination):
     """
     Example: http://api.example.org/accounts/?page=4&page_size=100
