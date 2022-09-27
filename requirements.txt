@@ -1,7 +1,7 @@
 # Django
 Django<4.0.0
 django-simple-history
-djangorestframework
+djangorestframework<3.14.0
 django-restql
 django-filter
 djangorestframework-filters==1.0.0.dev0  # TODO: move to 1.0.0.dev2
