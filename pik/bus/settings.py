@@ -90,3 +90,50 @@ class LogstashBusLoggingSettingsExtender:
             ssl_verify=True,
             username=self._username,
             password=self._password)}
+
+
+class ConsumerBusSettingExtender:
+    __ALL__ = '__ALL__'
+
+    def __init__(self, settings, serializers):
+        self._settings = settings
+        self._serializers = serializers
+        self._rabbitmq_account_name = getattr(
+            self._settings, 'RABBITMQ_ACCOUNT_NAME', '')
+        self._rabbitmq_consumes = getattr(
+            self._settings, 'RABBITMQ_CONSUMES', '')
+        self._rabbitmq_consumes_all = getattr(
+            self._settings, 'RABBITMQ_CONSUMES_ALL', False)
+        if self._is_rabbitmq_consumes_all_not_set:
+            self._settings.RABBITMQ_CONSUMES_ALL = True
+
+    @property
+    def _is_rabbitmq_account_name_set(self):
+        return bool(self._rabbitmq_account_name)
+
+    @property
+    def _is_rabbitmq_consumes_set_all(self):
+        return bool(
+            (isinstance(self._rabbitmq_consumes, str)
+             and self._rabbitmq_consumes.lower() == self.__ALL__.lower())
+            or self._rabbitmq_consumes_all)
+
+    @property
+    def _is_rabbitmq_consumes_all_not_set(self):
+        return bool(
+            not self._rabbitmq_consumes_all
+            and self._is_rabbitmq_consumes_set_all)
+
+    @property
+    def _is_rabbitmq_consumes_rewrite_condition(self):
+        return bool(
+                self._is_rabbitmq_account_name_set
+                and self._is_rabbitmq_consumes_set_all)
+
+    def extend(self):
+        if self._is_rabbitmq_consumes_rewrite_condition:
+            self._settings.RABBITMQ_CONSUMES = {
+                (f'{self._rabbitmq_account_name}.'
+                 f'{queue.partition("Serializer")[0]}'):
+                f'{serializer.__module__}.{serializer.__name__}'
+                for queue, serializer in self._serializers.items()}

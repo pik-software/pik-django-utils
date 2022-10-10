@@ -2,12 +2,14 @@ from functools import reduce
 from operator import or_
 from typing import Dict
 
+from django.conf import settings
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
-from django.conf import settings
 from django_filters.conf import is_callable
 from rest_framework.fields import Field
 from rest_framework.serializers import ModelSerializer, SerializerMetaclass
+
+from pik.bus.settings import ConsumerBusSettingExtender
 
 
 class LazySerializerRegistrationConflict(Exception):
@@ -132,6 +134,7 @@ class ModelSerializerRegistratorMetaclass(SerializerMetaclass):
             raise LazySerializerRegistrationConflict(
                 (new, cls.SERIALIZERS[name]))
         cls.SERIALIZERS[name] = new
+        ConsumerBusSettingExtender(settings, cls.SERIALIZERS).extend()
         return new
 
 
