@@ -127,8 +127,8 @@ class ConsumerBusSettingExtender:
     @property
     def _is_rabbitmq_consumes_rewrite_condition(self):
         return bool(
-                self._is_rabbitmq_account_name_set
-                and self._is_rabbitmq_consumes_set_all)
+            self._is_rabbitmq_account_name_set
+            and self._is_rabbitmq_consumes_set_all)
 
     def extend(self):
         if self._is_rabbitmq_consumes_rewrite_condition:
