@@ -119,7 +119,8 @@ class MessageProducer:
             self.transaction_guid = None
 
     def _send_transaction_messages(self):
-        for envelope, exchange, routing_key in self._transaction_messages or []:
+        messages = self._transaction_messages or []
+        for envelope, exchange, routing_key in messages:
             if len(self._transaction_messages) > 1:
                 envelope.setdefault('headers', {})
                 envelope['headers']['transactionGUID'] = self.transaction_guid
