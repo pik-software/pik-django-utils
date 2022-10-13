@@ -71,9 +71,9 @@ class MessageProducer:
         channel.confirm_delivery()
         return channel
 
-    def _publish(self, exchange, envelope):
+    def _publish(self, envelope, exchange='', routing_key=''):
         self._channel.basic_publish(
-            exchange=exchange, routing_key='',
+            exchange=exchange, routing_key=routing_key,
             body=self.renderer_class().render(envelope))
 
     @retry(
@@ -85,9 +85,9 @@ class MessageProducer:
         after=after_fail_retry,
         reraise=True,
     )
-    def _produce(self, exchange, envelope):
+    def _produce(self, envelope, exchange, routing_key):
         try:
-            self._publish(exchange, envelope)
+            self._publish(envelope, exchange, routing_key)
         except ChannelClosedByBroker as error:
             self._capture_event(envelope, success=False, error=error)
             if error.reply_code != spec.SYNTAX_ERROR:
@@ -98,11 +98,12 @@ class MessageProducer:
         else:
             self._capture_event(envelope, success=True, error=None)
 
-    def produce(self, exchange, envelope):
+    def produce(self, envelope, exchange='', routing_key=''):
         if self._transaction_messages is not None:
-            self._transaction_messages.append((exchange, envelope))
+            self._transaction_messages.append((
+                envelope, exchange, routing_key))
             return
-        self._produce(exchange, envelope)
+        self._produce(envelope, exchange, routing_key)
 
     def start_transaction(self):
         if self._transaction_messages is not None:
@@ -118,13 +119,14 @@ class MessageProducer:
             self.transaction_guid = None
 
     def _send_transaction_messages(self):
-        for exchange, envelope in self._transaction_messages or []:
+        messages = self._transaction_messages or []
+        for envelope, exchange, routing_key in messages:
             if len(self._transaction_messages) > 1:
                 envelope.setdefault('headers', {})
                 envelope['headers']['transactionGUID'] = self.transaction_guid
                 envelope['headers']['transactionMessageCount'] = len(
                     self._transaction_messages)
-            self._produce(exchange, envelope)
+            self._produce(envelope, exchange, routing_key)
 
     def _capture_event(self, envelope, **kwargs):
         entity_guid = envelope.get('message', {}).get('guid')
@@ -186,7 +188,10 @@ class InstanceHandler:
         else:
             self._capture_event(success=True, error=None)
 
-        self._producer.produce(self._exchange, envelope)
+        self._produce(envelope)
+
+    def _produce(self, envelope):
+        self._producer.produce(envelope, exchange=self._exchange)
 
     def _capture_event(self, **kwargs):
         try:
@@ -259,6 +264,9 @@ class InstanceHandler:
 @receiver(post_save)
 def push_model_instance_to_rabbit_queue(instance, **kwargs):
     if not settings.RABBITMQ_PRODUCER_ENABLE:
+        return
+    # For signal from migration.
+    if instance.__module__ == '__fake__':
         return
     try:
         InstanceHandler(instance, mdm_event_captor, producer).handle()

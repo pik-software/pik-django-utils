@@ -6,8 +6,8 @@ from django.utils.translation import gettext_lazy as _
 from django_restql.mixins import DynamicFieldsMixin
 from rest_framework import serializers
 from rest_framework.fields import (
-    ChoiceField, JSONField, MultipleChoiceField, SerializerMethodField,
-    NullBooleanField, _UnvalidatedField, )
+    ChoiceField, JSONField, MultipleChoiceField,
+    SerializerMethodField, _UnvalidatedField, )
 from rest_framework.serializers import ModelSerializer
 from rest_framework.schemas.openapi import AutoSchema, SchemaGenerator
 # TODO: klimenkoas: Drop `drf_yasg` dependency
@@ -125,15 +125,6 @@ class DeprecatedFieldAutoSchema(AutoSchema):
         if is_deprecated_as_field or is_deprecated:
             schema['deprecated'] = True
         return schema
-
-
-class BooleanFieldAutoSchema(AutoSchema):
-    """ Adds NullBooleanField schema support """
-
-    def map_field(self, field):
-        if isinstance(field, NullBooleanField):
-            return {'type': 'boolean'}
-        return super().map_field(field)
 
 
 class DeprecatedSerializerAutoSchema(AutoSchema):
@@ -285,11 +276,24 @@ class MethodTagAutoSchema(AutoSchema):
         return super().get_tags(path, method)
 
 
+class CustomizableViewSchemaMixIn:
+    def get_operation(self, path, method):
+        operation = super().get_operation(path, method)
+        if hasattr(self.view, 'update_schema'):
+            operation = self._update_operation(operation)
+        return operation
+
+    def _update_operation(self, operation):
+        if callable(self.view.update_schema):
+            return self.view.update_schema(operation)
+        return deepmerge(self.view.update_schema, operation)
+
+
 class PIKAutoSchema(
+        CustomizableViewSchemaMixIn,
         CustomizableSerializerAutoSchema,
         JSONFieldAutoSchema,
         ListFieldAutoSchema,
-        BooleanFieldAutoSchema,
         ReferenceAutoSchema,
         TypedSerializerAutoSchema,
         EnumNamesAutoSchema,

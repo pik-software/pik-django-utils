@@ -31,22 +31,22 @@ def test_transaction_decorator():
 @patch("pik.bus.producer.MessageProducer._publish", Mock())
 def test_transaction_publish_single():
     with MDMTransaction():
-        producer.produce(None, {})
+        producer.produce({}, 'exchange')
     assert  producer._publish.call_args_list == [  # noqa: protect-access
-        call(None, {})]
+        call({}, 'exchange', '')]
 
 
 @patch("pik.bus.producer.uuid.uuid4", Mock(return_value='0ABC..'))
 @patch("pik.bus.producer.MessageProducer._publish", Mock())
 def test_transaction_publish_multiple():
     with MDMTransaction():
-        producer.produce(None, {})
-        producer.produce(None, {})
+        producer.produce({}, 'exchange')
+        producer.produce({}, 'exchange')
     assert  producer._publish.call_args_list == [  # noqa: protect-access
-        call(None, {'headers': {
-            'transactionGUID': '0ABC..', 'transactionMessageCount': 2}}),
-        call(None, {'headers': {
-            'transactionGUID': '0ABC..', 'transactionMessageCount': 2}})]
+        call({'headers': {
+            'transactionGUID': '0ABC..', 'transactionMessageCount': 2}}, 'exchange', ''),
+        call({'headers': {
+            'transactionGUID': '0ABC..', 'transactionMessageCount': 2}}, 'exchange', '')]
 
 
 @override_settings(RABBITMQ_PRODUCES={
@@ -119,8 +119,8 @@ def test_publication_event_ok():
 @patch('pik.bus.producer.MessageProducer._capture_event', Mock())
 def test_transaction_publication_event_ok():
     with MDMTransaction():
-        producer.produce(None, {'message': 1})
-        producer.produce(None, {'message': 2})
+        producer.produce({'message': 1}, 'exchange')
+        producer.produce({'message': 2}, 'exchange')
         assert MessageProducer._capture_event.call_args_list == []  # noqa: protect-access
     expected = [
         call({'headers': {
@@ -140,8 +140,8 @@ def test_transaction_publication_event_ok():
 def test_transaction_publication_event_fail():
     with pytest.raises(ZeroDivisionError):
         with MDMTransaction():
-            producer.produce(None, {'message': 1})
-            producer.produce(None, {'message': 2})
+            producer.produce({'message': 1}, 'exchange')
+            producer.produce({'message': 2}, 'exchange')
             assert producer._capture_event.call_args_list == []  # noqa: protect-access
     assert producer._transaction_messages is None  # noqa: protected-access
     expected = pformat([
@@ -164,7 +164,8 @@ def test_nested_transaction_fail():
 @patch('pik.bus.producer.MessageProducer._capture_event', Mock())
 def test_single_transaction_event():
     with MDMTransaction():
-        producer.produce(None, {'message': 1})
-    assert producer._publish.call_args_list == [call(None, {'message': 1})]  # noqa: protected-access
+        producer.produce({'message': 1}, 'exchange')
+    assert producer._publish.call_args_list == [  # noqa: protected-access
+        call({'message': 1}, 'exchange', '')]
     assert producer._capture_event.call_args_list == [call(  # noqa: protected-access
         {'message': 1}, success=True, error=None)]
