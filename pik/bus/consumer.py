@@ -48,6 +48,10 @@ class MessageConsumer:
         self._queues = queues
         self._event_captor = event_captor
 
+    @staticmethod
+    def message_handler(body, queue, event_captor):
+        return MessageHandler(body, queue, event_captor)
+
     def consume(self):
         self._connect()
         self._config_channel()
@@ -76,7 +80,7 @@ class MessageConsumer:
     def _handle_message(self, channel, method, properties, body, queue):  # noqa: too-many-arguments
         logger.info(
             'Handling %s bytes message from %s queue', len(body), queue)
-        handler = MessageHandler(body, queue, mdm_event_captor)
+        handler = self.message_handler(body, queue, mdm_event_captor)
 
         envelope = {}
         try:
@@ -175,6 +179,13 @@ class MessageHandler:
         return self._get_serializer(self._queue)
 
     @classmethod
+    def get_queue_serializers(cls) -> dict:
+        return {
+            queue: import_string(serializer)
+            for queue, serializer in settings.RABBITMQ_CONSUMES.items()
+        }
+
+    @classmethod
     def _get_serializer(cls, queue):
         """
             Queue name to serializer mapping dict `{queue:  serializer, ... }`
@@ -183,10 +194,7 @@ class MessageHandler:
                 startup is redundant for other workers and tests
         """
         if cls._serializers is None:
-            cls._serializers = {
-                queue: import_string(serializer)
-                for queue, serializer in settings.RABBITMQ_CONSUMES.items()
-            }
+            cls._serializers = cls.get_queue_serializers()
         if not cls._serializers or queue not in cls._serializers:  # noqa: unsupported-membership-test
             raise QueueSerializerMissingException(
                 f'Unable to find serializer for {queue}')
