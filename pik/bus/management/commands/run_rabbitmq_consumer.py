@@ -13,14 +13,6 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     help = 'Starts worker, which consumes messages from rabbitmq queue.'
 
-    @staticmethod
-    def _do_nothing():
-        loop = asyncio.get_event_loop()
-        try:
-            loop.run_forever()
-        finally:
-            loop.close()
-
     def handle(self, *args, **options):
         django.setup()
 
@@ -29,9 +21,23 @@ class Command(BaseCommand):
             # Do nothing to prevent the container from closing.
             self._do_nothing()
 
-        consumer_name = settings.RABBITMQ_ACCOUNT_NAME
-        queues = list(settings.RABBITMQ_CONSUMES.keys())
-        logger.info('Starting worker for queues %s"', queues)
+        logger.info('Starting worker for queues %s"', self.queues)
         MessageConsumer(
-            settings.RABBITMQ_URL, consumer_name, queues,
+            settings.RABBITMQ_URL, self.consumer_name, self.queues,
             mdm_event_captor).consume()
+
+    @staticmethod
+    def _do_nothing():
+        loop = asyncio.get_event_loop()
+        try:
+            loop.run_forever()
+        finally:
+            loop.close()
+
+    @property
+    def queues(self) -> list:
+        return list(settings.RABBITMQ_CONSUMES.keys())
+
+    @property
+    def consumer_name(self) -> str:
+        return settings.RABBITMQ_ACCOUNT_NAME
