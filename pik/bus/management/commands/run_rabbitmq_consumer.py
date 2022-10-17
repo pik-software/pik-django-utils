@@ -12,6 +12,24 @@ logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
     help = 'Starts worker, which consumes messages from rabbitmq queue.'
+    _message_consumer = MessageConsumer
+
+    def handle(self, *args, **options):
+        django.setup()
+
+        if not self._is_rabbitmq_enabled:
+            logger.warning('RABBITMQ_CONSUMER_ENABLE is set to False')
+            # Do nothing to prevent the container from closing.
+            self._do_nothing()
+
+        logger.info('Starting worker for queues %s"', self.queues)
+        self._message_consumer(
+            self.rabbitmq_url, self.consumer_name, self.queues,
+            self.event_captor).consume()
+
+    @staticmethod
+    def _is_rabbitmq_enabled():
+        return settings.RABBITMQ_CONSUMER_ENABLE
 
     @staticmethod
     def _do_nothing():
@@ -21,17 +39,18 @@ class Command(BaseCommand):
         finally:
             loop.close()
 
-    def handle(self, *args, **options):
-        django.setup()
+    @property
+    def rabbitmq_url(self) -> str:
+        return settings.RABBITMQ_URL
 
-        if not settings.RABBITMQ_CONSUMER_ENABLE:
-            logger.warning('RABBITMQ_CONSUMER_ENABLE is set to False')
-            # Do nothing to prevent the container from closing.
-            self._do_nothing()
+    @property
+    def consumer_name(self) -> str:
+        return settings.RABBITMQ_ACCOUNT_NAME
 
-        consumer_name = settings.RABBITMQ_ACCOUNT_NAME
-        queues = list(settings.RABBITMQ_CONSUMES.keys())
-        logger.info('Starting worker for queues %s"', queues)
-        MessageConsumer(
-            settings.RABBITMQ_URL, consumer_name, queues,
-            mdm_event_captor).consume()
+    @property
+    def queues(self) -> list:
+        return list(settings.RABBITMQ_CONSUMES.keys())
+
+    @property
+    def event_captor(self):
+        return mdm_event_captor
