@@ -27,86 +27,14 @@ class BusQueueNotFound(Exception):
     pass
 
 
+class QueueSerializerMissingException(Exception):
+    pass
+
+
 def log_after_retry_connect(retry_state):
     logger.warning(
         'Connecting to RabbitMQ. Attempt number: %s',
         retry_state.attempt_number)
-
-
-class MessageConsumer:
-    RECONNECT_WAIT = 1
-    PREFETCH_COUNT = 1
-
-    _consumer_name = None
-    _connection_url = None
-    _queues = None
-    _channel = None
-
-    def __init__(self, connection_url, consumer_name, queues, event_captor):
-        self._consumer_name = consumer_name
-        self._connection_url = connection_url
-        self._queues = queues
-        self._event_captor = event_captor
-
-    @staticmethod
-    def message_handler(body, queue, event_captor):
-        return MessageHandler(body, queue, event_captor)
-
-    def consume(self):
-        self._connect()
-        self._config_channel()
-        self._bind_queues()
-        self._channel.start_consuming()
-
-    @retry(
-        wait=wait_fixed(RECONNECT_WAIT),
-        retry=retry_if_exception_type(AMQPConnectionError),
-        after=log_after_retry_connect)
-    def _connect(self):
-        self._channel = BlockingConnection(URLParameters(
-            self._connection_url)).channel()
-
-    def _config_channel(self):
-        self._channel.basic_qos(prefetch_count=self.PREFETCH_COUNT)
-        self._channel.confirm_delivery()
-
-    def _bind_queues(self):
-        for queue in self._queues:
-            logger.info('Starting %s queue consumer', queue)
-            self._channel.basic_consume(
-                on_message_callback=partial(self._handle_message, queue=queue),
-                queue=queue)
-
-    def _handle_message(self, channel, method, properties, body, queue):  # noqa: too-many-arguments
-        logger.info(
-            'Handling %s bytes message from %s queue', len(body), queue)
-        handler = self.message_handler(body, queue, mdm_event_captor)
-
-        envelope = {}
-        try:
-            envelope = handler.envelope
-            handler.handle()
-        except Exception as error:  # noqa: too-broad-except
-            self._capture_event(envelope, success=False, error=error)
-            channel.basic_nack(delivery_tag=method.delivery_tag)
-            return
-        else:
-            channel.basic_ack(delivery_tag=method.delivery_tag)
-            self._capture_event(envelope, success=True, error=None)
-
-    def _capture_event(self, envelope, **kwargs):
-        self._event_captor.capture(
-            event='consumption',
-            entity_type=envelope.get('message', {}).get('type'),
-            entity_guid=envelope.get('message', {}).get('guid'),
-            transactionGUID=envelope.get('headers', {}).get('transactionGUID'),
-            transactionMessageCount=envelope.get(
-                'headers', {}).get('transactionMessageCount'),
-            **kwargs)
-
-
-class QueueSerializerMissingException(Exception):
-    pass
 
 
 class MessageHandler:
@@ -266,5 +194,74 @@ class MessageHandler:
             transactionGUID=self.envelope.get(
                 'headers', {}).get('transactionGUID'),
             transactionMessageCount=self.envelope.get(
+                'headers', {}).get('transactionMessageCount'),
+            **kwargs)
+
+
+class MessageConsumer:
+    RECONNECT_WAIT = 1
+    PREFETCH_COUNT = 1
+
+    _consumer_name = None
+    _connection_url = None
+    _queues = None
+    _channel = None
+    _handler = MessageHandler
+
+    def __init__(self, connection_url, consumer_name, queues, event_captor):
+        self._consumer_name = consumer_name
+        self._connection_url = connection_url
+        self._queues = queues
+        self._event_captor = event_captor
+
+    def consume(self):
+        self._connect()
+        self._config_channel()
+        self._bind_queues()
+        self._channel.start_consuming()
+
+    @retry(
+        wait=wait_fixed(RECONNECT_WAIT),
+        retry=retry_if_exception_type(AMQPConnectionError),
+        after=log_after_retry_connect)
+    def _connect(self):
+        self._channel = BlockingConnection(URLParameters(
+            self._connection_url)).channel()
+
+    def _config_channel(self):
+        self._channel.basic_qos(prefetch_count=self.PREFETCH_COUNT)
+        self._channel.confirm_delivery()
+
+    def _bind_queues(self):
+        for queue in self._queues:
+            logger.info('Starting %s queue consumer', queue)
+            self._channel.basic_consume(
+                on_message_callback=partial(self._handle_message, queue=queue),
+                queue=queue)
+
+    def _handle_message(self, channel, method, properties, body, queue):  # noqa: too-many-arguments
+        logger.info(
+            'Handling %s bytes message from %s queue', len(body), queue)
+        handler = self._handler(body, queue, mdm_event_captor)
+
+        envelope = {}
+        try:
+            envelope = handler.envelope
+            handler.handle()
+        except Exception as error:  # noqa: too-broad-except
+            self._capture_event(envelope, success=False, error=error)
+            channel.basic_nack(delivery_tag=method.delivery_tag)
+            return
+        else:
+            channel.basic_ack(delivery_tag=method.delivery_tag)
+            self._capture_event(envelope, success=True, error=None)
+
+    def _capture_event(self, envelope, **kwargs):
+        self._event_captor.capture(
+            event='consumption',
+            entity_type=envelope.get('message', {}).get('type'),
+            entity_guid=envelope.get('message', {}).get('guid'),
+            transactionGUID=envelope.get('headers', {}).get('transactionGUID'),
+            transactionMessageCount=envelope.get(
                 'headers', {}).get('transactionMessageCount'),
             **kwargs)
