@@ -232,12 +232,15 @@ class MessageConsumer:
         self._channel.basic_qos(prefetch_count=self.PREFETCH_COUNT)
         self._channel.confirm_delivery()
 
+    def _bind_queue(self, queue):
+        logger.info('Starting %s queue consumer', queue)
+        self._channel.basic_consume(
+            on_message_callback=partial(self._handle_message, queue=queue),
+            queue=queue)
+
     def _bind_queues(self):
         for queue in self._queues:
-            logger.info('Starting %s queue consumer', queue)
-            self._channel.basic_consume(
-                on_message_callback=partial(self._handle_message, queue=queue),
-                queue=queue)
+            self._bind_queue(queue)
 
     def _handle_message(self, channel, method, properties, body, queue):  # noqa: too-many-arguments
         logger.info(
