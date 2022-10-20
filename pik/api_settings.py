@@ -6,7 +6,7 @@ from rest_framework.settings import APISettings
 USER_SETTINGS = getattr(settings, "JSON_CAMEL_CASE", {})
 
 DEFAULTS = {
-    "RENDERER_CLASS": "rest_framework.renderers.JSONRenderer",
+    "RENDERER_CLASS": "pik.api.renderers.DecimalJSONRenderer",
     "PARSER_CLASS": "rest_framework.parsers.JSONParser",
     "JSON_UNDERSCORIZE": {"ignore_fields": None, "lower_camel_case": False},
 }
