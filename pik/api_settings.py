@@ -7,7 +7,7 @@ USER_SETTINGS = getattr(settings, "JSON_CAMEL_CASE", {})
 
 DEFAULTS = {
     "RENDERER_CLASS": "pik.api.renderers.DecimalJSONRenderer",
-    "PARSER_CLASS": "rest_framework.parsers.JSONParser",
+    "PARSER_CLASS": "pik.api.parsers.DecimalJSONParser",
     "JSON_UNDERSCORIZE": {"ignore_fields": None, "lower_camel_case": False},
 }
 
