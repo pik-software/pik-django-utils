@@ -14,9 +14,11 @@ def encode_fakestr(func):
     return wrap
 
 
-json.encoder.encode_basestring = encode_fakestr(json.encoder.encode_basestring)
-json.encoder.encode_basestring_ascii = encode_fakestr(
-    json.encoder.encode_basestring_ascii)
+if __name__ == '__main__':
+    json.encoder.encode_basestring = encode_fakestr(
+        json.encoder.encode_basestring)
+    json.encoder.encode_basestring_ascii = encode_fakestr(
+        json.encoder.encode_basestring_ascii)
 
 
 class FakeStr(str):
