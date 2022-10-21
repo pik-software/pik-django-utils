@@ -16,10 +16,9 @@ IMPORT_STRINGS = ("RENDERER_CLASS", "PARSER_CLASS")
 
 VALID_SETTINGS = {
     "RENDERER_CLASS": (
-        "rest_framework.renderers.JSONRenderer",
-        "rest_framework.renderers.UnicodeJSONRenderer",
+        "pik.api.renderers.DecimalJSONRenderer",
     ),
-    "PARSER_CLASS": ("rest_framework.parsers.JSONParser",),
+    "PARSER_CLASS": ("pik.api.parsers.DecimalJSONParser",),
 }
 
 
