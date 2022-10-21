@@ -7,10 +7,10 @@ from rest_framework.utils import encoders
 
 
 def encode_fakestr(func):
-    def wrap(s):
-        if isinstance(s, FakeStr):
-            return repr(s)
-        return func(s)
+    def wrap(obj):
+        if isinstance(obj, FakeStr):
+            return repr(obj)
+        return func(obj)
     return wrap
 
 
@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
 
 class FakeStr(str):
-    def __init__(self, value):
+    def __init__(self, value):  # noqa: pylint=super-init-not-called
         self._value = value
 
     def __repr__(self):
@@ -30,10 +30,10 @@ class FakeStr(str):
 
 
 class DecimalJSONEncoder(encoders.JSONEncoder):
-    def default(self, o):
-        if isinstance(o, Decimal):
-            return FakeStr(o)
-        return super().default(o)
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return FakeStr(obj)
+        return super().default(obj)
 
 
 class DecimalJSONRenderer(JSONRenderer):

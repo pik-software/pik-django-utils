@@ -22,4 +22,4 @@ class DecimalJSONParser(JSONParser):
                 decoded_stream, parse_constant=parse_constant,
                 parse_float=Decimal)
         except ValueError as exc:
-            raise ParseError('JSON parse error - %s' % str(exc))
+            raise ParseError(f'JSON parse error - {exc}') from exc
