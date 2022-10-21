@@ -14,20 +14,9 @@ def encode_fakestr(func):
     return wrap
 
 
-if __name__ == '__main__':
-    try:
-        from _json import encode_basestring_ascii as c_encode_basestring_ascii
-    except ImportError:
-        c_encode_basestring_ascii = None
-    try:
-        from _json import encode_basestring as c_encode_basestring
-    except ImportError:
-        c_encode_basestring = None
-
-    json.encoder.encode_basestring = encode_fakestr(
-        c_encode_basestring or json.encoder.py_encode_basestring)
-    json.encoder.encode_basestring_ascii = encode_fakestr(
-        c_encode_basestring_ascii or json.encoder.py_encode_basestring_ascii)
+json.encoder.encode_basestring = encode_fakestr(json.encoder.encode_basestring)
+json.encoder.encode_basestring_ascii = encode_fakestr(
+    json.encoder.encode_basestring_ascii)
 
 
 class FakeStr(str):
