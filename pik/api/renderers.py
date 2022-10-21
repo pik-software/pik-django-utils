@@ -8,7 +8,7 @@ from rest_framework.utils import encoders
 
 def encode_fakestr(func):
     def wrap(s):
-        if isinstance(s, fakestr):
+        if isinstance(s, FakeStr):
             return repr(s)
         return func(s)
     return wrap
@@ -19,7 +19,7 @@ json.encoder.encode_basestring_ascii = encode_fakestr(
     json.encoder.encode_basestring_ascii)
 
 
-class fakestr(str):  # noqa: pylint=N801 / class names should use CapWords convention
+class FakeStr(str):
     def __init__(self, value):
         self._value = value
 
@@ -30,7 +30,7 @@ class fakestr(str):  # noqa: pylint=N801 / class names should use CapWords conve
 class DecimalJSONEncoder(encoders.JSONEncoder):
     def default(self, o):
         if isinstance(o, Decimal):
-            return fakestr(o)
+            return FakeStr(o)
         return super().default(o)
 
 
