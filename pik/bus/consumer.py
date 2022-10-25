@@ -211,12 +211,12 @@ class MessageConsumer:
 
     def __init__(
             self, connection_url, consumer_name,
-            queues, event_captor, handler_class=MessageHandler):
+            queues, event_captor, message_handler=MessageHandler):
         self._consumer_name = consumer_name
         self._connection_url = connection_url
         self._queues = queues
         self._event_captor = event_captor
-        self._handler_class = handler_class
+        self._message_handler = message_handler
 
     def consume(self):
         self._connect()
@@ -249,7 +249,7 @@ class MessageConsumer:
     def _handle_message(self, channel, method, properties, body, queue):  # noqa: too-many-arguments
         logger.info(
             'Handling %s bytes message from %s queue', len(body), queue)
-        handler = self._handler_class(body, queue, mdm_event_captor)
+        handler = self._message_handler(body, queue, mdm_event_captor)
 
         envelope = {}
         try:
