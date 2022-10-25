@@ -209,7 +209,7 @@ class MessageConsumer:
     _queues = None
     _channel = None
 
-    def __init__(
+    def __init__(  # noqa: pylint - too-many-arguments
             self, connection_url, consumer_name,
             queues, event_captor, message_handler=MessageHandler):
         self._consumer_name = consumer_name
@@ -325,8 +325,8 @@ class AllQueueMessageConsumer(MessageConsumer):
             except (  # noqa: pylint - invalid-name
                     ChannelWrongStateError,
                     ChannelClosed) as e:
-                logger.warning('Queue %s does`t exist. Exception: %s',
-                             queue, e)
+                logger.warning(
+                    'Queue %s does`t exist. Exception: %s', queue, e)
                 self._missing_queues.add(queue)
             else:
                 self._bind_queue(queue)
@@ -337,6 +337,8 @@ class AllQueueMessageConsumer(MessageConsumer):
                     pass
 
     def _bind_missing_queues(self):
+        logger.info(
+            'Trying to consume missing queues: %s', self._missing_queues)
         self._bind_queues(self._missing_queues)
 
     @retry(
