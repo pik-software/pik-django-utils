@@ -304,7 +304,7 @@ class AllQueueMessageConsumer(MessageConsumer):
             _channel = self._connection.channel()
             yield _channel
         except Exception as e:  # noqa: pylint - broad-except
-            logger.error('Cannot open another channel. Exception: %s', e)
+            logger.warning('Cannot open another channel. Exception: %s', e)
         finally:
             if _channel is not None:
                 _channel.close()
@@ -325,7 +325,7 @@ class AllQueueMessageConsumer(MessageConsumer):
             except (  # noqa: pylint - invalid-name
                     ChannelWrongStateError,
                     ChannelClosed) as e:
-                logger.error('Queue %s does`t exist. Exception: %s',
+                logger.warning('Queue %s does`t exist. Exception: %s',
                              queue, e)
                 self._missing_queues.add(queue)
             else:
