@@ -1,8 +1,11 @@
-import logging
 import asyncio
+import logging
+
 import django
 from django.conf import settings
 from django.core.management.base import BaseCommand
+from pika import URLParameters
+
 from pik.bus.consumer import MessageConsumer, MessageHandler
 from pik.bus.mdm import mdm_event_captor
 
@@ -48,7 +51,7 @@ class Command(BaseCommand):
 
     @property
     def consumer_name(self) -> str:
-        return settings.RABBITMQ_ACCOUNT_NAME
+        return URLParameters(settings.RABBITMQ_URL).credentials.username
 
     @property
     def queues(self) -> list:
