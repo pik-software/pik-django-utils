@@ -7,7 +7,7 @@ from rest_framework.utils import encoders
 
 def encode_fakestr(func):
     def wrap(obj):
-        if isinstance(obj, FakeStr):
+        if isinstance(obj, FakeDecimal):
             return repr(obj)
         return func(obj)
     return wrap
@@ -24,8 +24,8 @@ if __name__ == '__main__':
     monkeypatch_encode_basestring()
 
 
-class FakeStr(str):
-    def __init__(self, value):  # noqa: pylint=super-init-not-called
+class FakeDecimal(str):
+    def __init__(self, value: Decimal):  # noqa: pylint=super-init-not-called
         self._value = value
 
     def __repr__(self):
@@ -35,7 +35,7 @@ class FakeStr(str):
 class DecimalJSONEncoder(encoders.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Decimal):
-            return FakeStr(obj)
+            return FakeDecimal(obj)
         return super().default(obj)
 
 
