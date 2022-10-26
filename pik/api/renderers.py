@@ -1,8 +1,7 @@
 import json
 from decimal import Decimal
 
-from rest_framework.renderers import (
-    JSONRenderer)
+from rest_framework.renderers import JSONRenderer
 from rest_framework.utils import encoders
 
 
