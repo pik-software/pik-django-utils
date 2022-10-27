@@ -6,8 +6,8 @@ from rest_framework.settings import APISettings
 USER_SETTINGS = getattr(settings, "JSON_CAMEL_CASE", {})
 
 DEFAULTS = {
-    "RENDERER_CLASS": "rest_framework.renderers.JSONRenderer",
-    "PARSER_CLASS": "rest_framework.parsers.JSONParser",
+    "RENDERER_CLASS": "pik.api.renderers.DecimalJSONRenderer",
+    "PARSER_CLASS": "pik.api.parsers.DecimalJSONParser",
     "JSON_UNDERSCORIZE": {"ignore_fields": None, "lower_camel_case": False},
 }
 
@@ -16,10 +16,9 @@ IMPORT_STRINGS = ("RENDERER_CLASS", "PARSER_CLASS")
 
 VALID_SETTINGS = {
     "RENDERER_CLASS": (
-        "rest_framework.renderers.JSONRenderer",
-        "rest_framework.renderers.UnicodeJSONRenderer",
+        "pik.api.renderers.DecimalJSONRenderer",
     ),
-    "PARSER_CLASS": ("rest_framework.parsers.JSONParser",),
+    "PARSER_CLASS": ("pik.api.parsers.DecimalJSONParser",),
 }
 
 
