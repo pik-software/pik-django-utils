@@ -1,23 +1,27 @@
+import contextlib
 import io
 import logging
 from functools import partial
 from hashlib import sha1
+from typing import Set
 
 from django.conf import settings
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
-from rest_framework.parsers import JSONParser
 from pika import BlockingConnection, URLParameters
-from pika.exceptions import AMQPConnectionError
+from pika.exceptions import (
+    AMQPConnectionError, ChannelWrongStateError,
+    ChannelClosed, ChannelClosedByBroker)
+from rest_framework.parsers import JSONParser
 from tenacity import retry, retry_if_exception_type, wait_fixed
 
-from pik.bus.mdm import mdm_event_captor
-from pik.utils.sentry import capture_exception
-from pik.utils.case_utils import underscorize
 from pik.api.exceptions import extract_exception_data
+from pik.bus.mdm import mdm_event_captor
+from pik.bus.models import PIKMessageException
 from pik.core.shortcuts import update_or_create_object
-
-from .models import PIKMessageException
+from pik.utils.bus import LiveBlockingConnection
+from pik.utils.case_utils import underscorize
+from pik.utils.sentry import capture_exception
 
 
 logger = logging.getLogger(__name__)
@@ -206,13 +210,15 @@ class MessageConsumer:
     _connection_url = None
     _queues = None
     _channel = None
-    _handler = MessageHandler
 
-    def __init__(self, connection_url, consumer_name, queues, event_captor):
+    def __init__(  # noqa: pylint - too-many-arguments
+            self, connection_url, consumer_name,
+            queues, event_captor, message_handler=MessageHandler):
         self._consumer_name = consumer_name
         self._connection_url = connection_url
         self._queues = queues
         self._event_captor = event_captor
+        self._message_handler = message_handler
 
     def consume(self):
         self._connect()
@@ -245,7 +251,7 @@ class MessageConsumer:
     def _handle_message(self, channel, method, properties, body, queue):  # noqa: too-many-arguments
         logger.info(
             'Handling %s bytes message from %s queue', len(body), queue)
-        handler = self._handler(body, queue, mdm_event_captor)
+        handler = self._message_handler(body, queue, mdm_event_captor)
 
         envelope = {}
         try:
@@ -268,3 +274,87 @@ class MessageConsumer:
             transactionMessageCount=envelope.get(
                 'headers', {}).get('transactionMessageCount'),
             **kwargs)
+
+
+class AllQueueMessageConsumer(MessageConsumer):
+    """
+    Message consumer that includes queue existence checking
+    before consuming and periodical running function
+    that try to add missing queues.
+    """
+
+    RECONNECT_WAIT = 1
+    CALLBACK_WAIT = 300
+
+    _connection = None
+    _connection_class = LiveBlockingConnection
+    _missing_queues: Set[str] = set()
+    _existing_queues: Set[str] = set()
+
+    @contextlib.contextmanager
+    def _temp_channel(self):
+        """
+        Context manager that creates a temporary channel and
+        closes this one on exit from `with` block.
+        Using:
+        with self._temp_channel() as channel:
+            channel.queue_declare(...)
+        """
+
+        _channel = None
+        try:
+            _channel = self._connection.channel()
+            yield _channel
+        except ChannelClosedByBroker as e:  # noqa: pylint - invalid-name
+            logger.warning(
+                'Channel has already been closed by broker. Exception: %s', e)
+        except Exception as e:  # noqa: pylint - broad-except
+            logger.error('Cannot open another channel. Exception: %s', e)
+        finally:
+            if _channel is not None:
+                _channel.close()
+
+    def _bind_queue(self, queue):
+        logger.info('Starting %s queue consumer', queue)
+        self._channel.basic_consume(
+            on_message_callback=partial(self._handle_message, queue=queue),
+            queue=queue)
+        logger.info('%s queue consumer stared successfully', queue)
+
+    def _bind_queues(self, queues=None):  # noqa: pylint - arguments-differ
+        queues = self._queues if queues is None else queues.copy()
+        for queue in queues:
+            try:
+                with self._temp_channel() as channel:
+                    channel.queue_declare(queue, passive=True)
+            except (  # noqa: pylint - invalid-name
+                    ChannelWrongStateError,
+                    ChannelClosed) as e:
+                logger.warning(
+                    'Queue %s does`t exist. Exception: %s', queue, e)
+                self._missing_queues.add(queue)
+            else:
+                self._bind_queue(queue)
+                self._existing_queues.add(queue)
+                try:
+                    self._missing_queues.remove(queue)
+                except KeyError as e:  # noqa: pylint - invalid-name
+                    logger.warning(
+                        'Queue %s already removed from self._existing_queues.'
+                        ' Exception: %s', queue, e)
+
+    def _bind_missing_queues(self):
+        logger.info(
+            'Trying to consume missing queues: %s', self._missing_queues)
+        self._bind_queues(self._missing_queues)
+
+    @retry(
+        wait=wait_fixed(RECONNECT_WAIT),
+        retry=retry_if_exception_type(AMQPConnectionError),
+        after=log_after_retry_connect)
+    def _connect(self):
+        self._connection = self._connection_class(
+            URLParameters(self._connection_url),
+            periodic_callback=self._bind_missing_queues,
+            periodic_callback_interval=self.CALLBACK_WAIT)
+        self._channel = self._connection.channel()
