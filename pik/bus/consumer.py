@@ -333,8 +333,10 @@ class AllQueueMessageConsumer(MessageConsumer):
                 self._existing_queues.add(queue)
                 try:
                     self._missing_queues.remove(queue)
-                except KeyError:
-                    pass
+                except KeyError as e:
+                    logger.warning(
+                        'Queue %s already removed from self._existing_queues.'
+                        ' Exception: %s', queue, e)
 
     def _bind_missing_queues(self):
         logger.info(
