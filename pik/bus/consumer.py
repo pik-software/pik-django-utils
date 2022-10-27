@@ -287,8 +287,8 @@ class AllQueueMessageConsumer(MessageConsumer):
 
     _connection = None
     _connection_class = LiveBlockingConnection
-    _missing_queues = set()
-    _existing_queues = set()
+    _missing_queues: set = set()
+    _existing_queues: set = set()
 
     @contextlib.contextmanager
     def _temp_channel(self):
