@@ -3,6 +3,7 @@ import io
 import logging
 from functools import partial
 from hashlib import sha1
+from typing import Set
 
 from django.conf import settings
 from django.utils.functional import cached_property
@@ -287,8 +288,8 @@ class AllQueueMessageConsumer(MessageConsumer):
 
     _connection = None
     _connection_class = LiveBlockingConnection
-    _missing_queues: set = set()
-    _existing_queues: set = set()
+    _missing_queues: Set[str] = set()
+    _existing_queues: Set[str] = set()
 
     @contextlib.contextmanager
     def _temp_channel(self):
