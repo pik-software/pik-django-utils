@@ -333,7 +333,7 @@ class AllQueueMessageConsumer(MessageConsumer):
                 self._existing_queues.add(queue)
                 try:
                     self._missing_queues.remove(queue)
-                except KeyError as e:
+                except KeyError as e:  # noqa: pylint - invalid-name
                     logger.warning(
                         'Queue %s already removed from self._existing_queues.'
                         ' Exception: %s', queue, e)
