@@ -9,8 +9,8 @@ from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
 from pika import BlockingConnection, URLParameters
 from pika.exceptions import (
-    AMQPConnectionError, ChannelWrongStateError, ChannelClosed,
-    ChannelClosedByBroker)
+    AMQPConnectionError, ChannelWrongStateError,
+    ChannelClosed, ChannelClosedByBroker)
 from rest_framework.parsers import JSONParser
 from tenacity import retry, retry_if_exception_type, wait_fixed
 
@@ -304,7 +304,7 @@ class AllQueueMessageConsumer(MessageConsumer):
         try:
             _channel = self._connection.channel()
             yield _channel
-        except ChannelClosedByBroker as e:
+        except ChannelClosedByBroker as e:  # noqa: pylint - invalid-name
             logger.warning(
                 'Channel has already been closed by broker. Exception: %s', e)
         except Exception as e:  # noqa: pylint - broad-except
