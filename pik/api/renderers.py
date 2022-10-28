@@ -13,15 +13,10 @@ def encode_fakestr(func):
     return wrap
 
 
-def monkeypatch_encode_basestring():
-    json.encoder.encode_basestring = encode_fakestr(  # type: ignore
-        json.encoder.encode_basestring)  # type: ignore
-    json.encoder.encode_basestring_ascii = encode_fakestr(  # type: ignore
-        json.encoder.encode_basestring_ascii)  # type: ignore
-
-
-if __name__ == '__main__':
-    monkeypatch_encode_basestring()
+json.encoder.encode_basestring = encode_fakestr(  # type: ignore
+    json.encoder.encode_basestring)  # type: ignore
+json.encoder.encode_basestring_ascii = encode_fakestr(  # type: ignore
+    json.encoder.encode_basestring_ascii)  # type: ignore
 
 
 class FakeDecimal(str):
