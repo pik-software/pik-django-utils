@@ -43,7 +43,7 @@ class TestMessageHandlerFetch:
         assert handler._payload == {}  # noqa: protected-access
 
     @staticmethod
-    def test__invalid_json():
+    def test_invalid_json():
         handler = MessageHandler(
             b'', Mock(name='queue'), Mock(name='event_captor'))
         with pytest.raises(ParseError):

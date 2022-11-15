@@ -1,17 +1,27 @@
+import logging
 from datetime import datetime
 
+from django.conf import settings
+from django.utils.module_loading import import_string
 from celery import app
 
 from pik.utils.sentry import capture_exception
 from pik.modeladmin.tasks import register_progress
 
-from .consumer import MessageHandler
 from .mdm import mdm_event_captor
 from .models import PIKMessageException
 
 
+HANDLER_CLASS = getattr(settings, 'RABBITMQ_MESSAGE_HANDLER_CLASS', None)
+
+
+logger = logging.getLogger(__name__)
+
+
 @app.shared_task(bind=True)
 def task_process_messages(self, pks, *args, **kwargs):
+    if not HANDLER_CLASS:
+        logger.error('RABBITMQ_MESSAGE_HANDLER_CLASS is`t set.')
 
     current = 0
     failed = 0
@@ -25,7 +35,8 @@ def task_process_messages(self, pks, *args, **kwargs):
         total = queryset.count()
 
         for current, obj in enumerate(queryset.iterator(), 1):
-            handler = MessageHandler(obj.message, obj.queue, mdm_event_captor)
+            handler = import_string(HANDLER_CLASS)(
+                obj.message, obj.queue, mdm_event_captor)
             if handler.handle():
                 obj.delete()
                 success += 1
