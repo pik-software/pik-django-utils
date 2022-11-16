@@ -24,19 +24,12 @@ from pik.utils.sentry import capture_exception
 from pik.api.camelcase.viewsets import camelcase_type_field_hook
 from pik.api_settings import api_settings
 from pik.utils.case_utils import camelize
-
-from .mdm import mdm_event_captor
+from pik.bus.mdm import mdm_event_captor
+from pik.bus.exceptions import (
+    ModelMissingError, MDMTransactionIsAlreadyStartedError)
 
 
 logger = logging.getLogger(__name__)
-
-
-class BusModelNotFound(Exception):
-    pass
-
-
-class MDMTransactionIsAlreadyStarted(Exception):
-    pass
 
 
 def after_fail_retry(retry_state):
@@ -107,7 +100,7 @@ class MessageProducer:
 
     def start_transaction(self):
         if self._transaction_messages is not None:
-            raise MDMTransactionIsAlreadyStarted()
+            raise MDMTransactionIsAlreadyStartedError
         self.transaction_guid = str(uuid.uuid4())
         self._transaction_messages = []
 
@@ -243,14 +236,14 @@ class InstanceHandler:
         try:
             return self.models_info[self.model_name]['serializer']
         except KeyError as exc:
-            raise BusModelNotFound() from exc
+            raise ModelMissingError from exc
 
     @property
     def _exchange(self):
         try:
             return self.models_info[self.model_name]['exchange']
         except KeyError as exc:
-            raise BusModelNotFound() from exc
+            raise ModelMissingError from exc
 
     @property
     def model_name(self):

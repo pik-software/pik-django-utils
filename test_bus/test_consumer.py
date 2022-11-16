@@ -11,8 +11,8 @@ from rest_framework.fields import DateTimeField
 from rest_framework.serializers import CharField
 
 from pik.api.serializers import StandardizedModelSerializer
-from pik.bus.consumer import (
-    MessageHandler, QueueSerializerMissingException, MessageConsumer)
+from pik.bus.consumer import MessageHandler, MessageConsumer
+from pik.bus.exceptions import SerializerMissingError
 from pik.bus.models import PIKMessageException
 from test_core_models.models import RegularModel, RemovableRegularDepended
 
@@ -88,7 +88,7 @@ class TestMessageHandlerPrepare:
             Mock(name='event_captor'))
         handler._payload = {'someValue': 42}  # noqa: protected-access
         handler._serializers = {}  # noqa: protected-access
-        with pytest.raises(QueueSerializerMissingException):
+        with pytest.raises(SerializerMissingError):
             handler._prepare_payload()  # noqa: protected-access
         assert handler._payload == {'some_value': 42}  # noqa: protected-access
 

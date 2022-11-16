@@ -22,17 +22,10 @@ from pik.core.shortcuts import update_or_create_object
 from pik.utils.bus import LiveBlockingConnection
 from pik.utils.case_utils import underscorize
 from pik.utils.sentry import capture_exception
+from pik.bus.exceptions import QueuesMissingError, SerializerMissingError
 
 
 logger = logging.getLogger(__name__)
-
-
-class BusQueueNotFound(Exception):
-    pass
-
-
-class QueueSerializerMissingException(Exception):
-    pass
 
 
 def log_after_retry_connect(retry_state):
@@ -130,7 +123,7 @@ class MessageHandler:
         if cls._serializers is None:
             cls._serializers = cls.get_queue_serializers()
         if not cls._serializers or queue not in cls._serializers:  # noqa: unsupported-membership-test
-            raise QueueSerializerMissingException(
+            raise SerializerMissingError(
                 f'Unable to find serializer for {queue}')
         return cls._serializers[queue]  # noqa: unsupported-membership-test
 
@@ -214,6 +207,7 @@ class MessageConsumer:
     _event_captor = None
     _message_handler = None
 
+    _connection = None
     _channel = None
 
     def __init__(  # noqa: pylint - too-many-arguments
@@ -226,18 +220,24 @@ class MessageConsumer:
         self._message_handler = message_handler
 
     def consume(self):
-        self._connect()
-        self._config_channel()
-        self._bind_queues()
-        self._channel.start_consuming()
+        try:
+            self._connect()
+            self._config_channel()
+            self._bind_queues()
+            self._channel.start_consuming()
+        except Exception as error:  # noqa: too-broad-except
+            capture_exception(error)
 
     @retry(
         wait=wait_fixed(RECONNECT_WAIT),
         retry=retry_if_exception_type(AMQPConnectionError),
         after=log_after_retry_connect)
     def _connect(self):
-        self._channel = BlockingConnection(URLParameters(
-            self._connection_url)).channel()
+        self._connection = self._get_connection()
+        self._channel = self._connection.channel()
+
+    def _get_connection(self):
+        return BlockingConnection(URLParameters(self._connection_url))
 
     def _config_channel(self):
         self._channel.basic_qos(prefetch_count=self.PREFETCH_COUNT)
@@ -288,24 +288,16 @@ class AllQueueMessageConsumer(MessageConsumer):
     and periodical running function that try to add missing queues.
     """
 
-    RECONNECT_WAIT = 1
     CALLBACK_WAIT = 300
 
-    _connection = None
-    _connection_class = LiveBlockingConnection
     _missing_queues: Set[str] = set()
     _existing_queues: Set[str] = set()
 
-    @retry(
-        wait=wait_fixed(RECONNECT_WAIT),
-        retry=retry_if_exception_type(AMQPConnectionError),
-        after=log_after_retry_connect)
-    def _connect(self):
-        self._connection = self._connection_class(
+    def _get_connection(self):
+        return LiveBlockingConnection(
             URLParameters(self._connection_url),
             periodic_callback=self._bind_missing_queues,
             periodic_callback_interval=self.CALLBACK_WAIT)
-        self._channel = self._connection.channel()
 
     def _bind_missing_queues(self):
         logger.info(
@@ -318,6 +310,7 @@ class AllQueueMessageConsumer(MessageConsumer):
             try:
                 with self._temp_channel() as channel:
                     channel.queue_declare(queue, passive=True)
+            # TODO: why two exception class?
             except (  # noqa: pylint - invalid-name
                     ChannelWrongStateError,
                     ChannelClosed) as error:
@@ -334,7 +327,7 @@ class AllQueueMessageConsumer(MessageConsumer):
                         'Queue %s already removed from self._existing_queues.'
                         ' Exception: %s', queue, error)
         if not self._existing_queues:
-            logger.error('Existing queues is`t found.')
+            raise QueuesMissingError('Existing queues is`t found.')
 
     @contextlib.contextmanager
     def _temp_channel(self):
@@ -355,7 +348,7 @@ class AllQueueMessageConsumer(MessageConsumer):
                 'Channel has already been closed by broker. '
                 'Exception: %s', error)
         except Exception as error:  # noqa: pylint - broad-except
-            logger.error('Cannot open another channel. Exception: %s', error)
+            capture_exception(error, 'Cannot open temporary channel.')
         finally:
             if _channel is not None:
                 _channel.close()

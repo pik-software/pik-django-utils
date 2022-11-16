@@ -12,18 +12,15 @@ from .mdm import mdm_event_captor
 from .models import PIKMessageException
 
 
-HANDLER_CLASS = getattr(settings, 'RABBITMQ_MESSAGE_HANDLER_CLASS', None)
-
-
 logger = logging.getLogger(__name__)
+# TODO: test default handler class for exist.
+handler_class = import_string(getattr(
+    settings, 'RABBITMQ_MESSAGE_HANDLER_CLASS',
+    'pik.bus.consumer.MessageHandler'))
 
 
 @app.shared_task(bind=True)
 def task_process_messages(self, pks, *args, **kwargs):
-    if not HANDLER_CLASS:
-        logger.error('RABBITMQ_MESSAGE_HANDLER_CLASS is`t set.')
-        return
-
     current = 0
     failed = 0
     success = 0
@@ -36,8 +33,7 @@ def task_process_messages(self, pks, *args, **kwargs):
         total = queryset.count()
 
         for current, obj in enumerate(queryset.iterator(), 1):
-            handler = import_string(HANDLER_CLASS)(
-                obj.message, obj.queue, mdm_event_captor)
+            handler = handler_class(obj.message, obj.queue, mdm_event_captor)
             if handler.handle():
                 obj.delete()
                 success += 1

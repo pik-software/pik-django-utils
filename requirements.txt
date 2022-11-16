@@ -30,7 +30,8 @@ python-jose
 # Celery
 celery
 kombu
-importlib-metadata
+# TODO: unfrezze after resolve this issue: https://github.com/celery/kombu/issues/1620
+importlib-metadata==4.13.0
 
 # Text normalization library
 cucco

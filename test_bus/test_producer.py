@@ -7,7 +7,7 @@ from pika.exceptions import AMQPConnectionError
 
 from pik.bus.producer import (
     producer, MDMTransaction, InstanceHandler, MessageProducer,
-    MDMTransactionIsAlreadyStarted)
+    MDMTransactionIsAlreadyStartedError)
 
 
 def test_transaction_manager():
@@ -153,7 +153,7 @@ def test_transaction_publication_event_fail():
 
 def test_nested_transaction_fail():
     with MDMTransaction():
-        with pytest.raises(MDMTransactionIsAlreadyStarted):
+        with pytest.raises(MDMTransactionIsAlreadyStartedError):
             with MDMTransaction():
                 producer.produce(None, {'message': 1})
                 producer.produce(None, {'message': 2})
