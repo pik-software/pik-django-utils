@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 def task_process_messages(self, pks, *args, **kwargs):
     if not HANDLER_CLASS:
         logger.error('RABBITMQ_MESSAGE_HANDLER_CLASS is`t set.')
+        return
 
     current = 0
     failed = 0
