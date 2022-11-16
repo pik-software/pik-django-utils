@@ -156,3 +156,9 @@ RABBITMQ_PRODUCES = {}
 RABBITMQ_CONSUMES = {}
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
+
+try:
+    from .settings_local import *  # noqa: pylint=unused-wildcard-import, pylint=wildcard-import
+except ImportError:
+    pass
