@@ -50,7 +50,7 @@ def define_model(  # noqa: dangerous-default-value
 def define_serializer(  # noqa: dangerous-default-value
     base_serializer: Type,
     mixin_classes: Union[Type, Tuple[Type], tuple] = (),
-    model: Type = None,
+    model: object = None,
     variables={},
     name: Optional[str] = None,
     excluded_fields=(),
