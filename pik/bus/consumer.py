@@ -45,6 +45,7 @@ class MessageHandler:
     _parsed_payload = None
     _serializers = None
     exc_data = None
+    _event_label = 'deserialization'
 
     def __init__(self, body, queue, event_captor):
         self._body = body
@@ -187,7 +188,7 @@ class MessageHandler:
 
     def _capture_event(self, **kwargs):
         self._event_captor.capture(
-            event='deserialization',
+            event=self._event_label,
             entity_type=self.envelope.get('message', {}).get('type'),
             entity_guid=self.envelope.get('message', {}).get('guid'),
             transactionGUID=self.envelope.get(
@@ -254,10 +255,14 @@ class MessageConsumer:
             queue=queue)
         logger.info('%s queue consumer stared successfully', queue)
 
+    def get_handler_kwargs(self, **kwargs):
+        return {**kwargs, 'event_captor': mdm_event_captor}
+
     def _handle_message(self, channel, method, properties, body, queue):  # noqa: too-many-arguments
         logger.info(
             'Handling %s bytes message from %s queue', len(body), queue)
-        handler = self._message_handler(body, queue, mdm_event_captor)
+        handler = self._message_handler(**self.get_handler_kwargs(
+            body=body, queue=queue))
 
         envelope = {}
         try:
