@@ -19,7 +19,7 @@ def _process_lazy_fields(new_serializer):
             new_serializer._declared_fields.items(): # noqa: protected-access
         if not isinstance(field, LazyField):
             continue
-        field._kwargs['path'] = field._kwargs['path'].lstrip('Base') # noqa:
+        field._kwargs['path'] = field._kwargs['path'].partition('Base')[-1] # noqa:
         # protected-access
     return new_serializer
 
@@ -40,7 +40,8 @@ def define_model(  # noqa: dangerous-default-value
     meta = type('Meta', (base_model.Meta,), attrs)
     meta = _process_mixins_meta(meta, mixin_classes, attrs)
     excluded_fields = {field: None for field in excluded_fields}
-    name = base_model.__name__.lstrip('Base') if not name else name
+    name = base_model.__name__.partition('Base')[-1] if not name else name
+
     new_model = type(
         name, (*mixin_classes, base_model,),
         {**attrs, **excluded_fields, 'Meta': meta})
@@ -58,7 +59,7 @@ def define_serializer(  # noqa: dangerous-default-value
     """Define DRF serializer dynamically"""
 
     new_serializer_name = (
-        base_serializer.__name__.lstrip('Base')
+        base_serializer.__name__.partition('Base')[-1]
         if not name else f'{name}Serializer')
     attrs = {'__module__': variables['__name__']}
     mixin_classes = (mixin_classes
