@@ -255,7 +255,8 @@ class MessageConsumer:
             queue=queue)
         logger.info('%s queue consumer stared successfully', queue)
 
-    def get_handler_kwargs(self, **kwargs):
+    @staticmethod
+    def get_handler_kwargs(**kwargs):
         return {**kwargs, 'event_captor': mdm_event_captor}
 
     def _handle_message(self, channel, method, properties, body, queue):  # noqa: too-many-arguments
