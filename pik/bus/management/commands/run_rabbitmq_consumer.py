@@ -21,20 +21,15 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         django.setup()
 
-        if not self._is_rabbitmq_enabled:
+        if not self.is_consumer_enabled:
             logger.warning('RABBITMQ_CONSUMER_ENABLE is set to False')
             # Do nothing to prevent the container from closing.
             self._do_nothing()
         logger.info('Starting worker for queues %s"', self.queues)
         self._run_consumer()
 
-    def _run_consumer(self):
-        self._message_consumer(
-            self.rabbitmq_url, self.consumer_name, self.queues,
-            self.event_captor, self._message_handler).consume()
-
-    @staticmethod
-    def _is_rabbitmq_enabled():
+    @property
+    def is_consumer_enabled(self):
         return settings.RABBITMQ_CONSUMER_ENABLE
 
     @staticmethod
@@ -45,13 +40,18 @@ class Command(BaseCommand):
         finally:
             loop.close()
 
+    def _run_consumer(self):
+        self._message_consumer(
+            self.rabbitmq_url, self.consumer_name, self.queues,
+            self.event_captor, self._message_handler).consume()
+
     @property
     def rabbitmq_url(self) -> str:
         return settings.RABBITMQ_URL
 
     @property
     def consumer_name(self) -> str:
-        return URLParameters(settings.RABBITMQ_URL).credentials.username
+        return URLParameters(self.rabbitmq_url).credentials.username
 
     @property
     def queues(self) -> list:
