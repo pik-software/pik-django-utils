@@ -207,7 +207,7 @@ class InstanceHandler:
     def _envelope(self):
         message = self._message
         return {
-            'messageType': [message['type'], ],
+            'messageType': [f'urn:message:PIK.MDM.Messages:{message["type"]}'],
             'message': message,
             'host': self.host,
             'headers': self._event_captor.entities_version,
