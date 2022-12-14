@@ -152,6 +152,10 @@ class InstanceHandler:
         self._event_captor = event_captor
 
     @property
+    def producers_setting(self):
+        return settings.RABBITMQ_PRODUCES
+
+    @property
     def models_info(self):
         """```{
             model: {
@@ -165,7 +169,7 @@ class InstanceHandler:
                 import_string(serializer).Meta.model.__name__: {
                     'serializer': import_string(serializer),
                     'exchange': exchange}
-                for exchange, serializer in settings.RABBITMQ_PRODUCES.items()
+                for exchange, serializer in self.producers_setting.items()
             })
         return self.__class__._model_info_cache  # noqa: protect-access
 
@@ -258,7 +262,7 @@ class InstanceHandler:
 def push_model_instance_to_rabbit_queue(instance, **kwargs):
     if not settings.RABBITMQ_PRODUCER_ENABLE:
         return
-    # For signal from migration.
+    # Ignoring migration signals
     if instance.__module__ == '__fake__':
         return
     try:
