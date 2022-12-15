@@ -2,7 +2,9 @@ import inspect
 import re
 from typing import Type, Tuple, Optional, Union
 
+from pik.api.filters import StandardizedFilterSet
 from pik.api.lazy_field import LazyField
+from pik.api.serializers import StandardizedModelSerializer
 from pik.api.viewsets import StandardizedGenericViewSet
 
 
@@ -82,6 +84,63 @@ def define_serializer(  # noqa: dangerous-default-value
                           {**attrs, **excluded_fields, 'Meta': meta})
     new_serializer = _process_lazy_fields(new_serializer)
     variables[new_serializer_name] = new_serializer
+
+
+def define_filter(  # noqa: dangerous-default-value
+    base_filter: Type,
+    mixin_classes: Union[Type, Tuple[Type], tuple] = (),
+    model: Optional[Type] = None,
+    variables=None,
+    name: Optional[str] = None,
+    excluded_fields=(),
+) -> None:  # https://github.com/python/mypy/issues/8401
+    """Define DRF filter dynamically"""
+
+    if not variables:
+        variables = {}
+
+    new_filter_name = (
+        base_filter.__name__.partition('Base')[-1]
+        if not name else f'{name}Filter')
+    attrs = {'__module__': variables['__name__']}
+    mixin_classes = (mixin_classes
+                     if isinstance(mixin_classes, tuple)
+                     else (mixin_classes,))
+    meta = type('Meta', (base_filter.Meta,), {'model': model})
+    meta = _process_mixins_meta(meta, mixin_classes, attrs)
+    excluded_fields = {field: None for field in excluded_fields}
+    new_filter = type(new_filter_name,
+                      (*mixin_classes, base_filter,),
+                      {**attrs, **excluded_fields, 'Meta': meta})
+    variables[new_filter_name] = new_filter
+
+
+def define_serializers(
+        base_module, variables, models_module, excluded_fields=()):
+    predicate = lambda x: inspect.isclass(x) and issubclass(  # noqa: lambda
+        x, StandardizedModelSerializer)
+    definitions = get_module_classes(base_module, predicate)
+    for base_name, base in definitions.items():
+        match = re.match('Base(?P<name>.+)Serializer', base_name)
+        if not match or f'{match["name"]}Serializer' in variables:
+            continue
+        define_serializer(
+            base, (), getattr(models_module, match["name"]),
+            variables, excluded_fields=excluded_fields)
+
+
+def define_filters(
+        base_module, variables, models_module, excluded_fields=()):
+    predicate = lambda x: inspect.isclass(x) and issubclass(  # noqa: lambda
+        x, StandardizedFilterSet)
+    definitions = get_module_classes(base_module, predicate)
+    for base_name, base in definitions.items():
+        match = re.match('Base(?P<name>.+)Filter', base_name)
+        if not match or f'{match["name"]}Filter' in variables:
+            continue
+        define_filter(
+            base, (), getattr(models_module, match["name"]),
+            variables, excluded_fields=excluded_fields)
 
 
 def define_missing_classes(base_module, variables, base_class):
