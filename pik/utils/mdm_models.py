@@ -22,8 +22,9 @@ def _process_lazy_fields(new_serializer):
             new_serializer._declared_fields.items()): # noqa: protected-access
         if not isinstance(field, LazyField):
             continue
-        field._kwargs['path'] = ( # noqa: protected-access
-            field._kwargs['path'].partition('Base')[-1])
+        field._kwargs['path'] = (  # noqa: protected-access
+            field._kwargs['path']  # noqa: protected-access
+            .partition('Base')[-1])
     return new_serializer
 
 
