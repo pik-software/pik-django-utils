@@ -19,6 +19,9 @@ handler_class = import_string(getattr(
     'pik.bus.consumer.MessageHandler'))
 
 
+CHUNK_SIZE = 10000
+
+
 @app.shared_task(bind=True)
 def task_process_messages(self, pks, *args, **kwargs):
     current = 0
@@ -32,7 +35,8 @@ def task_process_messages(self, pks, *args, **kwargs):
             pk__in=pks).order_by('created')
         total = queryset.count()
 
-        for current, obj in enumerate(queryset.iterator(), 1):
+        for current, obj in enumerate(
+                queryset.iterator(chunk_size=CHUNK_SIZE), 1):
             handler = handler_class(obj.message, obj.queue, mdm_event_captor)
             if handler.handle():
                 obj.delete()
@@ -72,7 +76,7 @@ def task_delete_messages(self, pks, *args, **kwargs):
         'started': started, 'error': None})
 
     qs = PIKMessageException.objects.filter(pk__in=pks)
-    for current, obj in enumerate(qs.iterator(), 1):
+    for current, obj in enumerate(qs.iterator(chunk_size=CHUNK_SIZE), 1):
         try:
             obj.delete()
         except Exception as exc:  # noqa: broad-except
