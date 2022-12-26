@@ -148,6 +148,8 @@ producer = MessageProducer(settings.RABBITMQ_URL, mdm_event_captor)
 
 
 class InstanceHandler:
+    MESSAGE_TYPE_PREFIX = 'urn:message:PIK.MDM.Messages:'
+
     _instance = NotImplemented
     _model_info_cache: Dict[str, Dict[str, Union[str, Serializer]]] = {}
 
@@ -205,7 +207,7 @@ class InstanceHandler:
     def _envelope(self):
         message = self._message
         return {
-            'messageType': [message['type'], ],
+            'messageType': [f'{self.MESSAGE_TYPE_PREFIX}{message["type"]}'],
             'message': message,
             'host': self.host,
             'headers': self._event_captor.entities_version,
