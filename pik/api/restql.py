@@ -8,6 +8,11 @@ class DefaultRequestQueryParserMixin(RequestQueryParserMixin):
 
     default_restql_query = None
 
+    def __init__(self, *args, **kwargs):
+        if 'parsed_query' not in kwargs:
+            kwargs['parsed_query'] = self.default_restql_query
+        super().__init__(*args, **kwargs)
+
     @classmethod
     def has_restql_query_param(cls, request):
         return bool(
