@@ -15,12 +15,14 @@ logger = getLogger(__name__)
 
 
 class LogstashBusLoggingSettingsExtender:
+    _LOGGING_BASE = {
+        'version': 1}
+
     _LOGGING_FORMATTER = {
         '()': 'logstash_async.formatter.LogstashFormatter',
         'message_type': 'python-logstash',
         'extra_prefix': '',
-        'extra': {},
-    }
+        'extra': {}}
 
     _LOGGING_HANDLER = {
         'class': 'logstash_async.handler.AsynchronousLogstashHandler',
@@ -28,18 +30,16 @@ class LogstashBusLoggingSettingsExtender:
         'formatter': BUS_EVENT_FORMATTER,
         'host': None,
         'port': None,
-        'database_path': None,
-    }
+        'database_path': None}
 
     _LOGGING_LOGGER = {
         'handlers': [BUS_EVENT_HANDLER],
-        'level': 'INFO',
-    }
+        'level': 'INFO'}
 
-    _url_warning = 'BUS_EVENT_LOGSTASH_URL is not set or set in incorrect ' \
-                   'format in environment variables and settings param. ' \
-                   'BUS_EVENT_LOGSTASH_URL must be in url format, for ' \
-                   'example "https://user:pass@127.0.0.1:5044"'
+    _url_warning = (
+        'BUS_EVENT_LOGSTASH_URL is not set or set in incorrect format in '
+        'environment variables and settings param. BUS_EVENT_LOGSTASH_URL '
+        'must be in url format, for example "https://user:pass@host:port"')
 
     _host: Optional[str] = None
     _port = None
@@ -55,11 +55,7 @@ class LogstashBusLoggingSettingsExtender:
 
     @property
     def _is_logstash_url_valid(self):
-        logstash_url = os.environ.get(
-            'BUS_EVENT_LOGSTASH_URL',
-            self._settings.get('BUS_EVENT_LOGSTASH_URL', ''))
-
-        parsed = urlparse(logstash_url)
+        parsed = urlparse(self._logstash_url)
         self._host, self._port, self._username, self._password = (
             parsed.hostname, parsed.port, parsed.username, parsed.password)
         self._username = self._username or ''
@@ -70,8 +66,14 @@ class LogstashBusLoggingSettingsExtender:
             return False
         return True
 
+    @property
+    def _logstash_url(self):
+        return os.environ.get(
+            'BUS_EVENT_LOGSTASH_URL',
+            self._settings.get('BUS_EVENT_LOGSTASH_URL', ''))
+
     def _add_logstash_logger(self):
-        self._settings.setdefault('LOGGING', {})
+        self._settings.setdefault('LOGGING', self._LOGGING_BASE)
 
         logging = self._settings['LOGGING']
         for key in 'handlers', 'formatters', 'loggers':
