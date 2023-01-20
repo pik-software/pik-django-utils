@@ -27,12 +27,14 @@ def _process_lazy_fields(new_serializer):
 def define_model(  # noqa: dangerous-default-value
     base_model: Type,
     mixin_classes: Union[Type, Tuple[Type], tuple] = (),
-    variables={},
+    variables=None,
     name: Optional[str] = None,
     excluded_fields=(),
 ) -> None:  # https://github.com/python/mypy/issues/8401
     """Define Django model dynamically"""
 
+    if variables is None:
+        variables = {}
     attrs = {'__module__': variables['__name__']}
     mixin_classes = (mixin_classes
                      if isinstance(mixin_classes, tuple)
