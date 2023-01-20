@@ -15,8 +15,8 @@ def _process_lazy_fields(new_serializer):
     """Process all serializer LazyFields and replace its path attributes
     from BaseSerializers to specific ones"""
 
-    for _, field in \
-            new_serializer._declared_fields.items(): # noqa: protected-access
+    for _, field in (
+            new_serializer._declared_fields.items()): # noqa: protected-access
         if not isinstance(field, LazyField):
             continue
         field._kwargs['path'] = field._kwargs['path'].lstrip('Base') # noqa:
@@ -27,11 +27,14 @@ def _process_lazy_fields(new_serializer):
 def define_model(  # noqa: dangerous-default-value
     base_model: Type,
     mixin_classes: Union[Type, Tuple[Type], tuple] = (),
-    variables={},
+    variables=None,
     name: Optional[str] = None,
     excluded_fields=(),
 ) -> None:  # https://github.com/python/mypy/issues/8401
     """Define Django model dynamically"""
+
+    if variables is None:
+        variables = {}
 
     attrs = {'__module__': variables['__name__']}
     mixin_classes = (mixin_classes
@@ -50,12 +53,15 @@ def define_model(  # noqa: dangerous-default-value
 def define_serializer(  # noqa: dangerous-default-value
     base_serializer: Type,
     mixin_classes: Union[Type, Tuple[Type], tuple] = (),
-    model: Type = None,
-    variables={},
+    model: Optional[Type] = None,
+    variables=None,
     name: Optional[str] = None,
     excluded_fields=(),
 ) -> None:  # https://github.com/python/mypy/issues/8401
     """Define DRF serializer dynamically"""
+
+    if not variables:
+        variables = {}
 
     new_serializer_name = (
         base_serializer.__name__.lstrip('Base')

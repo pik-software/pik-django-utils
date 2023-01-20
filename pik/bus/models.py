@@ -9,7 +9,7 @@ from pik.core.models.base import PUided
 
 class PIKMessageException(PUided, Dated):
     entity_uid = models.UUIDField(
-        _('Идентификатор сущности'), blank=True, null=True)
+        _('Идентификатор сущности'), blank=True, null=True, unique=True)
     queue = models.CharField(_('Очередь'), max_length=255, db_index=True)
     message = models.BinaryField(_('Сообщение'))
     exception = models.JSONField(_('Ошибка'))
