@@ -53,12 +53,14 @@ def define_serializer(  # noqa: dangerous-default-value
     base_serializer: Type,
     mixin_classes: Union[Type, Tuple[Type], tuple] = (),
     model: Type = None,
-    variables={},
+    variables=None,
     name: Optional[str] = None,
     excluded_fields=(),
 ) -> None:  # https://github.com/python/mypy/issues/8401
     """Define DRF serializer dynamically"""
 
+    if variables is None:
+        variables = {}
     new_serializer_name = (
         base_serializer.__name__.lstrip('Base')
         if not name else f'{name}Serializer')
