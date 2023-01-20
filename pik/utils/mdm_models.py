@@ -41,6 +41,7 @@ def define_model(  # noqa: dangerous-default-value
 
     if variables is None:
         variables = {}
+
     attrs = {'__module__': variables['__name__']}
     mixin_classes = (mixin_classes
                      if isinstance(mixin_classes, tuple)
