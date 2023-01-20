@@ -28,10 +28,15 @@ class Command(BaseCommand):
         logger.info('Starting worker for queues %s"', self.queues)
         self._run_consumer()
 
+    def get_consumer_kwargs(self, **kwargs):
+        return {
+            'connection_url': self.rabbitmq_url,
+            'consumer_name': self.consumer_name,
+            'queues': self.queues, 'event_captor': self.event_captor,
+            'message_handler': self._message_handler, **kwargs}
+
     def _run_consumer(self):
-        self._message_consumer(
-            self.rabbitmq_url, self.consumer_name, self.queues,
-            self.event_captor, self._message_handler).consume()
+        self._message_consumer(**self.get_consumer_kwargs()).consume()
 
     @staticmethod
     def _is_rabbitmq_enabled():

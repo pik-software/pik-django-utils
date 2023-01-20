@@ -22,17 +22,10 @@ from pik.core.shortcuts import update_or_create_object
 from pik.utils.bus import LiveBlockingConnection
 from pik.utils.case_utils import underscorize
 from pik.utils.sentry import capture_exception
+from pik.bus.exceptions import QueuesMissingError, SerializerMissingError
 
 
 logger = logging.getLogger(__name__)
-
-
-class BusQueueNotFound(Exception):
-    pass
-
-
-class QueueSerializerMissingException(Exception):
-    pass
 
 
 def log_after_retry_connect(retry_state):
@@ -44,12 +37,15 @@ def log_after_retry_connect(retry_state):
 class MessageHandler:
     parser_class = JSONParser
 
-    _payload = None
-    _parsed_payload = None
     _body = None
     _queue = None
+    _event_captor = None
+
+    _payload = None
+    _parsed_payload = None
     _serializers = None
     exc_data = None
+    _event_label = 'deserialization'
 
     def __init__(self, body, queue, event_captor):
         self._body = body
@@ -72,6 +68,13 @@ class MessageHandler:
     @cached_property
     def envelope(self):
         return self.parser_class().parse(io.BytesIO(self._body))
+
+    @classmethod
+    def get_queue_serializers(cls) -> dict:
+        return {
+            queue: import_string(serializer)
+            for queue, serializer in settings.RABBITMQ_CONSUMES.items()
+        }
 
     def _fetch_payload(self):
         self._payload = self.envelope['message']
@@ -111,13 +114,6 @@ class MessageHandler:
         return self._get_serializer(self._queue)
 
     @classmethod
-    def get_queue_serializers(cls) -> dict:
-        return {
-            queue: import_string(serializer)
-            for queue, serializer in settings.RABBITMQ_CONSUMES.items()
-        }
-
-    @classmethod
     def _get_serializer(cls, queue):
         """
             Queue name to serializer mapping dict `{queue:  serializer, ... }`
@@ -128,7 +124,7 @@ class MessageHandler:
         if cls._serializers is None:
             cls._serializers = cls.get_queue_serializers()
         if not cls._serializers or queue not in cls._serializers:  # noqa: unsupported-membership-test
-            raise QueueSerializerMissingException(
+            raise SerializerMissingError(
                 f'Unable to find serializer for {queue}')
         return cls._serializers[queue]  # noqa: unsupported-membership-test
 
@@ -192,7 +188,7 @@ class MessageHandler:
 
     def _capture_event(self, **kwargs):
         self._event_captor.capture(
-            event='deserialization',
+            event=self._event_label,
             entity_type=self.envelope.get('message', {}).get('type'),
             entity_guid=self.envelope.get('message', {}).get('guid'),
             transactionGUID=self.envelope.get(
@@ -206,52 +202,68 @@ class MessageConsumer:
     RECONNECT_WAIT = 1
     PREFETCH_COUNT = 1
 
-    _consumer_name = None
     _connection_url = None
+    _consumer_name = None
     _queues = None
+    _event_captor = None
+    _message_handler = None
+
+    _connection = None
     _channel = None
 
     def __init__(  # noqa: pylint - too-many-arguments
             self, connection_url, consumer_name,
             queues, event_captor, message_handler=MessageHandler):
-        self._consumer_name = consumer_name
         self._connection_url = connection_url
+        self._consumer_name = consumer_name
         self._queues = queues
         self._event_captor = event_captor
         self._message_handler = message_handler
 
     def consume(self):
-        self._connect()
-        self._config_channel()
-        self._bind_queues()
-        self._channel.start_consuming()
+        try:
+            self._connect()
+            self._config_channel()
+            self._bind_queues()
+            self._channel.start_consuming()
+        except Exception as error:  # noqa: too-broad-except
+            capture_exception(error)
 
     @retry(
         wait=wait_fixed(RECONNECT_WAIT),
         retry=retry_if_exception_type(AMQPConnectionError),
         after=log_after_retry_connect)
     def _connect(self):
-        self._channel = BlockingConnection(URLParameters(
-            self._connection_url)).channel()
+        self._connection = self._get_connection()
+        self._channel = self._connection.channel()
+
+    def _get_connection(self):
+        return BlockingConnection(URLParameters(self._connection_url))
 
     def _config_channel(self):
         self._channel.basic_qos(prefetch_count=self.PREFETCH_COUNT)
         self._channel.confirm_delivery()
+
+    def _bind_queues(self):
+        for queue in self._queues:
+            self._bind_queue(queue)
 
     def _bind_queue(self, queue):
         logger.info('Starting %s queue consumer', queue)
         self._channel.basic_consume(
             on_message_callback=partial(self._handle_message, queue=queue),
             queue=queue)
+        logger.info('%s queue consumer stared successfully', queue)
 
-    def _bind_queues(self):
-        for queue in self._queues:
-            self._bind_queue(queue)
+    @staticmethod
+    def get_handler_kwargs(**kwargs):
+        return {**kwargs, 'event_captor': mdm_event_captor}
 
     def _handle_message(self, channel, method, properties, body, queue):  # noqa: too-many-arguments
         logger.info(
             'Handling %s bytes message from %s queue', len(body), queue)
-        handler = self._message_handler(body, queue, mdm_event_captor)
+        handler = self._message_handler(**self.get_handler_kwargs(
+            body=body, queue=queue))
 
         envelope = {}
         try:
@@ -278,18 +290,50 @@ class MessageConsumer:
 
 class AllQueueMessageConsumer(MessageConsumer):
     """
-    Message consumer that includes queue existence checking
-    before consuming and periodical running function
-    that try to add missing queues.
+    Message consumer that includes queue existence checking before consuming
+    and periodical running function that try to add missing queues.
     """
 
-    RECONNECT_WAIT = 1
     CALLBACK_WAIT = 300
 
-    _connection = None
-    _connection_class = LiveBlockingConnection
     _missing_queues: Set[str] = set()
     _existing_queues: Set[str] = set()
+
+    def _get_connection(self):
+        return LiveBlockingConnection(
+            URLParameters(self._connection_url),
+            periodic_callback=self._bind_missing_queues,
+            periodic_callback_interval=self.CALLBACK_WAIT)
+
+    def _bind_missing_queues(self):
+        logger.info(
+            'Trying to consume missing queues: %s', self._missing_queues)
+        self._bind_queues(self._missing_queues)
+
+    def _bind_queues(self, queues=None):  # noqa: pylint - arguments-differ
+        queues = self._queues if queues is None else queues.copy()
+        for queue in queues:
+            try:
+                with self._temp_channel() as channel:
+                    channel.queue_declare(queue, passive=True)
+            # TODO: why two exception class?
+            except (  # noqa: pylint - invalid-name
+                    ChannelWrongStateError,
+                    ChannelClosed) as error:
+                logger.warning(
+                    'Queue %s does`t exist. Exception: %s', queue, error)
+                self._missing_queues.add(queue)
+            else:
+                self._bind_queue(queue)
+                self._existing_queues.add(queue)
+                try:
+                    self._missing_queues.remove(queue)
+                except KeyError as error:  # noqa: pylint - invalid-name
+                    logger.warning(
+                        'Queue %s already removed from self._existing_queues.'
+                        ' Exception: %s', queue, error)
+        if not self._existing_queues:
+            raise QueuesMissingError('Existing queues is`t found.')
 
     @contextlib.contextmanager
     def _temp_channel(self):
@@ -305,56 +349,12 @@ class AllQueueMessageConsumer(MessageConsumer):
         try:
             _channel = self._connection.channel()
             yield _channel
-        except ChannelClosedByBroker as e:  # noqa: pylint - invalid-name
+        except ChannelClosedByBroker as error:  # noqa: pylint - invalid-name
             logger.warning(
-                'Channel has already been closed by broker. Exception: %s', e)
-        except Exception as e:  # noqa: pylint - broad-except
-            logger.error('Cannot open another channel. Exception: %s', e)
+                'Channel has already been closed by broker. '
+                'Exception: %s', error)
+        except Exception as error:  # noqa: pylint - broad-except
+            capture_exception(error, 'Cannot open temporary channel.')
         finally:
             if _channel is not None:
                 _channel.close()
-
-    def _bind_queue(self, queue):
-        logger.info('Starting %s queue consumer', queue)
-        self._channel.basic_consume(
-            on_message_callback=partial(self._handle_message, queue=queue),
-            queue=queue)
-        logger.info('%s queue consumer stared successfully', queue)
-
-    def _bind_queues(self, queues=None):  # noqa: pylint - arguments-differ
-        queues = self._queues if queues is None else queues.copy()
-        for queue in queues:
-            try:
-                with self._temp_channel() as channel:
-                    channel.queue_declare(queue, passive=True)
-            except (  # noqa: pylint - invalid-name
-                    ChannelWrongStateError,
-                    ChannelClosed) as e:
-                logger.warning(
-                    'Queue %s does`t exist. Exception: %s', queue, e)
-                self._missing_queues.add(queue)
-            else:
-                self._bind_queue(queue)
-                self._existing_queues.add(queue)
-                try:
-                    self._missing_queues.remove(queue)
-                except KeyError as e:  # noqa: pylint - invalid-name
-                    logger.warning(
-                        'Queue %s already removed from self._existing_queues.'
-                        ' Exception: %s', queue, e)
-
-    def _bind_missing_queues(self):
-        logger.info(
-            'Trying to consume missing queues: %s', self._missing_queues)
-        self._bind_queues(self._missing_queues)
-
-    @retry(
-        wait=wait_fixed(RECONNECT_WAIT),
-        retry=retry_if_exception_type(AMQPConnectionError),
-        after=log_after_retry_connect)
-    def _connect(self):
-        self._connection = self._connection_class(
-            URLParameters(self._connection_url),
-            periodic_callback=self._bind_missing_queues,
-            periodic_callback_interval=self.CALLBACK_WAIT)
-        self._channel = self._connection.channel()

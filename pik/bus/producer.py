@@ -24,19 +24,12 @@ from pik.utils.sentry import capture_exception
 from pik.api.camelcase.viewsets import camelcase_type_field_hook
 from pik.api_settings import api_settings
 from pik.utils.case_utils import camelize
-
-from .mdm import mdm_event_captor
+from pik.bus.mdm import mdm_event_captor
+from pik.bus.exceptions import (
+    ModelMissingError, MDMTransactionIsAlreadyStartedError)
 
 
 logger = logging.getLogger(__name__)
-
-
-class BusModelNotFound(Exception):
-    pass
-
-
-class MDMTransactionIsAlreadyStarted(Exception):
-    pass
 
 
 def after_fail_retry(retry_state):
@@ -107,7 +100,7 @@ class MessageProducer:
 
     def start_transaction(self):
         if self._transaction_messages is not None:
-            raise MDMTransactionIsAlreadyStarted()
+            raise MDMTransactionIsAlreadyStartedError
         self.transaction_guid = str(uuid.uuid4())
         self._transaction_messages = []
 
@@ -159,6 +152,10 @@ class InstanceHandler:
         self._event_captor = event_captor
 
     @property
+    def producers_setting(self):
+        return settings.RABBITMQ_PRODUCES
+
+    @property
     def models_info(self):
         """```{
             model: {
@@ -172,7 +169,7 @@ class InstanceHandler:
                 import_string(serializer).Meta.model.__name__: {
                     'serializer': import_string(serializer),
                     'exchange': exchange}
-                for exchange, serializer in settings.RABBITMQ_PRODUCES.items()
+                for exchange, serializer in self.producers_setting.items()
             })
         return self.__class__._model_info_cache  # noqa: protect-access
 
@@ -210,7 +207,7 @@ class InstanceHandler:
     def _envelope(self):
         message = self._message
         return {
-            'messageType': [message['type'], ],
+            'messageType': [f'urn:message:PIK.MDM.Messages:{message["type"]}'],
             'message': message,
             'host': self.host,
             'headers': self._event_captor.entities_version,
@@ -243,14 +240,14 @@ class InstanceHandler:
         try:
             return self.models_info[self.model_name]['serializer']
         except KeyError as exc:
-            raise BusModelNotFound() from exc
+            raise ModelMissingError from exc
 
     @property
     def _exchange(self):
         try:
             return self.models_info[self.model_name]['exchange']
         except KeyError as exc:
-            raise BusModelNotFound() from exc
+            raise ModelMissingError from exc
 
     @property
     def model_name(self):
@@ -265,7 +262,7 @@ class InstanceHandler:
 def push_model_instance_to_rabbit_queue(instance, **kwargs):
     if not settings.RABBITMQ_PRODUCER_ENABLE:
         return
-    # For signal from migration.
+    # Ignoring migration signals
     if instance.__module__ == '__fake__':
         return
     try:
