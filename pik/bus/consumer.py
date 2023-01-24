@@ -13,6 +13,7 @@ from pika.exceptions import (
     AMQPConnectionError, ChannelWrongStateError,
     ChannelClosed, ChannelClosedByBroker)
 from rest_framework.parsers import JSONParser
+from rest_framework.exceptions import ValidationError
 from tenacity import retry, retry_if_exception_type, wait_fixed
 
 from pik.api.exceptions import extract_exception_data
@@ -140,7 +141,9 @@ class MessageHandler:
                 dependant.delete()
 
     def _capture_exception(self, exc):
-        capture_exception(exc)
+        # Don't spam validation errors to sentry.
+        if not isinstance(exc, ValidationError):
+            capture_exception(exc)
         self.exc_data = extract_exception_data(exc)
 
         is_missing_dependency = (
