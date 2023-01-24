@@ -6,6 +6,7 @@ from hashlib import sha1
 from typing import Set
 
 from django.conf import settings
+from django.core.cache import cache
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
 from pika import BlockingConnection, URLParameters
@@ -36,6 +37,7 @@ def log_after_retry_connect(retry_state):
 
 
 class MessageHandler:
+    LOCK_TIMEOUT = 60
     parser_class = JSONParser
 
     _body = None
@@ -88,8 +90,14 @@ class MessageHandler:
                 self._payload)
 
     def _update_instance(self):
-        self._serializer.is_valid(raise_exception=True)
-        self._serializer.save()
+        guid = self._payload.get('guid')
+        queue = self._queue
+        lock = (
+            cache.lock(f'bus-{queue}-{guid}', timeout=self.LOCK_TIMEOUT)
+            if guid else contextlib.nullcontext())
+        with lock:
+            self._serializer.is_valid(raise_exception=True)
+            self._serializer.save()
 
     @cached_property
     def _serializer(self):
