@@ -142,7 +142,7 @@ class MessageHandler:
 
     def _capture_exception(self, exc):
         # Don't spam validation errors to sentry.
-        if not isinstance(ValidationError, exc):
+        if not isinstance(exc, ValidationError):
             capture_exception(exc)
         self.exc_data = extract_exception_data(exc)
 
