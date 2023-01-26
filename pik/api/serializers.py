@@ -17,6 +17,7 @@ from .constants import SOFT_DELETE_FIELDS
 from .deprecated.serializers import UnderscorizeSerializerHookMixIn
 from .lazy_field import LazyFieldHandlerMixIn
 from .restql import DefaultRequestQueryParserMixin
+from .validators import NewestUpdateValidator
 
 
 def _normalize_label(label):
@@ -179,8 +180,9 @@ class LabeledModelSerializerMixIn:
 
 
 class ValidatedModelSerializerMixIn:
-    """ Allows using model defined validators due to missing DRF clean
-    handling """
+    """
+    Allows using model defined validators due to missing DRF clean handling
+    """
 
     def validate(self, attrs):
         if not self.parent:
@@ -197,6 +199,13 @@ class ValidatedModelSerializerMixIn:
                 raise serializers.ValidationError(
                     dict(zip(range(0, len(errors)), errors)))
         return super().validate(attrs)
+
+
+class NewestUpdateMixIn:
+    class Meta:
+        validators = [
+            NewestUpdateValidator()
+        ]
 
 
 class DynamicModelSerializerMixIn:
@@ -283,6 +292,7 @@ class StandardizedModelSerializer(
         LabeledModelSerializerMixIn,
         SettableNestedSerializerMixIn,
         ValidatedModelSerializerMixIn,
+        NewestUpdateMixIn,
         DynamicModelSerializerMixIn,
         PermittedFieldsSerializerMixIn,
         StandardizedProtocolSerializer,
@@ -295,6 +305,13 @@ class StandardizedModelSerializer(
     @staticmethod
     def get_is_deleted(obj) -> bool:
         return bool(obj.deleted)
+
+
+# TODO: Serializer for bus?
+class BusStandardizedModelSerializer(
+    StandardizedModelSerializer,
+    NewestUpdateMixIn):
+    pass
 
 
 class StandardizedChangeSerializer(

@@ -3,8 +3,8 @@ from rest_framework.exceptions import ValidationError
 
 
 class NonChangeableValidator:
-    error_msg = _('Редактирование этого поля не разрешено.')
     requires_context = True
+    error_msg = _('Редактирование этого поля не разрешено.')
 
     def __init__(self):
         self.serializer_field = None
@@ -18,3 +18,16 @@ class NonChangeableValidator:
 
             if old_value != value:
                 raise ValidationError(self.error_msg)
+
+
+class NewestUpdateValidator:
+    requires_context = True
+    error_msg = _('Новое значене поля updated должно быть больше предыдущего.')
+
+    def __call__(self, attrs, serializer):
+        old_updated = getattr(serializer.instance, 'updated', None)
+        new_updated = attrs.get('updated')
+        if not old_updated or not new_updated:
+            return
+        if new_updated < old_updated:
+            raise ValidationError(self.error_msg)
