@@ -200,11 +200,6 @@ class ValidatedModelSerializerMixIn:
         return super().validate(attrs)
 
 
-class NewestUpdateValidatorMixIn:
-    class Meta:
-        validators = [NewestUpdateValidator()]
-
-
 class DynamicModelSerializerMixIn:
     """
     A ModelSerializer that takes an additional `fields` argument that
@@ -289,7 +284,6 @@ class StandardizedModelSerializer(
         LabeledModelSerializerMixIn,
         SettableNestedSerializerMixIn,
         ValidatedModelSerializerMixIn,
-        NewestUpdateValidatorMixIn,
         DynamicModelSerializerMixIn,
         PermittedFieldsSerializerMixIn,
         StandardizedProtocolSerializer,
@@ -302,6 +296,9 @@ class StandardizedModelSerializer(
     @staticmethod
     def get_is_deleted(obj) -> bool:
         return bool(obj.deleted)
+
+    class Meta:
+        validators = [NewestUpdateValidator()]
 
 
 class StandardizedChangeSerializer(
