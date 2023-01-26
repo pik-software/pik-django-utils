@@ -2,6 +2,8 @@ import inspect
 import re
 from typing import Type, Tuple, Optional, Union
 
+from django.db.models import Model
+
 from pik.api.filters import StandardizedFilterSet
 from pik.api.lazy_field import LazyField
 from pik.api.serializers import StandardizedModelSerializer
@@ -114,6 +116,20 @@ def define_filter(  # noqa: dangerous-default-value
                       (*mixin_classes, base_filter,),
                       {**attrs, **excluded_fields, 'Meta': meta})
     variables[new_filter_name] = new_filter
+
+
+def define_models(
+        base_module, variables, excluded_fields=()):
+    predicate = lambda x: inspect.isclass(x) and issubclass(  # noqa: lambda
+        x, Model)
+    definitions = get_module_classes(base_module, predicate)
+    for base_name, base in definitions.items():
+        match = re.match('Base(?P<name>.+)', base_name)
+        if not match or f'{match["name"]}' in variables:
+            continue
+        define_model(
+            base, (), variables,
+            match["name"], excluded_fields=excluded_fields)
 
 
 def define_serializers(
