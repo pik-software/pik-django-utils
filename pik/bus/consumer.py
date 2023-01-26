@@ -11,8 +11,8 @@ from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
 from pika import BlockingConnection, URLParameters
 from pika.exceptions import (
-    AMQPConnectionError, ChannelWrongStateError,
-    ChannelClosed, ChannelClosedByBroker)
+    AMQPConnectionError, ChannelWrongStateError, ChannelClosedByBroker,
+    ChannelClosed)
 from rest_framework.parsers import JSONParser
 from rest_framework.exceptions import ValidationError
 from tenacity import retry, retry_if_exception_type, wait_fixed
@@ -28,12 +28,6 @@ from pik.bus.exceptions import QueuesMissingError, SerializerMissingError
 
 
 logger = logging.getLogger(__name__)
-
-
-def log_after_retry_connect(retry_state):
-    logger.warning(
-        'Connecting to RabbitMQ. Attempt number: %s',
-        retry_state.attempt_number)
 
 
 class MessageHandler:
@@ -233,17 +227,24 @@ class MessageConsumer:
 
     def consume(self):
         try:
-            self._connect()
-            self._config_channel()
-            self._bind_queues()
-            self._channel.start_consuming()
+            self._consume()
         except Exception as error:  # noqa: too-broad-except
             capture_exception(error)
 
     @retry(
         wait=wait_fixed(RECONNECT_WAIT),
         retry=retry_if_exception_type(AMQPConnectionError),
-        after=log_after_retry_connect)
+        after=lambda retry_state:
+            logger.warning(
+                'Connecting to RabbitMQ. Attempt number: %s',
+                retry_state.attempt_number)
+    )
+    def _consume(self):
+        self._connect()
+        self._config_channel()
+        self._bind_queues()
+        self._channel.start_consuming()
+
     def _connect(self):
         self._connection = self._get_connection()
         self._channel = self._connection.channel()
