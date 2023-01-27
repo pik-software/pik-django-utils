@@ -1,6 +1,8 @@
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError
 
+from pik.api.exceptions import NewestUpdateValidationError
+
 
 class NonChangeableValidator:
     requires_context = True
@@ -24,10 +26,11 @@ class NewestUpdateValidator:
     requires_context = True
     error_msg = _('Новое значене поля updated должно быть больше предыдущего.')
 
-    def __call__(self, attrs, serializer):
-        old_updated = getattr(serializer.instance, 'updated', None)
-        new_updated = attrs.get('updated')
-        if not old_updated or not new_updated:
+    def __call__(self, value, serializer_field):
+        from django.conf import settings
+        settings.missing_variable
+        updated = getattr(serializer_field.parent.instance, 'updated', None)
+        if not updated:
             return
-        if new_updated < old_updated:
-            raise ValidationError(self.error_msg)
+        if value < updated:
+            raise NewestUpdateValidationError(self.error_msg)

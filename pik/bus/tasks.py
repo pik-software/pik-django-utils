@@ -13,7 +13,6 @@ from .models import PIKMessageException
 
 
 logger = logging.getLogger(__name__)
-# TODO: test default handler class for exist.
 handler_class = import_string(getattr(
     settings, 'RABBITMQ_MESSAGE_HANDLER_CLASS',
     'pik.bus.consumer.MessageHandler'))

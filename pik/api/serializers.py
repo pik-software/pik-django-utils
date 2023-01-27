@@ -124,6 +124,13 @@ class StandardizedProtocolSerializer(serializers.ModelSerializer):
         return obj.version
 
 
+class DatedSerializer(serializers.ModelSerializer):
+    created = serializers.DateTimeField()
+    updated = serializers.DateTimeField(
+        validators=[NewestUpdateValidator()],
+    )
+
+
 class LabeledModelSerializerMixIn:
     """
     Default DRF ModelSerializer has different nature than DRF Field
@@ -287,6 +294,7 @@ class StandardizedModelSerializer(
         DynamicModelSerializerMixIn,
         PermittedFieldsSerializerMixIn,
         StandardizedProtocolSerializer,
+        DatedSerializer,
 ):
 
     # we pass soft deleted logic here because drf-yasg can't find type of
@@ -296,9 +304,6 @@ class StandardizedModelSerializer(
     @staticmethod
     def get_is_deleted(obj) -> bool:
         return bool(obj.deleted)
-
-    class Meta:
-        validators = [NewestUpdateValidator()]
 
 
 class StandardizedChangeSerializer(

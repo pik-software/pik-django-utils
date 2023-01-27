@@ -17,7 +17,8 @@ from rest_framework.parsers import JSONParser
 from rest_framework.exceptions import ValidationError
 from tenacity import retry, retry_if_exception_type, wait_fixed
 
-from pik.api.exceptions import extract_exception_data
+from pik.api.exceptions import (
+    extract_exception_data, NewestUpdateValidationError)
 from pik.bus.mdm import mdm_event_captor
 from pik.bus.models import PIKMessageException
 from pik.core.shortcuts import update_or_create_object
@@ -146,6 +147,12 @@ class MessageHandler:
         # Don't spam validation errors to sentry.
         if not isinstance(exc, ValidationError):
             capture_exception(exc)
+
+        # Don't capture race errors for consumer.
+        if isinstance(exc, NewestUpdateValidationError):
+            capture_exception(exc)
+            return
+
         self.exc_data = extract_exception_data(exc)
 
         is_missing_dependency = (
@@ -156,20 +163,6 @@ class MessageHandler:
             self._capture_missing_dependencies()
             return
         self._capture_invalid_payload(exc)
-
-    def _capture_invalid_payload(self, exc):
-        uid = sha1(self._body).hexdigest()[:32]
-        update_or_create_object(
-            PIKMessageException, search_keys={
-                'queue': self._queue,
-                'uid': uid},
-            uid=uid,
-            queue=self._queue,
-            message=self._body,
-            exception=extract_exception_data(exc),
-            exception_message=self.exc_data['message'],
-            exception_type=self.exc_data['code']
-        )
 
     def _capture_missing_dependencies(self):
         dependencies = {
@@ -189,6 +182,20 @@ class MessageHandler:
             exception_type=self.exc_data['code'],
             exception_message=self.exc_data['message'],
             dependencies=dependencies
+        )
+
+    def _capture_invalid_payload(self, exc):
+        uid = sha1(self._body).hexdigest()[:32]
+        update_or_create_object(
+            PIKMessageException, search_keys={
+                'queue': self._queue,
+                'uid': uid},
+            uid=uid,
+            queue=self._queue,
+            message=self._body,
+            exception=extract_exception_data(exc),
+            exception_message=self.exc_data['message'],
+            exception_type=self.exc_data['code']
         )
 
     def _capture_event(self, **kwargs):
