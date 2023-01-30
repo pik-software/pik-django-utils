@@ -181,8 +181,7 @@ class MessageHandler:
             exception=self.exc_data,
             exception_type=self.exc_data['code'],
             exception_message=self.exc_data['message'],
-            dependencies=dependencies
-        )
+            dependencies=dependencies)
 
     def _capture_invalid_payload(self, exc):
         uid = sha1(self._body).hexdigest()[:32]
@@ -194,9 +193,8 @@ class MessageHandler:
             queue=self._queue,
             message=self._body,
             exception=extract_exception_data(exc),
-            exception_message=self.exc_data['message'],
-            exception_type=self.exc_data['code']
-        )
+            exception_type=self.exc_data['code'],
+            exception_message=self.exc_data['message'])
 
     def _capture_event(self, **kwargs):
         self._event_captor.capture(

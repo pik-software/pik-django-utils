@@ -36,10 +36,11 @@ class LogstashBusLoggingSettingsExtender:
         'level': 'INFO',
     }
 
-    _url_warning = 'BUS_EVENT_LOGSTASH_URL is not set or set in incorrect ' \
-                   'format in environment variables and settings param. ' \
-                   'BUS_EVENT_LOGSTASH_URL must be in url format, for ' \
-                   'example "https://user:pass@127.0.0.1:5044"'
+    _url_warning = (
+        'BUS_EVENT_LOGSTASH_URL is not set or set in incorrect format in '
+        'environment variables and settings param. BUS_EVENT_LOGSTASH_URL '
+        'must be in url format, for example "https://user:pass@127.0.0.1:5044"'
+    )
 
     _host: Optional[str] = None
     _port = None
