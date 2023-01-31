@@ -149,7 +149,7 @@ class MessageHandler:
             capture_exception(exc)
 
         # Don't capture race errors for consumer.
-        if isinstance(exc, NewestUpdateValidationError):
+        if NewestUpdateValidationError.is_error_match(exc):
             capture_exception(exc)
             return
 

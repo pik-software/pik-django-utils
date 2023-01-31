@@ -1,5 +1,7 @@
+from django.utils.translation import gettext_lazy as _
 from rest_framework import status
-from rest_framework.exceptions import APIException, ValidationError
+from rest_framework.exceptions import (
+    APIException, ValidationError, ErrorDetail)
 
 
 class APIRequestError(APIException):
@@ -7,7 +9,27 @@ class APIRequestError(APIException):
 
 
 class NewestUpdateValidationError(ValidationError):
-    pass
+    """
+    serializer.is_valid always returned ValidationError exception
+    regardless of type exception returned by validator.
+    For determine type of validator we use code field of ErrorDetail.
+    """
+
+    error_msg = _('Новое значене поля updated должно быть больше предыдущего.')
+    code = 'NewestUpdateValidationError'
+
+    def __init__(self):
+        super().__init__(
+            ErrorDetail(self.error_msg, code=NewestUpdateValidationError.code))
+
+    @staticmethod
+    def is_error_match(error: Exception):
+        if not isinstance(error, ValidationError):
+            return False
+        updated = error.args[0].get('updated')
+        if not updated:
+            return False
+        return updated[0].code == NewestUpdateValidationError.code
 
 
 def extract_exception_data(exc):

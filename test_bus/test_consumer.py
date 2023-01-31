@@ -258,10 +258,11 @@ class TestMessageHandlerException:
         handler._capture_exception(ValidationError({'name': [  # noqa: protected-access
             ErrorDetail(string='This field is required.', code='required')]}))
         expected = [{
-            'exception': {'code': 'invalid', 'detail': {'name': [{
-                  'code': 'required',
-                  'message': 'This field is required.'}]},
-                          'message': 'Invalid input.'},
+            'exception': {
+                'code': 'invalid', 'detail': {'name': [{
+                    'code': 'required',
+                    'message': 'This field is required.'}]},
+                'message': 'Invalid input.'},
             'exception_message': 'Invalid input.',
             'exception_type': 'invalid',
             'queue': 'test_queue'}]

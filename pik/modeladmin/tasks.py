@@ -23,6 +23,6 @@ def register_progress(task_id, **kwargs):
         'total': 0,
         'error': None}
     progress = {**progress_defaults, **kwargs}
-    logger.info(f'task_id: {task_id}, progress: {progress}')
+    logger.info('task_id: %s, progress: %s', task_id, progress)
     cache.set(
         PROGRESS_KEY.format(task_id=task_id), progress, timeout=CACHE_TIMEOUT)

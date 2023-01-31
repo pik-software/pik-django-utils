@@ -19,8 +19,8 @@ class MDMEventCaptor:
             return
 
         message = (
-              f'Captured mdm event "{event}" for object "{entity_type}" '
-              f'guid "{entity_guid}"')
+            f'Captured mdm event "{event}" for object "{entity_type}" '
+            f'guid "{entity_guid}"')
         self._mdm_logger.info(msg=message, extra={
             **{
                 'logger': self._client_name,
