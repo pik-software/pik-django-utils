@@ -164,12 +164,18 @@ class MessageHandler:
         self._capture_invalid_payload(exc)
 
     def _capture_invalid_payload(self, exc):
+        try:
+            self._fetch_payload()
+            self._prepare_payload()
+            entity_uid = self._payload['guid']
+        except Exception:  # noqa: broad-except
+            entity_uid = None
         uid = sha1(self._body).hexdigest()[:32]
         update_or_create_object(
             PIKMessageException, search_keys={
                 'queue': self._queue,
                 'uid': uid},
-            entity_uid=self._payload.get('guid'),
+            entity_uid=entity_uid,
             uid=uid,
             queue=self._queue,
             message=self._body,
