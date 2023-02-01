@@ -39,8 +39,8 @@ def get_object_or_none(
         return None
 
 
-def validate_and_create_object(model: Type[models.Model], **kwargs) \
-        -> models.Model:
+def validate_and_create_object(
+        model: Type[models.Model], **kwargs) -> models.Model:
     """
     :raises ValueError
     :return obj
@@ -63,8 +63,8 @@ def validate_and_create_object(model: Type[models.Model], **kwargs) \
     return obj
 
 
-def validate_and_update_object(obj: models.Model, **kwargs) \
-        -> Tuple[models.Model, List[str]]:
+def validate_and_update_object(
+        obj: models.Model, **kwargs) -> Tuple[models.Model, List[str]]:
     """
     :raises ValueError
     :return obj, is_updated
@@ -101,8 +101,7 @@ def validate_and_update_object(obj: models.Model, **kwargs) \
 def update_or_create_object(
         source: Union[Type[models.Model], models.QuerySet, models.Manager],
         search_keys: Optional[dict] = None,
-        **kwargs) \
-        -> Tuple[models.Model, List[str], bool]:
+        **kwargs) -> Tuple[models.Model, List[str], bool]:
     """
     :raises ValueError
     :return obj, is_updated, is_created

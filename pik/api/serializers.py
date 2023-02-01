@@ -17,6 +17,7 @@ from .constants import SOFT_DELETE_FIELDS
 from .deprecated.serializers import UnderscorizeSerializerHookMixIn
 from .lazy_field import LazyFieldHandlerMixIn
 from .restql import DefaultRequestQueryParserMixin
+from .validators import NewestUpdateValidator
 
 
 def _normalize_label(label):
@@ -34,8 +35,7 @@ class SettableNestedSerializerMixIn:
             _('Недопустимый guid. Ожидался uuid, получен "{data_type}".'),
         'incorrect_type':
             _('Некорректный тип объекта. Ожидался "{expected_object_type}". '
-              'Получен "{object_type}".'),
-    }
+              'Получен "{object_type}".')}
 
     def run_validators(self, value):
         if not self.parent:
@@ -63,9 +63,9 @@ class SettableNestedSerializerMixIn:
             expected.extend(model.objects.all()._get_subclasses_recurse(model))  # noqa: We just want to find all possible children
 
         if object_type not in expected:
-            self.fail('incorrect_type',
-                      expected_object_type=", ".join(expected),
-                      object_type=object_type)
+            self.fail(
+                'incorrect_type', expected_object_type=", ".join(expected),
+                object_type=object_type)
         uid_value = request_data.get('guid')
         try:
             return model.objects.get(uid=uid_value)
@@ -124,24 +124,32 @@ class StandardizedProtocolSerializer(serializers.ModelSerializer):
         return obj.version
 
 
+class DatedSerializer(serializers.ModelSerializer):
+    created = serializers.DateTimeField()
+    updated = serializers.DateTimeField(
+        validators=[NewestUpdateValidator()],
+    )
+
+
 class LabeledModelSerializerMixIn:
-    """ Default DRF ModelSerializer has different nature than DRF Field
+    """
+    Default DRF ModelSerializer has different nature than DRF Field
 
-        1. DRF ModelSerializer does't handle labels and help_texts as expected.
-        2. DRF ModelSerializer has 2 different behaviours:
-            - initialized for direct use within viewset,
-            - initialized and binded for use within other serializer as field.
-        3. So label and help_text handling should be done during two stages:
-            - `__init__()` for using within viewset,
-            - `bind()` for use as field withing other serializer.
+    1. DRF ModelSerializer doesn't handle labels and help_texts as expected.
+    2. DRF ModelSerializer has 2 different behaviours:
+        - initialized for direct use within viewset,
+        - initialized and binded for use within other serializer as field.
+    3. So label and help_text handling should be done during two stages:
+        - `__init__()` for using within viewset,
+        - `bind()` for use as field withing other serializer.
 
-        This MixIn:
-            - on `__init__()`:
-                - sets label and help_text to model values if not provided,
-                - saves `is_set`=True if provided;
-            - on `bind()`:
-                - sets parent model field fetched `label` and `help_text`
-                values if `is_set`=`False`.
+    This MixIn:
+        - on `__init__()`:
+            - sets label and help_text to model values if not provided,
+            - saves `is_set`=True if provided;
+        - on `bind()`:
+            - sets parent model field fetched `label` and `help_text`
+            values if `is_set`=`False`.
     """
 
     _label_is_set = False
@@ -156,8 +164,7 @@ class LabeledModelSerializerMixIn:
             self._label_is_set = True
 
         if 'help_text' not in kwargs:
-            kwargs['help_text'] = getattr(self.Meta.model,
-                                          '_help_text', None)
+            kwargs['help_text'] = getattr(self.Meta.model, '_help_text', None)
         else:
             self._help_text_is_set = True
 
@@ -179,8 +186,9 @@ class LabeledModelSerializerMixIn:
 
 
 class ValidatedModelSerializerMixIn:
-    """ Allows using model defined validators due to missing DRF clean
-    handling """
+    """
+    Allows using model defined validators due to missing DRF clean handling
+    """
 
     def validate(self, attrs):
         if not self.parent:
@@ -213,8 +221,8 @@ class DynamicModelSerializerMixIn:
             # Drop any fields that are not specified in the `fields` argument.
             allowed = set(self.dynamic_fields)
             excluded_field_names = set(field_names) - allowed
-            field_names = tuple(x for x in field_names
-                                if x not in excluded_field_names)
+            field_names = tuple(
+                x for x in field_names if x not in excluded_field_names)
         return field_names
 
     def __init__(self, *args, **kwargs):
@@ -231,14 +239,15 @@ class PermittedFieldsPermissionMixIn:
     use_obj_perms = False
 
     def has_field_permission(self, user, model, field, obj=None):
-        permitted_fields = getattr(self, 'permitted_fields',
-                                   getattr(model, 'permitted_fields', None))
+        permitted_fields = getattr(
+            self, 'permitted_fields', getattr(model, 'permitted_fields', None))
         if not permitted_fields:
             return False
         for permission, _fields in permitted_fields.items():
             meta = model._meta
-            permission = permission.format(app_label=meta.app_label.lower(),
-                                           model_name=meta.object_name.lower())
+            permission = permission.format(
+                app_label=meta.app_label.lower(),
+                model_name=meta.object_name.lower())
 
             if self.use_obj_perms:
                 has_perm = (
@@ -252,9 +261,8 @@ class PermittedFieldsPermissionMixIn:
 
 class PermittedFieldsSerializerMixIn(PermittedFieldsPermissionMixIn):
     default_error_messages = {
-        'field_permission_denied': _('У вас нет прав для '
-                                     'редактирования этого поля.')
-    }
+        'field_permission_denied': _(
+            'У вас нет прав для редактирования этого поля.')}
 
     def to_internal_value(self, request_data):
         errors = {}
@@ -285,6 +293,7 @@ class StandardizedModelSerializer(
         ValidatedModelSerializerMixIn,
         DynamicModelSerializerMixIn,
         PermittedFieldsSerializerMixIn,
+        DatedSerializer,
         StandardizedProtocolSerializer,
 ):
 

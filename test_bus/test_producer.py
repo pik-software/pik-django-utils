@@ -44,9 +44,11 @@ def test_transaction_publish_multiple():
         producer.produce({}, 'exchange')
     assert  producer._publish.call_args_list == [  # noqa: protect-access
         call({'headers': {
-            'transactionGUID': '0ABC..', 'transactionMessageCount': 2}}, 'exchange', ''),
+            'transactionGUID': '0ABC..', 'transactionMessageCount': 2}},
+            'exchange', ''),
         call({'headers': {
-            'transactionGUID': '0ABC..', 'transactionMessageCount': 2}}, 'exchange', '')]
+            'transactionGUID': '0ABC..', 'transactionMessageCount': 2}},
+            'exchange', '')]
 
 
 @override_settings(RABBITMQ_PRODUCES={
