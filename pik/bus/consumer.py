@@ -169,6 +169,7 @@ class MessageHandler:
             PIKMessageException, search_keys={
                 'queue': self._queue,
                 'uid': uid},
+            entity_uid=self._payload.get('guid'),
             uid=uid,
             queue=self._queue,
             message=self._body,
