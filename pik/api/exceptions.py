@@ -10,17 +10,16 @@ class APIRequestError(APIException):
 
 class NewestUpdateValidationError(ValidationError):
     """
-    serializer.is_valid always returned ValidationError exception
-    regardless of type exception returned by validator.
-    For determine type of validator we use code field of ErrorDetail.
+    The serializer.is_valid method always returns a ValidationError exception,
+    regardless of the type of exception returned by the validator.
+    To determine the type of validator, we use the code field of ErrorDetail.
     """
 
     error_msg = _('Новое значене поля updated должно быть больше предыдущего.')
-    code = 'NewestUpdateValidationError'
+    code = 'newest_update_validation_error'
 
     def __init__(self):
-        super().__init__(
-            ErrorDetail(self.error_msg, code=NewestUpdateValidationError.code))
+        super().__init__(ErrorDetail(self.error_msg, code=self.code))
 
     @staticmethod
     def is_error_match(error: Exception):

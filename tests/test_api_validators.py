@@ -2,6 +2,7 @@ from datetime import datetime
 import uuid
 import pytest
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError, ErrorDetail
 
 import pik.api.serializers
 from pik.api.validators import NonChangeableValidator
@@ -50,10 +51,14 @@ class TestNewestUpdateValidator:
             'created': my_dated.created,
             'updated': past_datetime})
 
-        try:
+        with pytest.raises(ValidationError) as error:
             serializer.is_valid(raise_exception=True)
-        except Exception as error:
-            assert NewestUpdateValidationError.is_error_match(error)
+        expected = ({'updated': [ErrorDetail(
+            string='Новое значене поля updated должно быть больше '
+                   'предыдущего.',
+            code='newest_update_validation_error')]}, )
+        assert error.value.args == expected
+        assert NewestUpdateValidationError.is_error_match(error.value)
 
     def test_not_newest_update_validator_exception(self):
         my_dated = MyDated()
@@ -62,8 +67,6 @@ class TestNewestUpdateValidator:
             'created': my_dated.created,
             'updated': None})
 
-        try:
+        with pytest.raises(ValidationError) as error:
             serializer.is_valid(raise_exception=True)
-        except Exception as error:
-            assert not NewestUpdateValidationError.is_error_match(error)
-
+        assert not NewestUpdateValidationError.is_error_match(error.value)

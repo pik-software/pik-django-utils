@@ -71,8 +71,7 @@ class MessageHandler:
     def get_queue_serializers(cls) -> dict:
         return {
             queue: import_string(serializer)
-            for queue, serializer in settings.RABBITMQ_CONSUMES.items()
-        }
+            for queue, serializer in settings.RABBITMQ_CONSUMES.items()}
 
     def _fetch_payload(self):
         self._payload = self.envelope['message']

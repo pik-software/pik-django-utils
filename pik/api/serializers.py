@@ -293,8 +293,8 @@ class StandardizedModelSerializer(
         ValidatedModelSerializerMixIn,
         DynamicModelSerializerMixIn,
         PermittedFieldsSerializerMixIn,
-        StandardizedProtocolSerializer,
         DatedSerializer,
+        StandardizedProtocolSerializer,
 ):
 
     # we pass soft deleted logic here because drf-yasg can't find type of
