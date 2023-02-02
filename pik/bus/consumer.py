@@ -183,12 +183,7 @@ class MessageHandler:
             dependencies=dependencies)
 
     def _capture_invalid_payload(self, exc):
-        try:
-            self._fetch_payload()
-            self._prepare_payload()
-            entity_uid = self._payload['guid']
-        except Exception:  # noqa: broad-except
-            entity_uid = None
+        en```tity_uid = self._payload.get('guid') if self._payload else None
         uid = sha1(self._body).hexdigest()[:32]
         update_or_create_object(
             PIKMessageException, search_keys={
