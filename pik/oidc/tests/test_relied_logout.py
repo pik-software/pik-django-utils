@@ -14,12 +14,12 @@ from rest_framework import status
 @patch("social_core.backends.open_id_connect.OpenIdConnectAuth.oidc_config",
        Mock(return_value={
            'end_session_endpoint': 'http://op/openid/end-session/'}))
-def test_logout(api_client):
-    api_client.session['id_token'] = '{testidtoken}'
-    resp = api_client.get(reverse('admin:logout'))
+def test_logout(client):
+    client.session['id_token'] = '{testidtoken}'
+    resp = client.get(reverse('admin:logout'))
     assert resp.status_code == status.HTTP_302_FOUND
 
     params = urlencode({
         "post_logout_redirect_uri": "http://testserver/logout/"})
     assert resp['Location'] == f'http://op/openid/end-session/?{params}'
-    assert api_client.session.get('id_token') is None
+    assert client.session.get('id_token') is None
