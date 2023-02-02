@@ -16,6 +16,7 @@ pytest-django
 pytest-selenium
 pytest-base-url
 pytest-benchmark
+pytest-pythonpath
 # Error with all files Line: 1 pylint: fatal / Fatal error while checking
 # TODO: unfreeze
 pylint==2.12.2

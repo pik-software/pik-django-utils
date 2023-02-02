@@ -4,6 +4,7 @@ import logging
 from functools import partial
 from hashlib import sha1
 from typing import Set
+from uuid import UUID
 
 from django.conf import settings
 from django.core.cache import cache
@@ -183,11 +184,16 @@ class MessageHandler:
             dependencies=dependencies)
 
     def _capture_invalid_payload(self, exc):
+        try:
+            entity_uid = UUID(self._payload.get('guid'))
+        except:  # noqa: bare-except
+            entity_uid = None
         uid = sha1(self._body).hexdigest()[:32]
         update_or_create_object(
             PIKMessageException, search_keys={
                 'queue': self._queue,
                 'uid': uid},
+            entity_uid=entity_uid,
             uid=uid,
             queue=self._queue,
             message=self._body,

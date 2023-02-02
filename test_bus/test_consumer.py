@@ -395,6 +395,7 @@ class TestMessageConsumerEvents:
         assert pformat(event_captor.capture.call_args_list) == expected
 
     @staticmethod
+    @pytest.mark.django_db
     @patch('pik.bus.consumer.MessageHandler._get_serializer', Mock())
     def test_success_consumption():
         event_captor = Mock(name='event_captor')
@@ -418,6 +419,7 @@ class TestMessageConsumerEvents:
         assert pformat(event_captor.capture.call_args_list) == expected
 
     @staticmethod
+    @pytest.mark.django_db
     @patch('pik.bus.consumer.MessageHandler._get_serializer', Mock())
     def test_success_consumption_transactions():
         event_captor = Mock(name='event_captor')

@@ -39,7 +39,7 @@ def test_child_will_create_new_parent_with_the_same_address_and_uid():
     assert building.uid == parking.uid
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 def test_parent_address_unique_constraint():
     addr1 = get_random_string(12)
     Building.objects.create(address=addr1)
