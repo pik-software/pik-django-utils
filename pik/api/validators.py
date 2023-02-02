@@ -1,10 +1,12 @@
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError
 
+from pik.api.exceptions import NewestUpdateValidationError
+
 
 class NonChangeableValidator:
-    error_msg = _('Редактирование этого поля не разрешено.')
     requires_context = True
+    error_msg = _('Редактирование этого поля не разрешено.')
 
     def __init__(self):
         self.serializer_field = None
@@ -18,3 +20,15 @@ class NonChangeableValidator:
 
             if old_value != value:
                 raise ValidationError(self.error_msg)
+
+
+class NewestUpdateValidator:
+    requires_context = True
+
+    def __call__(self, value, serializer_field):
+        updated = getattr(serializer_field.parent.instance, 'updated', None)
+        if not updated:
+            return
+        if value > updated:
+            return
+        raise NewestUpdateValidationError()

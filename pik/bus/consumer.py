@@ -11,13 +11,14 @@ from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
 from pika import BlockingConnection, URLParameters
 from pika.exceptions import (
-    AMQPConnectionError, ChannelWrongStateError,
-    ChannelClosed, ChannelClosedByBroker)
+    AMQPConnectionError, ChannelWrongStateError, ChannelClosedByBroker,
+    ChannelClosed)
 from rest_framework.parsers import JSONParser
 from rest_framework.exceptions import ValidationError
 from tenacity import retry, retry_if_exception_type, wait_fixed
 
-from pik.api.exceptions import extract_exception_data
+from pik.api.exceptions import (
+    extract_exception_data, NewestUpdateValidationError)
 from pik.bus.mdm import mdm_event_captor
 from pik.bus.models import PIKMessageException
 from pik.core.shortcuts import update_or_create_object
@@ -28,12 +29,6 @@ from pik.bus.exceptions import QueuesMissingError, SerializerMissingError
 
 
 logger = logging.getLogger(__name__)
-
-
-def log_after_retry_connect(retry_state):
-    logger.warning(
-        'Connecting to RabbitMQ. Attempt number: %s',
-        retry_state.attempt_number)
 
 
 class MessageHandler:
@@ -76,8 +71,7 @@ class MessageHandler:
     def get_queue_serializers(cls) -> dict:
         return {
             queue: import_string(serializer)
-            for queue, serializer in settings.RABBITMQ_CONSUMES.items()
-        }
+            for queue, serializer in settings.RABBITMQ_CONSUMES.items()}
 
     def _fetch_payload(self):
         self._payload = self.envelope['message']
@@ -152,6 +146,12 @@ class MessageHandler:
         # Don't spam validation errors to sentry.
         if not isinstance(exc, ValidationError):
             capture_exception(exc)
+
+        # Don't capture race errors for consumer.
+        if NewestUpdateValidationError.is_error_match(exc):
+            capture_exception(exc)
+            return
+
         self.exc_data = extract_exception_data(exc)
 
         is_missing_dependency = (
@@ -162,27 +162,6 @@ class MessageHandler:
             self._capture_missing_dependencies()
             return
         self._capture_invalid_payload(exc)
-
-    def _capture_invalid_payload(self, exc):
-        try:
-            self._fetch_payload()
-            self._prepare_payload()
-            entity_uid = self._payload['guid']
-        except Exception:  # noqa: broad-except
-            entity_uid = None
-        uid = sha1(self._body).hexdigest()[:32]
-        update_or_create_object(
-            PIKMessageException, search_keys={
-                'queue': self._queue,
-                'uid': uid},
-            entity_uid=entity_uid,
-            uid=uid,
-            queue=self._queue,
-            message=self._body,
-            exception=extract_exception_data(exc),
-            exception_message=self.exc_data['message'],
-            exception_type=self.exc_data['code']
-        )
 
     def _capture_missing_dependencies(self):
         dependencies = {
@@ -201,8 +180,27 @@ class MessageHandler:
             exception=self.exc_data,
             exception_type=self.exc_data['code'],
             exception_message=self.exc_data['message'],
-            dependencies=dependencies
-        )
+            dependencies=dependencies)
+
+    def _capture_invalid_payload(self, exc):
+        try:
+            self._fetch_payload()
+            self._prepare_payload()
+            entity_uid = self._payload['guid']
+        except Exception:  # noqa: broad-except
+            entity_uid = None
+        uid = sha1(self._body).hexdigest()[:32]
+        update_or_create_object(
+            PIKMessageException, search_keys={
+                'queue': self._queue,
+                'uid': uid},
+            entity_uid=entity_uid,
+            uid=uid,
+            queue=self._queue,
+            message=self._body,
+            exception=extract_exception_data(exc),
+            exception_type=self.exc_data['code'],
+            exception_message=self.exc_data['message'])
 
     def _capture_event(self, **kwargs):
         self._event_captor.capture(
@@ -240,17 +238,24 @@ class MessageConsumer:
 
     def consume(self):
         try:
-            self._connect()
-            self._config_channel()
-            self._bind_queues()
-            self._channel.start_consuming()
+            self._consume()
         except Exception as error:  # noqa: too-broad-except
             capture_exception(error)
 
     @retry(
         wait=wait_fixed(RECONNECT_WAIT),
         retry=retry_if_exception_type(AMQPConnectionError),
-        after=log_after_retry_connect)
+        after=lambda retry_state:
+            logger.warning(
+                'Connecting to RabbitMQ. Attempt number: %s',
+                retry_state.attempt_number)
+    )
+    def _consume(self):
+        self._connect()
+        self._config_channel()
+        self._bind_queues()
+        self._channel.start_consuming()
+
     def _connect(self):
         self._connection = self._get_connection()
         self._channel = self._connection.channel()

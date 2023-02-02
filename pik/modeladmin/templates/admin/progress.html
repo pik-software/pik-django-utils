@@ -4,31 +4,29 @@
 {% block extrastyle %}
     {{ block.super }}
     <style>
+        progress {
+            appearance: none;
+            -webkit-appearance: none;
+            margin: 10pt;
+            width: 100%;
+            height: 25pt;
+        }
+        progress::-webkit-progress-value {
+            background-color: var(--breadcrumbs-bg);
+        }
 
-    progress {
-        appearance: none;
-        -webkit-appearance: none;
-        margin: 10pt;
-        width: 100%;
-        height: 25pt;
-    }
-    progress::-webkit-progress-value {
-        background-color: var(--breadcrumbs-bg);
-    }
+        progress.error::-webkit-progress-value {
+            background-color: var(--error-fg);
+        }
+        progress.successful::-webkit-progress-value {
+            background-color: var(--header-bg);
+        }
 
-    progress.error::-webkit-progress-value {
-        background-color: var(--error-fg);
-    }
-    progress.success::-webkit-progress-value {
-        background-color: var(--header-bg);
-    }
-
-    progress[value]::-webkit-progress-bar {
-        background-color: #eee;
-        border-radius: 2px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25) inset;
-    }
-
+        progress[value]::-webkit-progress-bar {
+            background-color: #eee;
+            border-radius: 2px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25) inset;
+        }
     </style>
 {% endblock %}
 
@@ -55,7 +53,7 @@
             {% endif %}
         {% endif %}
 
-        <progress {% if error or failed %} class="error" {% elif finished %} class="success" {% endif %} value="{{ current }}" max="{{ total }}"></progress>
+        <progress {% if error or failed %} class="error" {% elif finished %} class="successful" {% endif %} value="{{ current }}" max="{{ total }}"></progress>
 
         {% if total %}
             {{ progress }}%

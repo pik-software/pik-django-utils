@@ -234,12 +234,15 @@ class AdminProgressMixIn(AdminPageMixIn):
         elapsed = (now - progress['started'])
         left = progress['total'] - progress['current']
         speed = progress['current'] / elapsed.total_seconds()
+        percent = 0
+        if progress['total']:
+            percent = ceil(100 * progress['current'] / progress['total'])
 
         return {
             **self.admin_site.each_context(request), **progress, **kwargs,
             'title': self.progress_pages[process],
             'speed': speed,
-            'progress': ceil(100 * progress['current'] / progress['total']),
+            'progress': percent,
             'started': progress['started'],
             'elapsed': timedelta(seconds=ceil(
                 (now - progress['started']).total_seconds())),
