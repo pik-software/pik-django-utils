@@ -537,3 +537,14 @@ class TestMessageHandlerEvents:
             transactionGUID='DCEBA...', transactionMessageCount=10,
             success=False, error=ZeroDivisionError())])
         assert pformat(event_captor.capture.call_args_list) == expected
+
+# TODO:
+# Сделать тесты:
+# 1. Удаление ошибки после успеха
+# 2. Ошибка валидации уже была но приехала еще новая валидация
+# 3. Системная Ошибка уже была но приехала еще новая системная
+# 4. Ошибка валидации уже была но приехала еще новая системная
+# 5. Системная Ошибка уже была но приехала еще новая валидация
+# Тесты на проверку того что уже есть 2 сообщение в базе
+# 7. Системная ошибка если она уже была, а была еще валидация PIKMessage(body_hash) PIKMessage(entity_uid)
+# 8. Ошибка валидации если она уже была, а была еще системная PIKMessage(body_hash) PIKMessage(entity_uid)
