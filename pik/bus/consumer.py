@@ -74,9 +74,12 @@ class MessageHandler:
     def error_messages(self):
         lookups = Q(queue=self._queue) & Q(body_hash=self._body_hash)
         if self._entity_uid:
-            lookups = Q(queue=self._queue) & (
-                Q(body_hash=self._body_hash) | Q(entity_uid=self._entity_uid))
-        return PIKMessageException.objects.filter(lookups).order_by('-updated')
+            lookups = (
+                Q(queue=self._queue)
+                & (Q(body_hash=self._body_hash)
+                   | Q(entity_uid=self._entity_uid)))
+        return (
+            PIKMessageException.objects.filter(lookups).order_by('-updated'))
 
     @cached_property
     def envelope(self):
@@ -189,10 +192,10 @@ class MessageHandler:
                 queue=self._queue)]
 
         err_msg, other_errors = errors_messages[0:], errors_messages[1:]
-        err_msg.message=self._body,
-        err_msg.exception=extract_exception_data(exc),
-        err_msg.exception_type=exc_data['code'],
-        err_msg.exception_message=exc_data['message']
+        err_msg.message = self._body
+        err_msg.exception = extract_exception_data(exc)
+        err_msg.exception_type = exc_data['code']
+        err_msg.exception_message = exc_data['message']
 
         is_missing_dependency = ('does_not_exist' in [
             detail[0]['code']
@@ -253,9 +256,9 @@ class MessageConsumer:
         wait=wait_fixed(RECONNECT_WAIT),
         retry=retry_if_exception_type(AMQPConnectionError),
         after=lambda retry_state:
-            logger.warning(
-                'Connecting to RabbitMQ. Attempt number: %s',
-                retry_state.attempt_number)
+        logger.warning(
+            'Connecting to RabbitMQ. Attempt number: %s',
+            retry_state.attempt_number)
     )
     def _consume(self):
         self._connect()
@@ -289,7 +292,9 @@ class MessageConsumer:
     def get_handler_kwargs(**kwargs):
         return {**kwargs, 'event_captor': mdm_event_captor}
 
-    def _handle_message(self, channel, method, properties, body, queue):  # noqa: too-many-arguments
+    def _handle_message(  # noqa: too-many-arguments
+            self, channel, method, properties, body,
+            queue):
         logger.info(
             'Handling %s bytes message from %s queue', len(body), queue)
         handler = self._message_handler(**self.get_handler_kwargs(
@@ -312,7 +317,8 @@ class MessageConsumer:
             event='consumption',
             entity_type=envelope.get('message', {}).get('type'),
             entity_guid=envelope.get('message', {}).get('guid'),
-            transactionGUID=envelope.get('headers', {}).get('transactionGUID'),
+            transactionGUID=envelope.get('headers', {}).get(
+                'transactionGUID'),
             transactionMessageCount=envelope.get(
                 'headers', {}).get('transactionMessageCount'),
             **kwargs)
