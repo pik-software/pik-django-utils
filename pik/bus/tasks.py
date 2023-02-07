@@ -23,7 +23,7 @@ CHUNK_SIZE = 10000
 
 @app.shared_task(bind=True)
 def task_process_messages(self, pks, *args, **kwargs):
-    qs = PIKMessageException.objects.filter(pk__in=pks).order_by('created')
+    qs = PIKMessageException.objects.filter(pk__in=pks).order_by('updated')
 
     task_id = self.request.id
     started = datetime.now()
