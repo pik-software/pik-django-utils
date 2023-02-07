@@ -4,6 +4,7 @@ import logging
 from functools import partial
 from hashlib import sha1
 from typing import Set
+from uuid import UUID
 
 from django.conf import settings
 from django.core.cache import cache
@@ -55,23 +56,23 @@ class MessageHandler:
             self._prepare_payload()
             self._update_instance()
             self._process_dependants()
-            self.register_success()
+            self._register_success()
             return True
         except Exception as error:  # noqa: too-broad-except
-            self.register_error(error)
+            self._register_error(error)
             return False
 
-    def register_success(self):
-        for msg in self.error_messages:
+    def _register_success(self):
+        for msg in self._error_messages:
             msg.delete()
         self._capture_event(success=True, error=None)
 
-    def register_error(self, error):
+    def _register_error(self, error):
         self._capture_event(success=False, error=error)
         self._capture_exception(error)
 
     @property
-    def error_messages(self):
+    def _error_messages(self):
         lookups = Q(queue=self._queue) & Q(body_hash=self._body_hash)
         if self._entity_uid:
             lookups = (
@@ -118,7 +119,7 @@ class MessageHandler:
     @cached_property
     def _entity_uid(self):
         try:
-            return self._payload.get('guid')
+            return str(UUID(self._payload.get('guid')))
         except Exception as error:  # noqa: broad-except
             capture_exception(error)
             return None
@@ -132,7 +133,7 @@ class MessageHandler:
         try:
             return self._queryset.get(uid=self._entity_uid)
         except self._model.DoesNotExist:
-            return self._model(uid=self._entity_uid)
+            return self._model(uid=self._payload['guid'])
 
     @property
     def _model(self):
@@ -184,14 +185,14 @@ class MessageHandler:
 
         exc_data = extract_exception_data(exc)
 
-        errors_messages = self.error_messages
+        errors_messages = self._error_messages
         if not errors_messages:
             errors_messages = [PIKMessageException(
                 entity_uid=self._entity_uid,
                 body_hash=self._body_hash,
                 queue=self._queue)]
 
-        err_msg, other_errors = errors_messages[0:], errors_messages[1:]
+        err_msg, other_errors = errors_messages[0], errors_messages[1:]
         err_msg.message = self._body
         err_msg.exception = extract_exception_data(exc)
         err_msg.exception_type = exc_data['code']
@@ -216,7 +217,7 @@ class MessageHandler:
         self._event_captor.capture(
             event=self._event_label,
             entity_type=self.envelope.get('message', {}).get('type'),
-            entity_guid=self._entity_uid,
+            entity_guid=self.envelope.get('message', {}).get('guid'),
             transactionGUID=self.envelope.get(
                 'headers', {}).get('transactionGUID'),
             transactionMessageCount=self.envelope.get(

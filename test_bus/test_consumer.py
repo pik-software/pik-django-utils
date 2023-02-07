@@ -168,7 +168,8 @@ class TestMessageHandlerUpdateInstance:
                     handler._update_instance()  # noqa: protected-access
 
         assert list(RegularModel.objects.values('name', 'uid')) == [{
-            'uid': UUID('b24d988e-42aa-477d-a8c3-a88b127b9b31'), 'name': 'Test'
+            'uid': UUID('b24d988e-42aa-477d-a8c3-a88b127b9b31'),
+            'name': 'Test'
         }]
 
     @staticmethod
@@ -231,7 +232,9 @@ class TestMessageHandlerException:
     def test_unexpected_error():
         PIKMessageException(
             uid='dbef014c-1ece-f8f9-9e5e-fa78cf01680d',
-            exception='', queue='test_queue').save()
+            exception='',
+            queue='test_queue',
+            body_hash='dbef014c1ecef8f99e5efa78cf01680d2e0aa42f').save()
         handler = MessageHandler(
             b'test_message', 'test_queue', Mock(name='event_captor'))
         handler._capture_exception(Exception('test'))  # noqa: protected-access
@@ -353,7 +356,7 @@ class TestMessageHandlerDependencies:
     @staticmethod
     @patch.object(MessageHandler, '_serializer_class', RegularModelSerializer)
     def test_process_dependency():
-        PIKMessageException(
+        (PIKMessageException(
             message=json.dumps({'message': {
                 'type': 'Dependency',
                 'name': 'Dependency',
@@ -361,12 +364,16 @@ class TestMessageHandlerDependencies:
             }}).encode('utf8'),
             exception='',
             queue='test_queue',
-            dependencies={'DependantModel': 42}).save()
+            dependencies={
+                'DependantModel': '11111111-1111-1111-1111-111111111111'})
+         .save())
 
         handler = MessageHandler(
             Mock(name='message'), Mock(name='queue'),
             Mock(name='event_captor'))
-        handler._payload = {'guid': 42, 'type': 'DependantModel'}  # noqa: protected-access
+        handler._payload = {
+            'guid': '11111111-1111-1111-1111-111111111111',
+            'type': 'DependantModel'}  # noqa: protected-access
         handler._process_dependants()  # noqa: protected-access
 
         assert list(RegularModel.objects.values('uid', 'name')) == [{
@@ -491,6 +498,7 @@ class TestMessageHandlerEvents:
         assert pformat(event_captor.capture.call_args_list) == expected
 
     @staticmethod
+    @pytest.mark.django_db
     @patch('pik.bus.consumer.MessageHandler._get_serializer', Mock())
     @patch('pik.bus.consumer.MessageHandler._update_instance', Mock())
     @patch('pik.bus.consumer.MessageHandler._process_dependants', Mock())
