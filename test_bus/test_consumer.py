@@ -371,9 +371,9 @@ class TestMessageHandlerDependencies:
         handler = MessageHandler(
             Mock(name='message'), Mock(name='queue'),
             Mock(name='event_captor'))
-        handler._payload = {
+        handler._payload = {  # noqa: protected-access
             'guid': '11111111-1111-1111-1111-111111111111',
-            'type': 'DependantModel'}  # noqa: protected-access
+            'type': 'DependantModel'}
         handler._process_dependants()  # noqa: protected-access
 
         assert list(RegularModel.objects.values('uid', 'name')) == [{
@@ -554,5 +554,7 @@ class TestMessageHandlerEvents:
 # 4. Ошибка валидации уже была но приехала еще новая системная
 # 5. Системная Ошибка уже была но приехала еще новая валидация
 # Тесты на проверку того что уже есть 2 сообщение в базе
-# 7. Системная ошибка если она уже была, а была еще валидация PIKMessage(body_hash) PIKMessage(entity_uid)
-# 8. Ошибка валидации если она уже была, а была еще системная PIKMessage(body_hash) PIKMessage(entity_uid)
+# 7. Системная ошибка если она уже была,
+#   а была еще валидация PIKMessage(body_hash) PIKMessage(entity_uid)
+# 8. Ошибка валидации если она уже была,
+#   а была еще системная PIKMessage(body_hash) PIKMessage(entity_uid)
