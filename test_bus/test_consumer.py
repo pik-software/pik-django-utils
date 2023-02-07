@@ -555,6 +555,8 @@ class TestMessageHandlerEvents:
 # 5. Системная Ошибка уже была но приехала еще новая валидация
 # Тесты на проверку того что уже есть 2 сообщение в базе
 # 7. Системная ошибка если она уже была,
-#   а была еще валидация PIKMessage(body_hash) PIKMessage(entity_uid)
+#   а была еще валидация
+#   PIKMessageException(body_hash) PIKMessageException(entity_uid)
 # 8. Ошибка валидации если она уже была,
-#   а была еще системная PIKMessage(body_hash) PIKMessage(entity_uid)
+#   а была еще системная
+#   PIKMessageException(body_hash) PIKMessageException(entity_uid)
