@@ -548,15 +548,46 @@ class TestMessageHandlerEvents:
 
 # TODO:
 # Сделать тесты:
-# 1. Удаление ошибки после успеха
-# 2. Ошибка валидации уже была но приехала еще новая валидация
-# 3. Системная Ошибка уже была но приехала еще новая системная
-# 4. Ошибка валидации уже была но приехала еще новая системная
-# 5. Системная Ошибка уже была но приехала еще новая валидация
+# 1+. Удаление ошибки после успеха
+# 2-. Ошибка валидации уже была но приехала еще новая валидация
+# 3-. Системная Ошибка уже была но приехала еще новая системная
+# 4-. Ошибка валидации уже была но приехала еще новая системная
+# 5-. Системная Ошибка уже была но приехала еще новая валидация
 # Тесты на проверку того что уже есть 2 сообщение в базе
-# 7. Системная ошибка если она уже была,
+# 6-. Системная ошибка если она уже была,
 #   а была еще валидация
 #   PIKMessageException(body_hash) PIKMessageException(entity_uid)
-# 8. Ошибка валидации если она уже была,
+# 7-. Ошибка валидации если она уже была,
 #   а была еще системная
 #   PIKMessageException(body_hash) PIKMessageException(entity_uid)
+
+
+class TestMessageHandlerRegisterSuccess:
+    @staticmethod
+    @pytest.mark.django_db
+    def test_delete_success():
+        exc_data_validation = {
+            'uid': '00000000-0000-0000-0000-000000000000',
+            'entity_uid': '99999999-9999-9999-9999-999999999999',
+            'body_hash': 'b732cb833f4b2db280e371a1ad19c9f3dd8abdf5',
+            'queue': 'test_queue',
+            'message': json.dumps({'message': {
+                'type': 'test_queue',
+                'name': 'test_queue',
+                'guid': '99999999-9999-9999-9999-999999999999'
+                }}).encode('utf8'),
+            'exception': {
+                'code': 'invalid',
+                'detail': {
+                    'name': [
+                        {'code': 'null',
+                         'message': 'Это поле не может быть пустым.'}]}},
+            'exception_type': 'invalid',
+            'exception_message': 'Invalid input.'
+        }
+        PIKMessageException(**exc_data_validation).save()
+        handler = MessageHandler(
+            exc_data_validation['message'], exc_data_validation['queue'],
+            Mock(name='event_captor'))
+        handler._register_success()
+        assert PIKMessageException.objects.count() == 0
