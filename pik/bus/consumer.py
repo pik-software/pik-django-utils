@@ -193,6 +193,10 @@ class MessageHandler:
                 queue=self._queue)]
 
         err_msg, other_errors = errors_messages[0], errors_messages[1:]
+        if not err_msg.body_hash:
+            err_msg.body_hash = self._body_hash
+        if not err_msg.entity_uid:
+            err_msg.entity_uid = self._entity_uid
         err_msg.message = self._body
         err_msg.exception = extract_exception_data(exc)
         err_msg.exception_type = exc_data['code']
@@ -208,8 +212,8 @@ class MessageHandler:
                 for error in errors
                 if error['code'] == 'does_not_exist'}
 
-        for err_msg in other_errors:
-            err_msg.delete()
+        for _err_msg in other_errors:
+            _err_msg.delete()
 
         err_msg.save()
 
