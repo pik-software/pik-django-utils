@@ -8,6 +8,7 @@ from uuid import UUID
 
 from django.conf import settings
 from django.core.cache import cache
+from django.db.models import Q
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
 from pika import BlockingConnection, URLParameters
@@ -22,7 +23,6 @@ from pik.api.exceptions import (
     extract_exception_data, NewestUpdateValidationError)
 from pik.bus.mdm import mdm_event_captor
 from pik.bus.models import PIKMessageException
-from pik.core.shortcuts import update_or_create_object
 from pik.utils.bus import LiveBlockingConnection
 from pik.utils.case_utils import underscorize
 from pik.utils.sentry import capture_exception
@@ -43,7 +43,6 @@ class MessageHandler:
     _payload = None
     _parsed_payload = None
     _serializers = None
-    exc_data = None
     _event_label = 'deserialization'
 
     def __init__(self, body, queue, event_captor):
@@ -57,12 +56,31 @@ class MessageHandler:
             self._prepare_payload()
             self._update_instance()
             self._process_dependants()
-            self._capture_event(success=True, error=None)
+            self._register_success()
             return True
         except Exception as error:  # noqa: too-broad-except
-            self._capture_event(success=False, error=error)
-            self._capture_exception(error)
+            self._register_error(error)
             return False
+
+    def _register_success(self):
+        for msg in self._error_messages:
+            msg.delete()
+        self._capture_event(success=True, error=None)
+
+    def _register_error(self, error):
+        self._capture_event(success=False, error=error)
+        self._capture_exception(error)
+
+    @property
+    def _error_messages(self):
+        lookups = Q(queue=self._queue) & Q(body_hash=self._body_hash)
+        if self._entity_uid:
+            lookups = (
+                Q(queue=self._queue)
+                & (Q(body_hash=self._body_hash)
+                   | Q(entity_uid=self._entity_uid)))
+        return (
+            PIKMessageException.objects.filter(lookups).order_by('-updated'))
 
     @cached_property
     def envelope(self):
@@ -99,9 +117,21 @@ class MessageHandler:
         return self._serializer_class(self._instance, self._payload)
 
     @cached_property
+    def _entity_uid(self):
+        try:
+            return str(UUID(self._payload.get('guid')))
+        except Exception as error:  # noqa: broad-except
+            capture_exception(error)
+            return None
+
+    @cached_property
+    def _body_hash(self):
+        return sha1(self._body).hexdigest()
+
+    @cached_property
     def _instance(self):
         try:
-            return self._queryset.get(uid=self._payload['guid'])
+            return self._queryset.get(uid=self._entity_uid)
         except self._model.DoesNotExist:
             return self._model(uid=self._payload['guid'])
 
@@ -136,7 +166,7 @@ class MessageHandler:
         from .models import PIKMessageException  # noqa: cyclic import workaround
         dependants = PIKMessageException.objects.filter(
             dependencies__contains={
-                self._payload["type"]: self._payload["guid"]})
+                self._payload["type"]: self._entity_uid})
         for dependant in dependants:
             handler = self.__class__(
                 dependant.message, dependant.queue, mdm_event_captor)
@@ -153,53 +183,35 @@ class MessageHandler:
             capture_exception(exc)
             return
 
-        self.exc_data = extract_exception_data(exc)
+        exc_data = extract_exception_data(exc)
 
-        is_missing_dependency = (
-            'does_not_exist' in [
-                detail[0]['code']
-                for detail in self.exc_data.get('detail', {}).values()])
+        errors_messages = self._error_messages
+        if not errors_messages:
+            errors_messages = [PIKMessageException(
+                entity_uid=self._entity_uid,
+                body_hash=self._body_hash,
+                queue=self._queue)]
+
+        err_msg, other_errors = errors_messages[0], errors_messages[1:]
+        err_msg.message = self._body
+        err_msg.exception = exc_data
+        err_msg.exception_type = exc_data['code']
+        err_msg.exception_message = exc_data['message']
+
+        is_missing_dependency = ('does_not_exist' in [
+            detail[0]['code']
+            for detail in exc_data.get('detail', {}).values()])
         if is_missing_dependency:
-            self._capture_missing_dependencies()
-            return
-        self._capture_invalid_payload(exc)
+            err_msg.dependencies = {
+                self._payload[field]['type']: self._payload[field]['guid']
+                for field, errors in exc_data.get('detail', {}).items()
+                for error in errors
+                if error['code'] == 'does_not_exist'}
 
-    def _capture_missing_dependencies(self):
-        dependencies = {
-            self._payload[field]['type']: self._payload[field]['guid']
-            for field, errors in self.exc_data.get('detail', {}).items()
-            for error in errors
-            if error['code'] == 'does_not_exist'}
+        for _err_msg in other_errors:
+            _err_msg.delete()
 
-        update_or_create_object(
-            PIKMessageException, search_keys={
-                'entity_uid': self._payload.get('guid'),
-                'queue': self._queue},
-            entity_uid=self._payload.get('guid'),
-            queue=self._queue,
-            message=self._body,
-            exception=self.exc_data,
-            exception_type=self.exc_data['code'],
-            exception_message=self.exc_data['message'],
-            dependencies=dependencies)
-
-    def _capture_invalid_payload(self, exc):
-        try:
-            entity_uid = UUID(self._payload.get('guid'))
-        except:  # noqa: bare-except
-            entity_uid = None
-        uid = sha1(self._body).hexdigest()[:32]
-        update_or_create_object(
-            PIKMessageException, search_keys={
-                'queue': self._queue,
-                'uid': uid},
-            entity_uid=entity_uid,
-            uid=uid,
-            queue=self._queue,
-            message=self._body,
-            exception=extract_exception_data(exc),
-            exception_type=self.exc_data['code'],
-            exception_message=self.exc_data['message'])
+        err_msg.save()
 
     def _capture_event(self, **kwargs):
         self._event_captor.capture(
@@ -281,7 +293,9 @@ class MessageConsumer:
     def get_handler_kwargs(**kwargs):
         return {**kwargs, 'event_captor': mdm_event_captor}
 
-    def _handle_message(self, channel, method, properties, body, queue):  # noqa: too-many-arguments
+    def _handle_message(  # noqa: too-many-arguments
+            self, channel, method, properties, body,
+            queue):
         logger.info(
             'Handling %s bytes message from %s queue', len(body), queue)
         handler = self._message_handler(**self.get_handler_kwargs(
@@ -304,7 +318,8 @@ class MessageConsumer:
             event='consumption',
             entity_type=envelope.get('message', {}).get('type'),
             entity_guid=envelope.get('message', {}).get('guid'),
-            transactionGUID=envelope.get('headers', {}).get('transactionGUID'),
+            transactionGUID=envelope.get('headers', {}).get(
+                'transactionGUID'),
             transactionMessageCount=envelope.get(
                 'headers', {}).get('transactionMessageCount'),
             **kwargs)

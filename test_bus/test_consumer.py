@@ -34,6 +34,14 @@ class RemovableRegularDependedSerializer(StandardizedModelSerializer):
         fields = ('guid', 'created', 'dependence')
 
 
+class RegularDatedModelSerializer(RegularModelSerializer):
+    created = DateTimeField(required=False)
+
+    class Meta:
+        model = RegularModel
+        fields = ('guid', 'created', 'name')
+
+
 class TestMessageHandlerFetch:
     @staticmethod
     def test_ok():
@@ -168,7 +176,8 @@ class TestMessageHandlerUpdateInstance:
                     handler._update_instance()  # noqa: protected-access
 
         assert list(RegularModel.objects.values('name', 'uid')) == [{
-            'uid': UUID('b24d988e-42aa-477d-a8c3-a88b127b9b31'), 'name': 'Test'
+            'uid': UUID('b24d988e-42aa-477d-a8c3-a88b127b9b31'),
+            'name': 'Test'
         }]
 
     @staticmethod
@@ -231,7 +240,9 @@ class TestMessageHandlerException:
     def test_unexpected_error():
         PIKMessageException(
             uid='dbef014c-1ece-f8f9-9e5e-fa78cf01680d',
-            exception='', queue='test_queue').save()
+            exception='',
+            queue='test_queue',
+            body_hash='dbef014c1ecef8f99e5efa78cf01680d2e0aa42f').save()
         handler = MessageHandler(
             b'test_message', 'test_queue', Mock(name='event_captor'))
         handler._capture_exception(Exception('test'))  # noqa: protected-access
@@ -353,7 +364,7 @@ class TestMessageHandlerDependencies:
     @staticmethod
     @patch.object(MessageHandler, '_serializer_class', RegularModelSerializer)
     def test_process_dependency():
-        PIKMessageException(
+        (PIKMessageException(
             message=json.dumps({'message': {
                 'type': 'Dependency',
                 'name': 'Dependency',
@@ -361,12 +372,16 @@ class TestMessageHandlerDependencies:
             }}).encode('utf8'),
             exception='',
             queue='test_queue',
-            dependencies={'DependantModel': 42}).save()
+            dependencies={
+                'DependantModel': '11111111-1111-1111-1111-111111111111'})
+         .save())
 
         handler = MessageHandler(
             Mock(name='message'), Mock(name='queue'),
             Mock(name='event_captor'))
-        handler._payload = {'guid': 42, 'type': 'DependantModel'}  # noqa: protected-access
+        handler._payload = {  # noqa: protected-access
+            'guid': '11111111-1111-1111-1111-111111111111',
+            'type': 'DependantModel'}
         handler._process_dependants()  # noqa: protected-access
 
         assert list(RegularModel.objects.values('uid', 'name')) == [{
@@ -491,6 +506,7 @@ class TestMessageHandlerEvents:
         assert pformat(event_captor.capture.call_args_list) == expected
 
     @staticmethod
+    @pytest.mark.django_db
     @patch('pik.bus.consumer.MessageHandler._get_serializer', Mock())
     @patch('pik.bus.consumer.MessageHandler._update_instance', Mock())
     @patch('pik.bus.consumer.MessageHandler._process_dependants', Mock())
@@ -537,3 +553,399 @@ class TestMessageHandlerEvents:
             transactionGUID='DCEBA...', transactionMessageCount=10,
             success=False, error=ZeroDivisionError())])
         assert pformat(event_captor.capture.call_args_list) == expected
+
+
+class TestMessageHandlerMultipleErrors:
+    @staticmethod
+    @pytest.mark.django_db
+    def test_delete_success():
+        message = json.dumps({'message': {
+            'type': 'test_queue',
+            'name': 'test_queue',
+            'guid': '99999999-9999-9999-9999-999999999999'
+        }}).encode('utf8')
+        queue = 'test_queue'
+        exc_data = {
+            'uid': '00000000-0000-0000-0000-000000000000',
+            'entity_uid': '99999999-9999-9999-9999-999999999999',
+            'body_hash': 'b732cb833f4b2db280e371a1ad19c9f3dd8abdf5',
+            'queue': queue,
+            'message': message,
+            'exception': {
+                'code': 'invalid',
+                'detail': {
+                    'name': [
+                        {'code': 'null',
+                         'message': 'Это поле не может быть пустым.'}]}},
+            'exception_type': 'invalid',
+            'exception_message': 'Invalid input.'}
+        PIKMessageException(**exc_data).save()
+        handler = MessageHandler(
+            message, queue,
+            Mock(name='event_captor'))
+        handler._register_success()  # noqa: protected-access
+        assert PIKMessageException.objects.count() == 0
+
+    @staticmethod
+    @pytest.mark.django_db
+    def test_system_error_after_existing_system_error():
+        message = json.dumps({'message': {
+            'type': 'test_queue',
+            'name': 'test_queue',
+            'guid': '99999999-9999-9999-9999-999999999999'
+        }}).encode('utf8')
+        queue = 'test_queue'
+        exc_data = {
+            'uid': '00000000-0000-0000-0000-000000000000',
+            'entity_uid': '99999999-9999-9999-9999-999999999999',
+            'body_hash': 'b732cb833f4b2db280e371a1ad19c9f3dd8abdf5',
+            'queue': queue,
+            'message': message,
+            'exception': {
+                'code': 'ConnectionError',
+                'message': (
+                    'Error 111 connecting to service-redis:6379. '
+                    'Connection refused.')},
+            'exception_type': 'ConnectionError',
+            'exception_message': (
+                'Error 111 connecting to service-redis:6379. '
+                'Connection refused.')}
+        PIKMessageException(**exc_data).save()
+        handler = MessageHandler(
+            message, queue,
+            Mock(name='event_captor'))
+        handler.handle()
+        messages_qs = PIKMessageException.objects.all()
+        assert messages_qs.count() == 1
+        expected = {
+            'uid': UUID('00000000-0000-0000-0000-000000000000'),
+            'entity_uid': UUID('99999999-9999-9999-9999-999999999999'),
+            'body_hash': 'b732cb833f4b2db280e371a1ad19c9f3dd8abdf5',
+            'queue': 'test_queue',
+            'exception': {
+                'code': 'SerializerMissingError',
+                'message': 'Unable to find serializer for test_queue'},
+            'exception_type': 'SerializerMissingError',
+            'exception_message': 'Unable to find serializer for test_queue'}
+        assert (
+            messages_qs.values(
+                'uid', 'entity_uid', 'body_hash', 'queue',
+                'exception', 'exception_type', 'exception_message')
+            .first()) == expected
+        assert (bytes(
+            messages_qs.values_list('message', flat=True)
+            .first()) == message)
+
+    @staticmethod
+    @pytest.mark.django_db
+    def test_system_error_after_existing_validation_error():
+        message = json.dumps({'message': {
+            'type': 'test_queue',
+            'name': 'test_queue',
+            'guid': '99999999-9999-9999-9999-999999999999'
+        }}).encode('utf8')
+        queue = 'test_queue'
+        exc_data = {
+            'uid': '00000000-0000-0000-0000-000000000000',
+            'entity_uid': '99999999-9999-9999-9999-999999999999',
+            'body_hash': 'b732cb833f4b2db280e371a1ad19c9f3dd8abdf5',
+            'queue': queue,
+            'message': message,
+            'exception': {
+                'code': 'invalid',
+                'detail': {
+                    'name': [
+                        {'code': 'null',
+                         'message': 'Это поле не может быть пустым.'}]}},
+            'exception_type': 'invalid',
+            'exception_message': 'Invalid input.'}
+        PIKMessageException(**exc_data).save()
+        handler = MessageHandler(
+            message, queue,
+            Mock(name='event_captor'))
+        handler.handle()
+        messages_qs = PIKMessageException.objects.all()
+        assert messages_qs.count() == 1
+        expected = {
+            'uid': UUID('00000000-0000-0000-0000-000000000000'),
+            'entity_uid': UUID('99999999-9999-9999-9999-999999999999'),
+            'body_hash': 'b732cb833f4b2db280e371a1ad19c9f3dd8abdf5',
+            'queue': 'test_queue',
+            'exception': {
+                'code': 'SerializerMissingError',
+                'message': 'Unable to find serializer for test_queue'},
+            'exception_type': 'SerializerMissingError',
+            'exception_message': 'Unable to find serializer for test_queue'}
+        assert (
+            messages_qs.values(
+                'uid', 'entity_uid', 'body_hash', 'queue',
+                'exception', 'exception_type', 'exception_message')
+            .first()) == expected
+        assert (bytes(
+            messages_qs.values_list('message', flat=True)
+            .first()) == message)
+
+    @staticmethod
+    @pytest.mark.django_db
+    @patch.object(
+        MessageHandler, '_serializer_class',
+        RegularDatedModelSerializer)
+    def test_validation_error_after_existing_validation_error():
+        message = json.dumps({'message': {
+            'created': 'created_date',
+            'name': 'test_queue',
+            'guid': '99999999-9999-9999-9999-999999999999'
+        }}).encode('utf8')
+        queue = 'test_queue'
+        exc_data = {
+            'uid': '00000000-0000-0000-0000-000000000000',
+            'entity_uid': '99999999-9999-9999-9999-999999999999',
+            'body_hash': 'db16834ab244d557e098ffa4482eb304cfbaf780',
+            'queue': queue,
+            'message': message,
+            'exception': {
+                'code': 'invalid',
+                'detail': {
+                    'name': [
+                        {'code': 'null',
+                         'message': 'Это поле не может быть пустым.'}]}},
+            'exception_type': 'invalid',
+            'exception_message': 'Invalid input.'}
+        PIKMessageException(**exc_data).save()
+        handler = MessageHandler(
+            message, queue,
+            Mock(name='event_captor'))
+        handler.handle()
+        messages_qs = PIKMessageException.objects.all()
+        assert messages_qs.count() == 1
+        expected = {
+            'uid': UUID('00000000-0000-0000-0000-000000000000'),
+            'entity_uid': UUID('99999999-9999-9999-9999-999999999999'),
+            'body_hash': 'db16834ab244d557e098ffa4482eb304cfbaf780',
+            'queue': 'test_queue',
+            'exception': {
+                'code': 'invalid',
+                'detail': {
+                    'created': [{
+                        'code': 'invalid',
+                        'message': (
+                            'Datetime has wrong format. '
+                            'Use one of these formats '
+                            'instead: '
+                            'YYYY-MM-DDThh:mm[:ss[.uuuuuu]][+HH:MM|-HH:MM|Z].'
+                        )}]},
+                'message': 'Invalid input.'},
+            'exception_message': 'Invalid input.',
+            'exception_type': 'invalid'}
+        assert (
+            messages_qs.values(
+                'uid', 'entity_uid', 'body_hash', 'queue',
+                'exception', 'exception_type', 'exception_message')
+            .first()) == expected
+        assert (bytes(
+            messages_qs.values_list('message', flat=True)
+            .first()) == message)
+
+    @staticmethod
+    @pytest.mark.django_db
+    @patch.object(
+        MessageHandler, '_serializer_class',
+        RegularDatedModelSerializer)
+    def test_validation_error_after_existing_system_error():
+        message = json.dumps({'message': {
+            'created': 'created_date',
+            'name': 'test_queue',
+            'guid': '99999999-9999-9999-9999-999999999999'
+        }}).encode('utf8')
+        queue = 'test_queue'
+        exc_data = {
+            'uid': '00000000-0000-0000-0000-000000000000',
+            'entity_uid': '99999999-9999-9999-9999-999999999999',
+            'body_hash': 'db16834ab244d557e098ffa4482eb304cfbaf780',
+            'queue': queue,
+            'message': message,
+            'exception': {
+                'code': 'ConnectionError',
+                'message': (
+                    'Error 111 connecting to service-redis:6379. '
+                    'Connection refused.')},
+            'exception_type': 'ConnectionError',
+            'exception_message': (
+                'Error 111 connecting to service-redis:6379. '
+                'Connection refused.')}
+        PIKMessageException(**exc_data).save()
+        handler = MessageHandler(
+            message, queue,
+            Mock(name='event_captor'))
+        handler.handle()
+        messages_qs = PIKMessageException.objects.all()
+        assert messages_qs.count() == 1
+        expected = {
+            'uid': UUID('00000000-0000-0000-0000-000000000000'),
+            'entity_uid': UUID('99999999-9999-9999-9999-999999999999'),
+            'body_hash': 'db16834ab244d557e098ffa4482eb304cfbaf780',
+            'queue': 'test_queue',
+            'exception': {
+                'code': 'invalid',
+                'detail': {
+                    'created': [{
+                        'code': 'invalid',
+                        'message': (
+                            'Datetime has wrong format. '
+                            'Use one of these formats '
+                            'instead: '
+                            'YYYY-MM-DDThh:mm[:ss[.uuuuuu]][+HH:MM|-HH:MM|Z].'
+                        )}]},
+                'message': 'Invalid input.'},
+            'exception_message': 'Invalid input.',
+            'exception_type': 'invalid'}
+        assert (
+            messages_qs.values(
+                'uid', 'entity_uid', 'body_hash', 'queue',
+                'exception', 'exception_type', 'exception_message')
+            .first()) == expected
+        assert (bytes(
+            messages_qs.values_list('message', flat=True)
+            .first()) == message)
+
+    @staticmethod
+    @pytest.mark.django_db
+    def test_system_error_after_existing_validation_and_system_errors():
+        message = json.dumps({'message': {
+            'type': 'test_queue',
+            'name': 'test_queue',
+            'guid': '99999999-9999-9999-9999-999999999999'
+        }}).encode('utf8')
+        queue = 'test_queue'
+        exc_data_system = {
+            'uid': '00000000-0000-0000-0000-000000000000',
+            'entity_uid': None,
+            'body_hash': 'b732cb833f4b2db280e371a1ad19c9f3dd8abdf5',
+            'queue': queue,
+            'message': message,
+            'exception': {
+                'code': 'ConnectionError',
+                'message': (
+                    'Error 111 connecting to service-redis:6379. '
+                    'Connection refused.')},
+            'exception_type': 'ConnectionError',
+            'exception_message': (
+                'Error 111 connecting to service-redis:6379. '
+                'Connection refused.')}
+        exc_data_validation = {
+            'uid': '11111111-1111-1111-1111-111111111111',
+            'entity_uid': '99999999-9999-9999-9999-999999999999',
+            'body_hash': None,
+            'queue': queue,
+            'message': message,
+            'exception': {
+                'code': 'invalid',
+                'detail': {
+                    'name': [
+                        {'code': 'null',
+                         'message': 'Это поле не может быть пустым.'}]}},
+            'exception_type': 'invalid',
+            'exception_message': 'Invalid input.'}
+        PIKMessageException(**exc_data_system).save()
+        PIKMessageException(**exc_data_validation).save()
+        handler = MessageHandler(
+            message, queue,
+            Mock(name='event_captor'))
+        handler.handle()
+        messages_qs = PIKMessageException.objects.all()
+        assert messages_qs.count() == 1
+        expected = {
+            'uid': UUID('11111111-1111-1111-1111-111111111111'),
+            'entity_uid': UUID('99999999-9999-9999-9999-999999999999'),
+            'body_hash': None,
+            'queue': 'test_queue',
+            'exception': {
+                'code': 'SerializerMissingError',
+                'message': 'Unable to find serializer for test_queue'},
+            'exception_type': 'SerializerMissingError',
+            'exception_message': 'Unable to find serializer for test_queue'}
+        assert (
+            messages_qs.values(
+                'uid', 'entity_uid', 'body_hash', 'queue',
+                'exception', 'exception_type', 'exception_message')
+            .first()) == expected
+        assert (bytes(
+            messages_qs.values_list('message', flat=True)
+            .first()) == message)
+
+    @staticmethod
+    @pytest.mark.django_db
+    @patch.object(
+        MessageHandler, '_serializer_class',
+        RegularDatedModelSerializer)
+    def test_validation_error_after_existing_validation_and_system_errors():
+        message = json.dumps({'message': {
+            'created': 'created_date',
+            'name': 'test_queue',
+            'guid': '99999999-9999-9999-9999-999999999999'
+        }}).encode('utf8')
+        queue = 'test_queue'
+        exc_data_validation = {
+            'uid': '00000000-0000-0000-0000-000000000000',
+            'entity_uid': None,
+            'body_hash': 'db16834ab244d557e098ffa4482eb304cfbaf780',
+            'queue': queue,
+            'message': message,
+            'exception': {
+                'code': 'invalid',
+                'detail': {
+                    'name': [
+                        {'code': 'null',
+                         'message': 'Это поле не может быть пустым.'}]}},
+            'exception_type': 'invalid',
+            'exception_message': 'Invalid input.'}
+        exc_data_system = {
+            'uid': '11111111-1111-1111-1111-111111111111',
+            'entity_uid': '99999999-9999-9999-9999-999999999999',
+            'body_hash': None,
+            'queue': queue,
+            'message': message,
+            'exception': {
+                'code': 'ConnectionError',
+                'message': (
+                    'Error 111 connecting to service-redis:6379. '
+                    'Connection refused.')},
+            'exception_type': 'ConnectionError',
+            'exception_message': (
+                'Error 111 connecting to service-redis:6379. '
+                'Connection refused.')}
+        PIKMessageException(**exc_data_validation).save()
+        PIKMessageException(**exc_data_system).save()
+        handler = MessageHandler(
+            message, queue,
+            Mock(name='event_captor'))
+        handler.handle()
+        messages_qs = PIKMessageException.objects.all()
+        assert messages_qs.count() == 1
+        expected = {
+            'uid': UUID('11111111-1111-1111-1111-111111111111'),
+            'entity_uid': UUID('99999999-9999-9999-9999-999999999999'),
+            'body_hash': None,
+            'queue': 'test_queue',
+            'exception': {
+                'code': 'invalid',
+                'detail': {
+                    'created': [{
+                        'code': 'invalid',
+                        'message': (
+                            'Datetime has wrong format. '
+                            'Use one of these formats '
+                            'instead: '
+                            'YYYY-MM-DDThh:mm[:ss[.uuuuuu]][+HH:MM|-HH:MM|Z].'
+                        )}]},
+                'message': 'Invalid input.'},
+            'exception_message': 'Invalid input.',
+            'exception_type': 'invalid'}
+        assert (
+            messages_qs.values(
+                'uid', 'entity_uid', 'body_hash', 'queue',
+                'exception', 'exception_type', 'exception_message')
+            .first()) == expected
+        assert (bytes(
+            messages_qs.values_list('message', flat=True)
+            .first()) == message)

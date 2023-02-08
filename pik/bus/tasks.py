@@ -23,7 +23,7 @@ CHUNK_SIZE = 10000
 
 @app.shared_task(bind=True)
 def task_process_messages(self, pks, *args, **kwargs):
-    qs = PIKMessageException.objects.filter(pk__in=pks).order_by('created')
+    qs = PIKMessageException.objects.filter(pk__in=pks).order_by('updated')
 
     task_id = self.request.id
     started = datetime.now()
@@ -39,7 +39,6 @@ def task_process_messages(self, pks, *args, **kwargs):
         for current, obj in enumerate(qs.iterator(chunk_size=CHUNK_SIZE), 1):
             handler = handler_class(obj.message, obj.queue, mdm_event_captor)
             if handler.handle():
-                obj.delete()
                 successful += 1
             else:
                 failed += 1
