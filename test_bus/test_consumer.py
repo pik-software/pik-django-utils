@@ -551,7 +551,7 @@ class TestMessageHandlerEvents:
 # 1+. Удаление ошибки после успеха
 # 2-. Ошибка валидации уже была но приехала еще новая валидация
 # 3+. Системная Ошибка уже была но приехала еще новая системная
-# 4-. Ошибка валидации уже была но приехала еще новая системная
+# 4+. Ошибка валидации уже была но приехала еще новая системная
 # 5-. Системная Ошибка уже была но приехала еще новая валидация
 # Тесты на проверку того что уже есть 2 сообщение в базе
 # 6-. Системная ошибка если она уже была,
@@ -591,6 +591,57 @@ class TestMessageHandlerRegisterSuccess:
             Mock(name='event_captor'))
         handler._register_success()  # noqa: protected-access
         assert PIKMessageException.objects.count() == 0
+
+    @staticmethod
+    @pytest.mark.django_db
+    def test_system_error_after_existing_system_error():
+        message = json.dumps({'message': {
+            'type': 'test_queue',
+            'name': 'test_queue',
+            'guid': '99999999-9999-9999-9999-999999999999'
+        }}).encode('utf8')
+        exc_data_validation = {
+            'uid': '00000000-0000-0000-0000-000000000000',
+            'entity_uid': '99999999-9999-9999-9999-999999999999',
+            'body_hash': 'b732cb833f4b2db280e371a1ad19c9f3dd8abdf5',
+            'queue': 'test_queue',
+            'message': message,
+            'exception': {
+                'code': 'ConnectionError',
+                'message': (
+                    'Error 111 connecting to service-redis:6379. '
+                    'Connection refused.')},
+            'exception_type': 'ConnectionError',
+            'exception_message': (
+                'Error 111 connecting to service-redis:6379. '
+                'Connection refused.'),
+        }
+        PIKMessageException(**exc_data_validation).save()
+        handler = MessageHandler(
+            exc_data_validation['message'], exc_data_validation['queue'],
+            Mock(name='event_captor'))
+        handler.handle()
+        messages_qs = PIKMessageException.objects.all()
+        assert messages_qs.count() == 1
+        expected = {
+            'uid': UUID('00000000-0000-0000-0000-000000000000'),
+            'entity_uid': UUID('99999999-9999-9999-9999-999999999999'),
+            'body_hash': 'b732cb833f4b2db280e371a1ad19c9f3dd8abdf5',
+            'queue': 'test_queue',
+            'exception': {
+                'code': 'SerializerMissingError',
+                'message': 'Unable to find serializer for test_queue'},
+            'exception_type': 'SerializerMissingError',
+            'exception_message': 'Unable to find serializer for test_queue',
+        }
+        assert (
+            messages_qs.values(
+                'uid', 'entity_uid', 'body_hash', 'queue',
+                'exception', 'exception_type', 'exception_message')
+            .first()) == expected
+        assert (bytes(
+            messages_qs.values_list('message', flat=True)
+            .first()) == message)
 
     @staticmethod
     @pytest.mark.django_db
