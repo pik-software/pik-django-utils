@@ -34,6 +34,14 @@ class RemovableRegularDependedSerializer(StandardizedModelSerializer):
         fields = ('guid', 'created', 'dependence')
 
 
+class RegularDatedModelSerializer(RegularModelSerializer):
+    created = DateTimeField(required=False)
+
+    class Meta:
+        model = RegularModel
+        fields = ('guid', 'created', 'name')
+
+
 class TestMessageHandlerFetch:
     @staticmethod
     def test_ok():
@@ -549,7 +557,7 @@ class TestMessageHandlerEvents:
 # TODO:
 # Сделать тесты:
 # 1+. Удаление ошибки после успеха
-# 2-. Ошибка валидации уже была но приехала еще новая валидация
+# 2+. Ошибка валидации уже была но приехала еще новая валидация
 # 3+. Системная Ошибка уже была но приехала еще новая системная
 # 4+. Ошибка валидации уже была но приехала еще новая системная
 # 5-. Системная Ошибка уже была но приехала еще новая валидация
@@ -583,8 +591,7 @@ class TestMessageHandlerRegisterSuccess:
                         {'code': 'null',
                          'message': 'Это поле не может быть пустым.'}]}},
             'exception_type': 'invalid',
-            'exception_message': 'Invalid input.'
-        }
+            'exception_message': 'Invalid input.'}
         PIKMessageException(**exc_data_validation).save()
         handler = MessageHandler(
             exc_data_validation['message'], exc_data_validation['queue'],
@@ -614,8 +621,7 @@ class TestMessageHandlerRegisterSuccess:
             'exception_type': 'ConnectionError',
             'exception_message': (
                 'Error 111 connecting to service-redis:6379. '
-                'Connection refused.'),
-        }
+                'Connection refused.')}
         PIKMessageException(**exc_data_validation).save()
         handler = MessageHandler(
             exc_data_validation['message'], exc_data_validation['queue'],
@@ -632,8 +638,7 @@ class TestMessageHandlerRegisterSuccess:
                 'code': 'SerializerMissingError',
                 'message': 'Unable to find serializer for test_queue'},
             'exception_type': 'SerializerMissingError',
-            'exception_message': 'Unable to find serializer for test_queue',
-        }
+            'exception_message': 'Unable to find serializer for test_queue'}
         assert (
             messages_qs.values(
                 'uid', 'entity_uid', 'body_hash', 'queue',
@@ -664,8 +669,7 @@ class TestMessageHandlerRegisterSuccess:
                         {'code': 'null',
                          'message': 'Это поле не может быть пустым.'}]}},
             'exception_type': 'invalid',
-            'exception_message': 'Invalid input.'
-        }
+            'exception_message': 'Invalid input.'}
         PIKMessageException(**exc_data_validation).save()
         handler = MessageHandler(
             exc_data_validation['message'], exc_data_validation['queue'],
@@ -682,7 +686,67 @@ class TestMessageHandlerRegisterSuccess:
                 'code': 'SerializerMissingError',
                 'message': 'Unable to find serializer for test_queue'},
             'exception_type': 'SerializerMissingError',
-            'exception_message': 'Unable to find serializer for test_queue',
+            'exception_message': 'Unable to find serializer for test_queue'}
+        assert (
+            messages_qs.values(
+                'uid', 'entity_uid', 'body_hash', 'queue',
+                'exception', 'exception_type', 'exception_message')
+            .first()) == expected
+        assert (bytes(
+            messages_qs.values_list('message', flat=True)
+            .first()) == message)
+
+    @staticmethod
+    @pytest.mark.django_db
+    @patch.object(
+        MessageHandler, '_serializer_class',
+        RegularDatedModelSerializer)
+    def test_validation_error_after_existing_validation_error():
+        message = json.dumps({'message': {
+            'created': 'created_date',
+            'name': 'test_queue',
+            'guid': '99999999-9999-9999-9999-999999999999'
+        }}).encode('utf8')
+        exc_data_validation = {
+            'uid': '00000000-0000-0000-0000-000000000000',
+            'entity_uid': '99999999-9999-9999-9999-999999999999',
+            'body_hash': 'db16834ab244d557e098ffa4482eb304cfbaf780',
+            'queue': 'test_queue',
+            'message': message,
+            'exception': {
+                'code': 'invalid',
+                'detail': {
+                    'name': [
+                        {'code': 'null',
+                         'message': 'Это поле не может быть пустым.'}]}},
+            'exception_type': 'invalid',
+            'exception_message': 'Invalid input.'}
+        PIKMessageException(**exc_data_validation).save()
+        handler = MessageHandler(
+            exc_data_validation['message'], exc_data_validation['queue'],
+            Mock(name='event_captor'))
+        handler.handle()
+        messages_qs = PIKMessageException.objects.all()
+        assert messages_qs.count() == 1
+        expected = {
+            'uid': UUID('00000000-0000-0000-0000-000000000000'),
+            'entity_uid': UUID('99999999-9999-9999-9999-999999999999'),
+            'body_hash': 'db16834ab244d557e098ffa4482eb304cfbaf780',
+            'queue': 'test_queue',
+            'exception': {
+                'code': 'invalid',
+                'detail': {
+                    'created': [{
+                        'code': 'invalid',
+                        'message': (
+                            'Datetime has wrong format. '
+                            'Use one of these formats '
+                            'instead: '
+                            'YYYY-MM-DDThh:mm[:ss[.uuuuuu]][+HH:MM|-HH:MM|Z].'
+                        )}]},
+                'message': 'Invalid input.'},
+            'exception_message': 'Invalid input.',
+            'exception_type': 'invalid',
         }
         assert (
             messages_qs.values(
