@@ -559,16 +559,18 @@ class TestMessageHandlerMultipleErrors:
     @staticmethod
     @pytest.mark.django_db
     def test_delete_success():
+        message = json.dumps({'message': {
+            'type': 'test_queue',
+            'name': 'test_queue',
+            'guid': '99999999-9999-9999-9999-999999999999'
+        }}).encode('utf8')
+        queue = 'test_queue'
         exc_data = {
             'uid': '00000000-0000-0000-0000-000000000000',
             'entity_uid': '99999999-9999-9999-9999-999999999999',
             'body_hash': 'b732cb833f4b2db280e371a1ad19c9f3dd8abdf5',
-            'queue': 'test_queue',
-            'message': json.dumps({'message': {
-                'type': 'test_queue',
-                'name': 'test_queue',
-                'guid': '99999999-9999-9999-9999-999999999999'
-            }}).encode('utf8'),
+            'queue': queue,
+            'message': message,
             'exception': {
                 'code': 'invalid',
                 'detail': {
@@ -579,7 +581,7 @@ class TestMessageHandlerMultipleErrors:
             'exception_message': 'Invalid input.'}
         PIKMessageException(**exc_data).save()
         handler = MessageHandler(
-            exc_data['message'], exc_data['queue'],
+            message, queue,
             Mock(name='event_captor'))
         handler._register_success()  # noqa: protected-access
         assert PIKMessageException.objects.count() == 0
@@ -592,11 +594,12 @@ class TestMessageHandlerMultipleErrors:
             'name': 'test_queue',
             'guid': '99999999-9999-9999-9999-999999999999'
         }}).encode('utf8')
+        queue = 'test_queue'
         exc_data = {
             'uid': '00000000-0000-0000-0000-000000000000',
             'entity_uid': '99999999-9999-9999-9999-999999999999',
             'body_hash': 'b732cb833f4b2db280e371a1ad19c9f3dd8abdf5',
-            'queue': 'test_queue',
+            'queue': queue,
             'message': message,
             'exception': {
                 'code': 'ConnectionError',
@@ -609,7 +612,7 @@ class TestMessageHandlerMultipleErrors:
                 'Connection refused.')}
         PIKMessageException(**exc_data).save()
         handler = MessageHandler(
-            exc_data['message'], exc_data['queue'],
+            message, queue,
             Mock(name='event_captor'))
         handler.handle()
         messages_qs = PIKMessageException.objects.all()
@@ -641,11 +644,12 @@ class TestMessageHandlerMultipleErrors:
             'name': 'test_queue',
             'guid': '99999999-9999-9999-9999-999999999999'
         }}).encode('utf8')
+        queue = 'test_queue'
         exc_data = {
             'uid': '00000000-0000-0000-0000-000000000000',
             'entity_uid': '99999999-9999-9999-9999-999999999999',
             'body_hash': 'b732cb833f4b2db280e371a1ad19c9f3dd8abdf5',
-            'queue': 'test_queue',
+            'queue': queue,
             'message': message,
             'exception': {
                 'code': 'invalid',
@@ -657,7 +661,7 @@ class TestMessageHandlerMultipleErrors:
             'exception_message': 'Invalid input.'}
         PIKMessageException(**exc_data).save()
         handler = MessageHandler(
-            exc_data['message'], exc_data['queue'],
+            message, queue,
             Mock(name='event_captor'))
         handler.handle()
         messages_qs = PIKMessageException.objects.all()
@@ -692,11 +696,12 @@ class TestMessageHandlerMultipleErrors:
             'name': 'test_queue',
             'guid': '99999999-9999-9999-9999-999999999999'
         }}).encode('utf8')
+        queue = 'test_queue'
         exc_data = {
             'uid': '00000000-0000-0000-0000-000000000000',
             'entity_uid': '99999999-9999-9999-9999-999999999999',
             'body_hash': 'db16834ab244d557e098ffa4482eb304cfbaf780',
-            'queue': 'test_queue',
+            'queue': queue,
             'message': message,
             'exception': {
                 'code': 'invalid',
@@ -708,7 +713,7 @@ class TestMessageHandlerMultipleErrors:
             'exception_message': 'Invalid input.'}
         PIKMessageException(**exc_data).save()
         handler = MessageHandler(
-            exc_data['message'], exc_data['queue'],
+            message, queue,
             Mock(name='event_captor'))
         handler.handle()
         messages_qs = PIKMessageException.objects.all()
@@ -752,11 +757,12 @@ class TestMessageHandlerMultipleErrors:
             'name': 'test_queue',
             'guid': '99999999-9999-9999-9999-999999999999'
         }}).encode('utf8')
+        queue = 'test_queue'
         exc_data = {
             'uid': '00000000-0000-0000-0000-000000000000',
             'entity_uid': '99999999-9999-9999-9999-999999999999',
             'body_hash': 'db16834ab244d557e098ffa4482eb304cfbaf780',
-            'queue': 'test_queue',
+            'queue': queue,
             'message': message,
             'exception': {
                 'code': 'ConnectionError',
@@ -769,7 +775,7 @@ class TestMessageHandlerMultipleErrors:
                 'Connection refused.')}
         PIKMessageException(**exc_data).save()
         handler = MessageHandler(
-            exc_data['message'], exc_data['queue'],
+            message, queue,
             Mock(name='event_captor'))
         handler.handle()
         messages_qs = PIKMessageException.objects.all()
@@ -810,11 +816,12 @@ class TestMessageHandlerMultipleErrors:
             'name': 'test_queue',
             'guid': '99999999-9999-9999-9999-999999999999'
         }}).encode('utf8')
+        queue = 'test_queue'
         exc_data_system = {
             'uid': '00000000-0000-0000-0000-000000000000',
             'entity_uid': None,
             'body_hash': 'b732cb833f4b2db280e371a1ad19c9f3dd8abdf5',
-            'queue': 'test_queue',
+            'queue': queue,
             'message': message,
             'exception': {
                 'code': 'ConnectionError',
@@ -829,7 +836,7 @@ class TestMessageHandlerMultipleErrors:
             'uid': '11111111-1111-1111-1111-111111111111',
             'entity_uid': '99999999-9999-9999-9999-999999999999',
             'body_hash': None,
-            'queue': 'test_queue',
+            'queue': queue,
             'message': message,
             'exception': {
                 'code': 'invalid',
@@ -842,7 +849,7 @@ class TestMessageHandlerMultipleErrors:
         PIKMessageException(**exc_data_system).save()
         PIKMessageException(**exc_data_validation).save()
         handler = MessageHandler(
-            exc_data_system['message'], exc_data_system['queue'],
+            message, queue,
             Mock(name='event_captor'))
         handler.handle()
         messages_qs = PIKMessageException.objects.all()
@@ -850,7 +857,7 @@ class TestMessageHandlerMultipleErrors:
         expected = {
             'uid': UUID('11111111-1111-1111-1111-111111111111'),
             'entity_uid': UUID('99999999-9999-9999-9999-999999999999'),
-            'body_hash': 'b732cb833f4b2db280e371a1ad19c9f3dd8abdf5',
+            'body_hash': None,
             'queue': 'test_queue',
             'exception': {
                 'code': 'SerializerMissingError',
@@ -877,11 +884,12 @@ class TestMessageHandlerMultipleErrors:
             'name': 'test_queue',
             'guid': '99999999-9999-9999-9999-999999999999'
         }}).encode('utf8')
+        queue = 'test_queue'
         exc_data_validation = {
             'uid': '00000000-0000-0000-0000-000000000000',
             'entity_uid': None,
             'body_hash': 'db16834ab244d557e098ffa4482eb304cfbaf780',
-            'queue': 'test_queue',
+            'queue': queue,
             'message': message,
             'exception': {
                 'code': 'invalid',
@@ -895,7 +903,7 @@ class TestMessageHandlerMultipleErrors:
             'uid': '11111111-1111-1111-1111-111111111111',
             'entity_uid': '99999999-9999-9999-9999-999999999999',
             'body_hash': None,
-            'queue': 'test_queue',
+            'queue': queue,
             'message': message,
             'exception': {
                 'code': 'ConnectionError',
@@ -909,7 +917,7 @@ class TestMessageHandlerMultipleErrors:
         PIKMessageException(**exc_data_validation).save()
         PIKMessageException(**exc_data_system).save()
         handler = MessageHandler(
-            exc_data_validation['message'], exc_data_validation['queue'],
+            message, queue,
             Mock(name='event_captor'))
         handler.handle()
         messages_qs = PIKMessageException.objects.all()
@@ -917,7 +925,7 @@ class TestMessageHandlerMultipleErrors:
         expected = {
             'uid': UUID('11111111-1111-1111-1111-111111111111'),
             'entity_uid': UUID('99999999-9999-9999-9999-999999999999'),
-            'body_hash': 'db16834ab244d557e098ffa4482eb304cfbaf780',
+            'body_hash': None,
             'queue': 'test_queue',
             'exception': {
                 'code': 'invalid',

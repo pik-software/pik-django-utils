@@ -193,12 +193,8 @@ class MessageHandler:
                 queue=self._queue)]
 
         err_msg, other_errors = errors_messages[0], errors_messages[1:]
-        if not err_msg.body_hash:
-            err_msg.body_hash = self._body_hash
-        if not err_msg.entity_uid:
-            err_msg.entity_uid = self._entity_uid
         err_msg.message = self._body
-        err_msg.exception = extract_exception_data(exc)
+        err_msg.exception = exc_data
         err_msg.exception_type = exc_data['code']
         err_msg.exception_message = exc_data['message']
 
@@ -261,9 +257,9 @@ class MessageConsumer:
         wait=wait_fixed(RECONNECT_WAIT),
         retry=retry_if_exception_type(AMQPConnectionError),
         after=lambda retry_state:
-        logger.warning(
-            'Connecting to RabbitMQ. Attempt number: %s',
-            retry_state.attempt_number)
+            logger.warning(
+                'Connecting to RabbitMQ. Attempt number: %s',
+                retry_state.attempt_number)
     )
     def _consume(self):
         self._connect()
