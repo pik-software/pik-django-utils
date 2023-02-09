@@ -3,6 +3,7 @@ import io
 import logging
 from functools import partial
 from hashlib import sha1
+from itertools import chain
 from typing import Set
 from uuid import UUID
 
@@ -73,14 +74,17 @@ class MessageHandler:
 
     @property
     def _error_messages(self):
-        lookups = Q(queue=self._queue) & Q(body_hash=self._body_hash)
+        error_messages = PIKMessageException.objects.filter(
+            queue=self._queue, body_hash=self._body_hash).order_by(
+            '-updated')
         if self._entity_uid:
-            lookups = (
-                Q(queue=self._queue)
-                & (Q(body_hash=self._body_hash)
-                   | Q(entity_uid=self._entity_uid)))
-        return (
-            PIKMessageException.objects.filter(lookups).order_by('-updated'))
+            error_messages = (
+                entity for entity in sorted(chain(
+                    error_messages,
+                    PIKMessageException.objects.filter(
+                        queue=self._queue, entity_uid=self._entity_uid
+                    ).order_by('-updated')), key=lambda x: -x.updated))
+        return error_messages
 
     @cached_property
     def envelope(self):
