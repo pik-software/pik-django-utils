@@ -111,7 +111,13 @@ class MessageHandler:
             cache.lock(f'bus-{queue}-{guid}', timeout=self.LOCK_TIMEOUT)
             if guid else contextlib.nullcontext())
         with lock:
-            self._serializer.is_valid(raise_exception=True)
+            try:
+                self._serializer.is_valid(raise_exception=True)
+            except ValidationError as exc:
+                if NewestUpdateValidationError.is_error_match(exc):
+                    capture_exception(exc)
+                    return
+                raise
             self._serializer.save()
 
     @cached_property
@@ -179,11 +185,6 @@ class MessageHandler:
         # Don't spam validation errors to sentry.
         if not isinstance(exc, ValidationError):
             capture_exception(exc)
-
-        # Don't capture race errors for consumer.
-        if NewestUpdateValidationError.is_error_match(exc):
-            capture_exception(exc)
-            return
 
         exc_data = extract_exception_data(exc)
 
