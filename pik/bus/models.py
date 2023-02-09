@@ -30,7 +30,7 @@ class PIKMessageException(PUided, Dated):
             Index(fields=('has_dependencies', 'queue')),
             Index(fields=('queue', )),
         ]
-        unique_together = [['queue', 'entity_uid']]
+        unique_together = [['queue', 'entity_uid'], ['queue', 'body_hash']]
 
     def save(self, *args, **kwargs):
         self.has_dependencies = bool(self.dependencies)
