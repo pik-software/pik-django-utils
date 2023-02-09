@@ -15,7 +15,9 @@ from pik.api.serializers import StandardizedModelSerializer
 from pik.bus.consumer import MessageHandler, MessageConsumer
 from pik.bus.exceptions import SerializerMissingError
 from pik.bus.models import PIKMessageException
-from test_core_models.models import RegularModel, RemovableRegularDepended
+from test_core_models.models import (
+    RegularModel, RemovableRegularDepended,
+    MyDated, MyBaseHistorical)
 
 
 class RegularModelSerializer(StandardizedModelSerializer):
@@ -49,6 +51,14 @@ class RegularUpdatedModelSerializer(RegularModelSerializer):
     class Meta:
         model = RegularModel
         fields = ('guid', 'updated', 'name')
+
+
+class MyBaseHistoricalSerializer(RegularModelSerializer):
+    updated = DateTimeField(required=False)
+
+    class Meta:
+        model = MyBaseHistorical
+        fields = ('guid', 'updated')
 
 
 class TestMessageHandlerFetch:
@@ -359,67 +369,51 @@ class TestMessageHandlerException:
         message = PIKMessageException.objects.values_list('message').first()[0]
         assert BytesIO(message).read() == b'test_message'
 
+    """"
+        1. Прилетел нормальный 01.01.2000 => лег в базу
+        2. Прилетел невалидный 02.01.2000 => лег в ошибку (invalid email)
+        3. Прилетел старый 01.01.1999  => ???
+        проблема!!!
+        
+        1. Прилетел нормальный 01.01.2000
+        2. Прилетел старый 01.01.1999
+        окей!
+        
+    """
+
     @staticmethod
     @pytest.mark.django_db
-    @patch.object(MessageHandler, '_serializer_class',
-                  RegularUpdatedModelSerializer)
+    @patch.object(
+        MessageHandler, '_serializer_class', MyBaseHistoricalSerializer)
     def test_validation_error_updated_later_than_recent():
-        old_datetime = datetime.datetime(2020, 1, 1, 1, 1, 1, 111111)
-        new_datetime = datetime.datetime(2020, 1, 2, 1, 1, 1, 111111)
-        body = {
-            'updated': new_datetime,
-            'name': 'test_queue',
-            'guid': '99999999-9999-9999-9999-999999999999'
-        }
-        serializer = RegularUpdatedModelSerializer(data=body)
-        serializer.is_valid()
-        serializer.save()
-        assert RegularModel.objects.count() == 1
+        old_datetime = datetime.datetime(2014, 1, 1, 1, 1, 1, 111111)
+        new_datetime = datetime.datetime(2022, 1, 1, 1, 1, 1, 111111)
+        MyBaseHistorical(uid='99999999-9999-9999-9999-999999999999', updated=new_datetime).save()
         message = json.dumps({'message': {
+            'type': 'MyBaseHistorical',
             'updated': old_datetime.isoformat(),
-            'name': 'test_queue',
             'guid': '99999999-9999-9999-9999-999999999999'
         }}).encode('utf8')
-        queue = 'test_queue'
-        exc_data = {
-            'uid': '00000000-0000-0000-0000-000000000000',
-            'entity_uid': '99999999-9999-9999-9999-999999999999',
-            'body_hash': '6a26f6d29cb0376bdeb2ebfb8096940c8ed8a027',
-            'queue': queue,
-            'message': message,
-            'exception': {
-                'code': 'invalid',
-                'detail': {
-                    'name': [
-                        {'code': 'null',
-                         'message': 'Это поле не может быть пустым.'}]}},
-            'exception_type': 'invalid',
-            'exception_message': 'Invalid input.'}
-        PIKMessageException(**exc_data).save()
+        queue = 'MyBaseHistorical'
+        PIKMessageException(
+            uid='00000000-0000-0000-0000-000000000000',
+            entity_uid ='99999999-9999-9999-9999-999999999999',
+            body_hash='6a26f6d29cb0376bdeb2ebfb8096940c8ed8a027',
+            queue=queue,
+            message=message,
+            exception={'code': 'invalid', 'detail': {'name': [{
+                'code': 'null',
+                'message': 'Это поле не может быть пустым.'}]}},
+            exception_type='invalid',
+            exception_message='Invalid input.'
+        ).save()
         handler = MessageHandler(
             message, queue,
             Mock(name='event_captor'))
         handler.handle()
         messages_qs = PIKMessageException.objects.all()
-        assert messages_qs.count() == 1
-        expected = {
-            'body_hash': '6a26f6d29cb0376bdeb2ebfb8096940c8ed8a027',
-            'entity_uid': UUID('99999999-9999-9999-9999-999999999999'),
-            'exception': {'code': 'SerializerMissingError',
-                          'message': 'Unable to find serializer for test_queue'},
-            'exception_message': 'Unable to find serializer for test_queue',
-            'exception_type': 'SerializerMissingError',
-            'queue': 'test_queue',
-            'uid': UUID('00000000-0000-0000-0000-000000000000')
-        }
-        assert (
-            messages_qs.values(
-                'uid', 'entity_uid', 'body_hash', 'queue',
-                'exception', 'exception_type', 'exception_message')
-            .first()) == expected
-        assert (bytes(
-            messages_qs.values_list('message', flat=True)
-            .first()) == message)
+        assert messages_qs.count() == 0
+
 
 @pytest.mark.django_db
 class TestMessageHandlerDependencies:
