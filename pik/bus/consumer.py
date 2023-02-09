@@ -78,12 +78,14 @@ class MessageHandler:
             queue=self._queue, body_hash=self._body_hash).order_by(
             '-updated')
         if self._entity_uid:
-            error_messages = (
+            error_messages = tuple(
                 entity for entity in sorted(chain(
                     error_messages,
                     PIKMessageException.objects.filter(
                         queue=self._queue, entity_uid=self._entity_uid
-                    ).order_by('-updated')), key=lambda x: -x.updated))
+                    ).order_by('-updated')),
+                    key=lambda x: x.updated,
+                    reverse=True))
         return error_messages
 
     @cached_property
