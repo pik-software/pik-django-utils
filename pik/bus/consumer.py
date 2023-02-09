@@ -3,31 +3,29 @@ import io
 import logging
 from functools import partial
 from hashlib import sha1
-from itertools import chain
 from typing import Set
 from uuid import UUID
 
 from django.conf import settings
 from django.core.cache import cache
-from django.db.models import Q
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
 from pika import BlockingConnection, URLParameters
 from pika.exceptions import (
     AMQPConnectionError, ChannelWrongStateError, ChannelClosedByBroker,
     ChannelClosed)
-from rest_framework.parsers import JSONParser
 from rest_framework.exceptions import ValidationError
+from rest_framework.parsers import JSONParser
 from tenacity import retry, retry_if_exception_type, wait_fixed
 
 from pik.api.exceptions import (
     extract_exception_data, NewestUpdateValidationError)
+from pik.bus.exceptions import QueuesMissingError, SerializerMissingError
 from pik.bus.mdm import mdm_event_captor
 from pik.bus.models import PIKMessageException
 from pik.utils.bus import LiveBlockingConnection
 from pik.utils.case_utils import underscorize
 from pik.utils.sentry import capture_exception
-from pik.bus.exceptions import QueuesMissingError, SerializerMissingError
 
 
 logger = logging.getLogger(__name__)
@@ -78,14 +76,10 @@ class MessageHandler:
             queue=self._queue, body_hash=self._body_hash).order_by(
             '-updated')
         if self._entity_uid:
-            error_messages = tuple(
-                entity for entity in sorted(chain(
-                    error_messages,
-                    PIKMessageException.objects.filter(
-                        queue=self._queue, entity_uid=self._entity_uid
-                    ).order_by('-updated')),
-                    key=lambda x: x.updated,
-                    reverse=True))
+            error_messages = error_messages.union(
+                PIKMessageException.objects.filter(
+                    queue=self._queue, entity_uid=self._entity_uid
+                ).order_by('-updated')).order_by('-updated')
         return error_messages
 
     @cached_property
