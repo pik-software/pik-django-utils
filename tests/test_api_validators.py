@@ -1,6 +1,7 @@
 from datetime import datetime
 import uuid
 import pytest
+from pprint import pformat
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError, ErrorDetail
 
@@ -26,8 +27,7 @@ class MyPUidedSerializer(serializers.ModelSerializer):
 @pytest.mark.django_db
 def test_non_changeable_validator():
     payload = {
-        'uid': str(uuid.uuid4())
-    }
+        'uid': str(uuid.uuid4())}
     instance = MyPUided(uid=payload['uid'])
     serializer = MyPUidedSerializer(instance, payload)
     serializer.is_valid(raise_exception=True)
@@ -40,7 +40,11 @@ class MyDatedSerializer(pik.api.serializers.StandardizedModelSerializer):
 
 
 @pytest.mark.django_db
-class TestNewestUpdateValidator:
+class TestNewestUpdatedValidator:
+    VALIDATION_ERROR = ValidationError({'updated': [ErrorDetail(
+        string=('Новое значене поля updated должно быть больше предыдущего.'),
+        code='newest_update_validation_error')]})
+
     def test_newest_update_validator_exception(self):
         past_datetime = datetime.strptime(
             '2001-01-01T00:00:00.000000', '%Y-%m-%dT%H:%M:%S.%f')
@@ -70,3 +74,21 @@ class TestNewestUpdateValidator:
         with pytest.raises(ValidationError) as error:
             serializer.is_valid(raise_exception=True)
         assert not NewestUpdateValidationError.is_error_match(error.value)
+
+    def get_native_drf_validation_error(self):
+        past_datetime = datetime.strptime(
+            '2001-01-01T00:00:00.000000', '%Y-%m-%dT%H:%M:%S.%f')
+
+        my_dated = MyDated()
+        my_dated.save()
+        serializer = MyDatedSerializer(my_dated, {
+            'created': my_dated.created,
+            'updated': past_datetime})
+
+        with pytest.raises(ValidationError) as error:
+            serializer.is_valid(raise_exception=True)
+        return error.value
+
+    def test_validation_error(self):
+        drf_native_error = self.get_native_drf_validation_error()
+        assert pformat(drf_native_error) == pformat(self.VALIDATION_ERROR)

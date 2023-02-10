@@ -15,6 +15,7 @@ from pik.bus.consumer import MessageHandler, MessageConsumer
 from pik.bus.exceptions import SerializerMissingError
 from pik.bus.models import PIKMessageException
 from test_core_models.models import RegularModel, RemovableRegularDepended
+from tests.test_api_validators import TestNewestUpdatedValidator
 
 
 class RegularModelSerializer(StandardizedModelSerializer):
@@ -478,8 +479,8 @@ class TestMessageHandlerEvents:
             message_handler.handle()
 
         expected = pformat([call(
-            event='deserialization', entity_type=None, entity_guid=None,
-            transactionGUID=None, transactionMessageCount=None,
+            entity_type=None, entity_guid=None, transactionGUID=None,
+            transactionMessageCount=None, event='deserialization',
             success=False, error=ZeroDivisionError())])
         assert pformat(event_captor.capture.call_args_list) == expected
 
@@ -499,10 +500,9 @@ class TestMessageHandlerEvents:
             message_handler.handle()
 
         expected = pformat([call(
-            event='deserialization', entity_type='TestType',
-            entity_guid='ABC...', transactionGUID=None,
-            transactionMessageCount=None, success=False,
-            error=ZeroDivisionError())])
+            entity_type='TestType', entity_guid='ABC...', transactionGUID=None,
+            transactionMessageCount=None, event='deserialization',
+            success=False, error=ZeroDivisionError())])
         assert pformat(event_captor.capture.call_args_list) == expected
 
     @staticmethod
@@ -522,9 +522,9 @@ class TestMessageHandlerEvents:
             message_handler.handle()
 
         expected = pformat([call(
-            event='deserialization', entity_type='TestType',
-            entity_guid='ABC...', transactionGUID=None,
-            transactionMessageCount=None, success=True, error=None)])
+            entity_type='TestType', entity_guid='ABC...', transactionGUID=None,
+            transactionMessageCount=None, event='deserialization',
+            success=True, error=None)])
         assert pformat(event_captor.capture.call_args_list) == expected
 
     @staticmethod
@@ -548,10 +548,71 @@ class TestMessageHandlerEvents:
             message_handler.handle()
 
         expected = pformat([call(
-            event='deserialization', entity_type='TestType',
-            entity_guid='ABC...',
+            entity_type='TestType', entity_guid='ABC...',
             transactionGUID='DCEBA...', transactionMessageCount=10,
-            success=False, error=ZeroDivisionError())])
+            event='deserialization', success=False,
+            error=ZeroDivisionError())])
+        assert pformat(event_captor.capture.call_args_list) == expected
+
+
+class TestMessageConsumerCaptureEvent:
+    @staticmethod
+    @patch('pik.bus.consumer.MessageHandler._capture_exception', Mock())
+    def test_without_error():
+        event_captor = Mock(name='event_captor')
+        message_handler = MessageHandler(
+            b'test_message', 'test_queue', event_captor)
+
+        envelope = {'message': {'guid': 'ABC...', 'type': 'TestType'}}
+        with patch.object(MessageHandler, 'envelope', property(
+                Mock(return_value=envelope))):
+            message_handler._capture_event()
+
+        expected = pformat([call(
+            entity_type='TestType', entity_guid='ABC...', transactionGUID=None,
+            transactionMessageCount=None, event='deserialization',
+            success=True, error=None)])
+        assert pformat(event_captor.capture.call_args_list) == expected
+
+    @staticmethod
+    @patch('pik.bus.consumer.MessageHandler._capture_exception', Mock())
+    def test_with_error():
+        event_captor = Mock(name='event_captor')
+        message_handler = MessageHandler(
+            b'test_message', 'test_queue', event_captor)
+
+        envelope = {'message': {'guid': 'ABC...', 'type': 'TestType'}}
+        with patch.object(MessageHandler, 'envelope', property(
+                Mock(return_value=envelope))):
+            message_handler._capture_event(Exception('test_exception'))
+
+        expected = pformat([call(
+            entity_type='TestType', entity_guid='ABC...', transactionGUID=None,
+            transactionMessageCount=None, event='deserialization',
+            success=False, error=Exception('test_exception'))])
+        assert pformat(event_captor.capture.call_args_list) == expected
+
+    @staticmethod
+    @patch('pik.bus.consumer.MessageHandler._capture_exception', Mock())
+    def test_with_newest_updated_validation_error():
+        event_captor = Mock(name='event_captor')
+        message_handler = MessageHandler(
+            b'test_message', 'test_queue', event_captor)
+
+        error = TestNewestUpdatedValidator.VALIDATION_ERROR
+        envelope = {'message': {'guid': 'ABC...', 'type': 'TestType'}}
+        with patch.object(MessageHandler, 'envelope', property(
+                Mock(return_value=envelope))):
+            message_handler._capture_event(error)
+
+        expected = pformat([call(
+            entity_type='TestType', entity_guid='ABC...', transactionGUID=None,
+            transactionMessageCount=None, event='skip', success=True,
+            error=None, warning=ValidationError({'updated': [ErrorDetail(
+                string=(
+                    'Новое значене поля updated должно быть больше '
+                    'предыдущего.'),
+                code='newest_update_validation_error')]}))])
         assert pformat(event_captor.capture.call_args_list) == expected
 
 
