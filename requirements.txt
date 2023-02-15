@@ -48,3 +48,7 @@ python-logstash-async
 
 # converting roman numerals
 roman
+
+# JSON schema
+jsonschema
+email_validator
