@@ -11,6 +11,8 @@ from django.core.cache import cache
 from django.db.models import Q
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
+from django.db.utils import OperationalError
+from django.db import connection
 from pika import BlockingConnection, URLParameters
 from pika.exceptions import (
     AMQPConnectionError, ChannelWrongStateError, ChannelClosedByBroker,
@@ -33,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 class MessageHandler:
+    RECONNECT_WAIT = 1
     LOCK_TIMEOUT = 60
     parser_class = JSONParser
 
@@ -50,6 +53,14 @@ class MessageHandler:
         self._queue = queue
         self._event_captor = event_captor
 
+    @retry(
+        wait=wait_fixed(RECONNECT_WAIT),
+        retry=retry_if_exception_type(OperationalError),
+        after=lambda retry_state:
+            logger.warning(
+                'Connecting to Postgres. Attempt number: %s',
+                retry_state.attempt_number)
+    )
     def handle(self):
         try:
             self._fetch_payload()
@@ -58,6 +69,11 @@ class MessageHandler:
             self._process_dependants()
             self._register_success()
             return True
+        # Reraise exception for retry decorator.
+        except OperationalError:
+            connection.close()
+            connection.connect()
+            raise
         except Exception as error:  # noqa: too-broad-except
             self._register_error(error)
             return False
