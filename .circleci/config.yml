@@ -11,7 +11,7 @@ jobs:
 #      - image: quay.io/pik-software/base:v1.11
       - image: cr.yandex/crpia5dgh67v09sbman3/python-base:v1.14.1
         auth:
-          username: json_key
+          username: _json_key
           password: $YCR_API_KEY
 
       - image: mdillon/postgis:9.6
