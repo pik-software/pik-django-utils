@@ -41,7 +41,6 @@ def close_old_db_connections(func):
 
 
 class MessageHandler:
-    RECONNECT_WAIT = 1
     LOCK_TIMEOUT = 60
     parser_class = JSONParser
 
