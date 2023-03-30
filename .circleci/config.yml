@@ -8,9 +8,6 @@ jobs:
     docker:
       # specify the version you desire here
       # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
-      - image: docker:latest
-#        environment:
-#          ENV_ROLE: main
 #      - image: quay.io/pik-software/base:v1.11
       - image: cr.yandex/crpia5dgh67v09sbman3/python-base:v1.14.1
         auth:
