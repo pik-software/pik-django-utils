@@ -57,6 +57,7 @@ jobs:
 
       - run:
           name: run tests
+          context: main
           command: |
             echo 'aa'
             echo $TEST_VAR
