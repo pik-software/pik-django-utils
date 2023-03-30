@@ -58,7 +58,7 @@ jobs:
       - run:
           name: run tests
           environment:
-            TEST_VAR: main.TEST_VAR
+            TEST_VAR: <<main.TEST_VAR>>
           command: |
             echo 'aa'
             echo $TEST_VAR
