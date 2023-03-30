@@ -12,10 +12,10 @@ jobs:
 #        environment:
 #          ENV_ROLE: main
 #      - image: quay.io/pik-software/base:v1.11
-#      - image: cr.yandex/crpia5dgh67v09sbman3/python-base:v1.14.1
-#        auth:
-#          username: _json_key
-#          password: $YCR_API_KEY
+      - image: cr.yandex/crpia5dgh67v09sbman3/python-base:v1.14.1
+        auth:
+          username: _json_key
+          password: $YCR_API_KEY
 
       - image: mdillon/postgis:9.6
         environment:
@@ -40,15 +40,14 @@ jobs:
       - run:
           name: install dependencies
           command: |
-            echo 1
-#            python3 -m venv .venv
-#            . .venv/bin/activate
-#            pip install --upgrade pip
-#            pip install --upgrade setuptools
-#            pip install --exists-action w -r requirements.txt --progress-bar off
-#            pip install --exists-action w -r requirements.dev.txt --progress-bar off
-#            pip freeze
-#            pip check
+            python3 -m venv .venv
+            . .venv/bin/activate
+            pip install --upgrade pip
+            pip install --upgrade setuptools
+            pip install --exists-action w -r requirements.txt --progress-bar off
+            pip install --exists-action w -r requirements.dev.txt --progress-bar off
+            pip freeze
+            pip check
 
       - type: cache-save
         key: pik-python-{{ arch }}-{{ .Branch }}-{{ checksum "requirements.txt" }}-{{ checksum "requirements.dev.txt" }}
@@ -57,11 +56,7 @@ jobs:
 
       - run:
           name: run tests
-#          environment:
-#            TEST_VAR: <<main.TEST_VAR>>
           command: |
-            echo 'aa'
-            echo $TEST_VAR
             . .venv/bin/activate
             set -x
             check-manifest
