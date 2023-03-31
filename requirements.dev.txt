@@ -1,5 +1,5 @@
 # db
-redis==3.5.3
+redis==4.4.4
 psycopg2
 django-redis==4.12.1
 
