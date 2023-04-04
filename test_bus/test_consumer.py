@@ -3,7 +3,6 @@ import json
 from pprint import pformat
 from unittest.mock import Mock, patch, call
 from uuid import UUID
-import importlib
 
 import pytest
 from django.db.models import Manager
@@ -355,32 +354,17 @@ class TestMessageHandlerException:
 
 @pytest.mark.django_db
 class TestMessageHandlerDependencies:
-    # @staticmethod
-    # def test_missing_dependency():
-    #     handler = MessageHandler(
-    #         Mock(name='message'), Mock(name='queue'),
-    #         Mock(name='event_captor'))
-    #     handler._payload = {'guid': 42, 'type': 'RegularModel'}  # noqa: protected-access
-    #     handler._process_dependants()  # noqa: protected-access
-
-    from pik.utils.decorators import (
-        _close_old_db_connections_exec, _close_old_db_connections_exec1)
-    # _close_old_db_connections_exec = _close_old_db_connections_exec1
+    @staticmethod
+    def test_missing_dependency():
+        handler = MessageHandler(
+            Mock(name='message'), Mock(name='queue'),
+            Mock(name='event_captor'))
+        handler._payload = {'guid': 42, 'type': 'RegularModel'}  # noqa: protected-access
+        handler._process_dependants()  # noqa: protected-access
 
     @staticmethod
     @patch.object(MessageHandler, '_serializer_class', RegularModelSerializer)
-    @patch('pik.bus.consumer._close_old_db_connections_exec', lambda: None, spec=True)
-    # @patch('pik.bus.consumer.close_old_db_connections', lambda: None)
-    # @patch('pik.utils.decorators.close_old_db_connections', lambda x: x)
-    # @patch('pik.utils.decorators.close_old_db_connections', new_callable=lambda: None)
     def test_process_dependency():
-        # from pik.bus.consumer import _close_old_db_connections_exec
-        # _close_old_db_connections_exec = Mock(return_value=None)
-
-        # pik.utils.decorators.close_old_db_connections = lambda x: x
-        # # pik.utils.decorators.close_old_db_connections = pik.utils.decorators.close_old_db_connections1
-        # importlib.reload(pik.bus.consumer)
-
         (PIKMessageException(
             message=json.dumps({'message': {
                 'type': 'Dependency',
