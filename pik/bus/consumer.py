@@ -54,7 +54,6 @@ class MessageHandler:
     @close_old_db_connections
     def handle(self):
         try:
-            # _close_old_db_connections_exec()
             self._fetch_payload()
             self._prepare_payload()
             self._update_instance()
@@ -105,7 +104,6 @@ class MessageHandler:
             self._payload = self._serializer_class.underscorize_hook(
                 self._payload)
 
-    # @close_old_db_connections
     def _update_instance(self):
         guid = self._payload.get('guid')
         queue = self._queue
