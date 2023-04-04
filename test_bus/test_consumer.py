@@ -369,11 +369,14 @@ class TestMessageHandlerDependencies:
 
     @staticmethod
     @patch.object(MessageHandler, '_serializer_class', RegularModelSerializer)
-    @patch('pik.bus.consumer._close_old_db_connections_exec', lambda: None)
+    @patch('pik.bus.consumer._close_old_db_connections_exec', lambda: None, spec=True)
     # @patch('pik.bus.consumer.close_old_db_connections', lambda: None)
     # @patch('pik.utils.decorators.close_old_db_connections', lambda x: x)
     # @patch('pik.utils.decorators.close_old_db_connections', new_callable=lambda: None)
     def test_process_dependency():
+        # from pik.bus.consumer import _close_old_db_connections_exec
+        # _close_old_db_connections_exec = Mock(return_value=None)
+
         # pik.utils.decorators.close_old_db_connections = lambda x: x
         # # pik.utils.decorators.close_old_db_connections = pik.utils.decorators.close_old_db_connections1
         # importlib.reload(pik.bus.consumer)

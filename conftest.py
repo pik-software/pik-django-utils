@@ -48,3 +48,6 @@ def assert_num_queries_lte(pytestconfig):
 #
 # close_old_db_connections = lambda x: x
 # importlib.reload(pik.bus.consumer)
+
+from unittest.mock import patch
+patch('pik.bus.consumer._close_old_db_connections_exec', lambda: None).start()
