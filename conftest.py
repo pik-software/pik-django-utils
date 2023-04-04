@@ -32,3 +32,19 @@ def assert_num_queries_lte(pytestconfig):
                 pytest.fail(msg)
 
     return _assert_num_queries
+
+
+# from unittest.mock import patch
+# patch('pik.utils.fucntools.close_old_db_connections', lambda x: x)
+
+
+
+# import importlib
+# import pik.bus.consumer
+# # from pik.utils.decorators import close_old_db_connections
+# from pik.bus.consumer import close_old_db_connections
+#
+# autospec=True
+#
+# close_old_db_connections = lambda x: x
+# importlib.reload(pik.bus.consumer)

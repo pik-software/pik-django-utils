@@ -11,7 +11,6 @@ from django.core.cache import cache
 from django.db.models import Q
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
-from django.db import close_old_connections
 from pika import BlockingConnection, URLParameters
 from pika.exceptions import (
     AMQPConnectionError, ChannelWrongStateError, ChannelClosedByBroker,
@@ -28,16 +27,11 @@ from pik.utils.bus import LiveBlockingConnection
 from pik.utils.case_utils import underscorize
 from pik.utils.sentry import capture_exception
 from pik.bus.exceptions import QueuesMissingError, SerializerMissingError
+from pik.utils.decorators import (
+    close_old_db_connections, _close_old_db_connections_exec)
 
 
 logger = logging.getLogger(__name__)
-
-
-def close_old_db_connections(func):
-    def _wrapper(*args, **kwargs):
-        close_old_connections()
-        func(*args, **kwargs)
-    return _wrapper
 
 
 class MessageHandler:
@@ -58,9 +52,10 @@ class MessageHandler:
         self._queue = queue
         self._event_captor = event_captor
 
-    @close_old_db_connections
+    # @close_old_db_connections
     def handle(self):
         try:
+            _close_old_db_connections_exec()
             self._fetch_payload()
             self._prepare_payload()
             self._update_instance()
@@ -111,6 +106,7 @@ class MessageHandler:
             self._payload = self._serializer_class.underscorize_hook(
                 self._payload)
 
+    # @close_old_db_connections
     def _update_instance(self):
         guid = self._payload.get('guid')
         queue = self._queue

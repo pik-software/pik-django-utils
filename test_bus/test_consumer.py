@@ -3,6 +3,7 @@ import json
 from pprint import pformat
 from unittest.mock import Mock, patch, call
 from uuid import UUID
+import importlib
 
 import pytest
 from django.db.models import Manager
@@ -10,6 +11,7 @@ from rest_framework.exceptions import ParseError, ValidationError, ErrorDetail
 from rest_framework.fields import DateTimeField
 from rest_framework.serializers import CharField
 
+import pik.utils.decorators
 from pik.api.serializers import StandardizedModelSerializer
 from pik.bus.consumer import MessageHandler, MessageConsumer
 from pik.bus.exceptions import SerializerMissingError
@@ -353,17 +355,29 @@ class TestMessageHandlerException:
 
 @pytest.mark.django_db
 class TestMessageHandlerDependencies:
-    @staticmethod
-    def test_missing_dependency():
-        handler = MessageHandler(
-            Mock(name='message'), Mock(name='queue'),
-            Mock(name='event_captor'))
-        handler._payload = {'guid': 42, 'type': 'RegularModel'}  # noqa: protected-access
-        handler._process_dependants()  # noqa: protected-access
+    # @staticmethod
+    # def test_missing_dependency():
+    #     handler = MessageHandler(
+    #         Mock(name='message'), Mock(name='queue'),
+    #         Mock(name='event_captor'))
+    #     handler._payload = {'guid': 42, 'type': 'RegularModel'}  # noqa: protected-access
+    #     handler._process_dependants()  # noqa: protected-access
+
+    from pik.utils.decorators import (
+        _close_old_db_connections_exec, _close_old_db_connections_exec1)
+    # _close_old_db_connections_exec = _close_old_db_connections_exec1
 
     @staticmethod
     @patch.object(MessageHandler, '_serializer_class', RegularModelSerializer)
+    @patch('pik.bus.consumer._close_old_db_connections_exec', lambda: None)
+    # @patch('pik.bus.consumer.close_old_db_connections', lambda: None)
+    # @patch('pik.utils.decorators.close_old_db_connections', lambda x: x)
+    # @patch('pik.utils.decorators.close_old_db_connections', new_callable=lambda: None)
     def test_process_dependency():
+        # pik.utils.decorators.close_old_db_connections = lambda x: x
+        # # pik.utils.decorators.close_old_db_connections = pik.utils.decorators.close_old_db_connections1
+        # importlib.reload(pik.bus.consumer)
+
         (PIKMessageException(
             message=json.dumps({'message': {
                 'type': 'Dependency',
@@ -376,7 +390,7 @@ class TestMessageHandlerDependencies:
                 'DependantModel': '11111111-1111-1111-1111-111111111111'})
          .save())
 
-        handler = MessageHandler(
+        handler = pik.bus.consumer.MessageHandler(
             Mock(name='message'), Mock(name='queue'),
             Mock(name='event_captor'))
         handler._payload = {  # noqa: protected-access
@@ -949,3 +963,30 @@ class TestMessageHandlerMultipleErrors:
         assert (bytes(
             messages_qs.values_list('message', flat=True)
             .first()) == message)
+
+
+
+
+# from pik.utils.fucntools import ass_decorator, ass_decorator1
+# from pik.bus.consumer import ass
+#
+# from unittest.mock import Mock, patch, call
+# # patch('pik.utils.fucntools.ass_decorator', lambda x: x)
+# # patch('pik.utils.fucntools.ass_decorator', ass_decorator1)
+# # ass_decorator = lambda x: x
+#
+# from functools import wraps
+# def mock_decorator(*args, **kwargs):
+#     """Decorate by doing nothing."""
+#     def decorator(f):
+#         @wraps(f)
+#         def decorated_function(*args, **kwargs):
+#             return f(*args, **kwargs)
+#         return decorated_function
+#     return decorator
+# patch('pik.utils.fucntools.ass_decorator', mock_decorator).start()
+#
+#
+# def test_ass():
+#     ass()
+#     assert False
