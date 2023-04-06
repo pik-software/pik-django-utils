@@ -27,6 +27,7 @@ from pik.utils.bus import LiveBlockingConnection
 from pik.utils.case_utils import underscorize
 from pik.utils.sentry import capture_exception
 from pik.bus.exceptions import QueuesMissingError, SerializerMissingError
+from pik.utils.decorators import close_old_db_connections
 
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,7 @@ class MessageHandler:
         self._queue = queue
         self._event_captor = event_captor
 
+    @close_old_db_connections
     def handle(self):
         try:
             self._fetch_payload()

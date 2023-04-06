@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import os
+from unittest.mock import patch
 
 import dj_database_url
 
@@ -156,6 +157,11 @@ RABBITMQ_PRODUCES = {}
 RABBITMQ_CONSUMES = {}
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
+
+# Mock decorator for pik.bus.consumer.MessageHandler before load him from
+# tasks.py. Do here because tasks.py is loaded before conftest.py.
+patch('pik.utils.decorators.close_old_db_connections', lambda x: x).start()
 
 
 try:
