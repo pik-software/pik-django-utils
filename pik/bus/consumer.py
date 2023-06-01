@@ -56,9 +56,7 @@ class MessageHandler:
         try:
             self._fetch_payload()
             self._prepare_payload()
-            self._update_instance()
-            self._process_dependants()
-            self._register_success()
+            self._handle()
             return True
         except Exception as error:  # noqa: too-broad-except
             self._register_error(error)
@@ -100,9 +98,40 @@ class MessageHandler:
     def _prepare_payload(self):
         self._payload = underscorize(self._payload)
 
+        # from pik.api.deprecated.utils import KeysReplacer, replace_struct_keys
+        # uid_replacer = KeysReplacer({'guid': 'uid'})
+        # self._payload = dict(
+        #     replace_struct_keys(self._payload, replacer=uid_replacer))
+
         if hasattr(self._serializer_class, 'underscorize_hook'):
             self._payload = self._serializer_class.underscorize_hook(
                 self._payload)
+
+    # TODO: separate class to EntityHandler and CommandHandler.
+    def _handle(self):
+        if self._queue in self._commands:
+            self._command_handle()
+        self._entity_handle()
+
+    def _entity_handle(self):
+        self._update_instance()
+        self._process_dependants()
+        self._register_success()
+
+    def _command_handle(self):
+        self._prepare_command()
+        executor = import_string(self._commands[self._queue])
+        executor(**self._payload)
+
+    def _prepare_command(self):
+        # TODO: update underscorize logic.
+        self._payload['filter_uid'] = self._payload.pop('filter_guid')
+        self._payload['uid'] = self._payload.pop('guid')
+        del self._payload['type']
+
+    @cached_property
+    def _commands(self):
+        return getattr(settings, 'RABBITMQ_COMMANDS', {})
 
     def _update_instance(self):
         guid = self._payload.get('guid')
