@@ -125,9 +125,9 @@ class StandardizedProtocolSerializer(serializers.ModelSerializer):
 
 
 class DatedSerializer(serializers.ModelSerializer):
-    created = serializers.DateTimeField()
+    created = serializers.DateTimeField(required=False)
     updated = serializers.DateTimeField(
-        validators=[NewestUpdateValidator()],
+        required=False, validators=[NewestUpdateValidator()],
     )
 
 
