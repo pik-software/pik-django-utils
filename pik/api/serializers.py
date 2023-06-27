@@ -284,7 +284,7 @@ class PermittedFieldsSerializerMixIn(PermittedFieldsPermissionMixIn):
         return ret
 
 
-class StandardizedModelSerializer(
+class StandardizedNSISerializer(
         DefaultRequestQueryParserMixin,
         DynamicFieldsMixin,
         LazyFieldHandlerMixIn,
@@ -293,7 +293,6 @@ class StandardizedModelSerializer(
         ValidatedModelSerializerMixIn,
         DynamicModelSerializerMixIn,
         PermittedFieldsSerializerMixIn,
-        DatedSerializer,
         StandardizedProtocolSerializer,
 ):
 
@@ -304,6 +303,11 @@ class StandardizedModelSerializer(
     @staticmethod
     def get_is_deleted(obj) -> bool:
         return bool(obj.deleted)
+
+
+class StandardizedModelSerializer(
+        DatedSerializer, StandardizedNSISerializer):
+    pass
 
 
 class StandardizedChangeSerializer(
