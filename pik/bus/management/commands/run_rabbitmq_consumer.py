@@ -40,8 +40,8 @@ class Command(BaseCommand):
     def _run_consumer(self):
         self._message_consumer(**self.get_consumer_kwargs()).consume()
 
-    @staticmethod
-    def _is_rabbitmq_enabled():
+    @property
+    def _is_rabbitmq_enabled(self):
         return settings.RABBITMQ_CONSUMER_ENABLE
 
     @staticmethod
