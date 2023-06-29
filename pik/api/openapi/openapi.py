@@ -4,22 +4,22 @@ from django.conf import settings
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 from django_restql.mixins import DynamicFieldsMixin
-from rest_framework import serializers
-from rest_framework.fields import (
-    ChoiceField, JSONField, MultipleChoiceField,
-    SerializerMethodField, _UnvalidatedField, )
-from rest_framework.serializers import ModelSerializer
-from rest_framework.schemas.openapi import AutoSchema, SchemaGenerator
+from drf_spectacular.openapi import AutoSchema
 # TODO: klimenkoas: Drop `drf_yasg` dependency
 from drf_yasg.inspectors.field import (
     get_basic_type_info_from_hint, typing, inspect_signature, )
 from drf_yasg.utils import (
     force_real_str, field_value_to_representation, filter_none, )
+from rest_framework import serializers
+from rest_framework.fields import (
+    ChoiceField, JSONField, MultipleChoiceField,
+    SerializerMethodField, _UnvalidatedField, )
+from rest_framework.schemas.openapi import SchemaGenerator
+from rest_framework.serializers import ModelSerializer
+
 from pik.api.openapi.reference import (
     ReferenceAutoSchema, ReferenceSchemaGenerator)
-
 from .utils import deepmerge
-
 
 FIELD_MAPPING = (
     ('title', 'label', lambda x: force_real_str(x).strip().capitalize()),
