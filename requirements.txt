@@ -16,6 +16,7 @@ django-autocomplete-light
 dal_admin_filters
 django-prettyjson
 dj_database_url
+drf-spectacular
 
 # OIDC
 social-auth-app-django
