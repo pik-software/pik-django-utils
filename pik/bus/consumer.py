@@ -73,16 +73,6 @@ class MessageHandler:
         self._capture_event(success=False, error=error)
         self._capture_exception(error)
 
-    @property
-    def _error_messages(self):
-        lookups = Q(queue=self._queue) & Q(body_hash=self._body_hash)
-        if self._entity_uid:
-            lookups = (
-                Q(queue=self._queue)
-                & (Q(body_hash=self._body_hash)
-                   | Q(entity_uid=self._entity_uid)))
-        return (
-            PIKMessageException.objects.filter(lookups).order_by('-updated'))
 
     @cached_property
     def envelope(self):
@@ -127,10 +117,6 @@ class MessageHandler:
             return None
 
     @cached_property
-    def _body_hash(self):
-        return sha1(self._body).hexdigest()
-
-    @cached_property
     def _instance(self):
         try:
             return self._queryset.get(uid=self._entity_uid)
@@ -168,7 +154,7 @@ class MessageHandler:
         from .models import PIKMessageException  # noqa: cyclic import workaround
         dependants = PIKMessageException.objects.filter(
             dependencies__contains={
-                self._payload["type"]: self._entity_uid})
+                self._payload['type']: self._entity_uid})
         for dependant in dependants:
             handler = self.__class__(
                 dependant.message, dependant.queue, mdm_event_captor)
@@ -187,33 +173,49 @@ class MessageHandler:
 
         exc_data = extract_exception_data(exc)
 
-        errors_messages = self._error_messages
-        if not errors_messages:
-            errors_messages = [PIKMessageException(
-                entity_uid=self._entity_uid,
-                body_hash=self._body_hash,
-                queue=self._queue)]
+        error_messages = self._error_messages
+        if not error_messages:
+            error_messages = [
+                PIKMessageException(
+                    entity_uid=self._entity_uid,
+                    body_hash=self._body_hash,
+                    queue=self._queue)]
 
-        err_msg, other_errors = errors_messages[0], errors_messages[1:]
-        err_msg.message = self._body
-        err_msg.exception = exc_data
-        err_msg.exception_type = exc_data['code']
-        err_msg.exception_message = exc_data['message']
+        error_message, *same_error_messages = error_messages
+        error_message.message = self._body
+        error_message.exception = exc_data
+        error_message.exception_type = exc_data['code']
+        error_message.exception_message = exc_data['message']
 
         is_missing_dependency = ('does_not_exist' in [
             detail[0]['code']
             for detail in exc_data.get('detail', {}).values()])
         if is_missing_dependency:
-            err_msg.dependencies = {
+            error_message.dependencies = {
                 self._payload[field]['type']: self._payload[field]['guid']
                 for field, errors in exc_data.get('detail', {}).items()
-                for error in errors
-                if error['code'] == 'does_not_exist'}
+                for error in errors if error['code'] == 'does_not_exist'}
 
-        for _err_msg in other_errors:
-            _err_msg.delete()
+        for same_error_message in same_error_messages:
+            same_error_message.delete()
 
-        err_msg.save()
+        error_message.save()
+
+
+    @property
+    def _error_messages(self):
+        lookups = Q(queue=self._queue) & Q(body_hash=self._body_hash)
+        if self._entity_uid:
+            lookups = (
+                Q(queue=self._queue) &
+                (Q(body_hash=self._body_hash) |
+                 Q(entity_uid=self._entity_uid)))
+        return (
+            PIKMessageException.objects.filter(lookups).order_by('-updated'))
+
+    @cached_property
+    def _body_hash(self):
+        return sha1(self._body).hexdigest()
 
     def _capture_event(self, **kwargs):
         self._event_captor.capture(

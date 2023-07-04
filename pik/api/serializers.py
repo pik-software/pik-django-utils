@@ -18,6 +18,7 @@ from .deprecated.serializers import UnderscorizeSerializerHookMixIn
 from .lazy_field import LazyFieldHandlerMixIn
 from .restql import DefaultRequestQueryParserMixin
 from .validators import NewestUpdateValidator
+from .exceptions import NewestUpdateValidationError
 
 
 def _normalize_label(label):
@@ -127,8 +128,21 @@ class StandardizedProtocolSerializer(serializers.ModelSerializer):
 class DatedSerializer(serializers.ModelSerializer):
     created = serializers.DateTimeField(required=False)
     updated = serializers.DateTimeField(
-        required=False, validators=[NewestUpdateValidator()],
+        required=False,
+        # validators=[NewestUpdateValidator()],
     )
+
+    def validate(self, attrs):
+        result = super().validate(attrs)
+
+        old_updated = getattr(self.instance, 'updated', None)
+        new_updated = attrs.get('updated')
+        if not old_updated or not new_updated:
+            return result
+        if new_updated > old_updated:
+            return result
+        raise NewestUpdateValidationError()
+
 
 
 class LabeledModelSerializerMixIn:
