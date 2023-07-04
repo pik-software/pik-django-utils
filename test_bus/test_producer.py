@@ -97,7 +97,7 @@ def test_publication_event_fail():
 
 
 @patch('pik.bus.producer.MessageProducer._produce.retry.after', Mock())
-@patch('pik.bus.producer.MessageProducer._produce.retry._wait', 0)
+@patch('pik.bus.producer.MessageProducer._produce.retry.wait', 0)
 @patch('pik.bus.producer.MessageProducer._publish', property(
     Mock(side_effect=AMQPConnectionError)))
 @patch('pik.bus.producer.MessageProducer._capture_event', Mock())
