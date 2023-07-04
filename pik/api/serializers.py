@@ -144,7 +144,6 @@ class DatedSerializer(serializers.ModelSerializer):
         raise NewestUpdateValidationError()
 
 
-
 class LabeledModelSerializerMixIn:
     """
     Default DRF ModelSerializer has different nature than DRF Field

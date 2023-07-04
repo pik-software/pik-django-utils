@@ -73,7 +73,6 @@ class MessageHandler:
         self._capture_event(success=False, error=error)
         self._capture_exception(error)
 
-
     @cached_property
     def envelope(self):
         return self.parser_class().parse(io.BytesIO(self._body))
@@ -200,7 +199,6 @@ class MessageHandler:
             same_error_message.delete()
 
         error_message.save()
-
 
     @property
     def _error_messages(self):
