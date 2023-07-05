@@ -19,7 +19,7 @@ class PIKMessageExceptionAdmin(AdminProgressMixIn, admin.ModelAdmin):
     list_display = ('queue', 'exception_type', 'entity_uid', )
     search_fields = (
         'created', 'queue', 'exception', 'exception_message', 'exception_type',
-        'message', 'dependencies', )
+        'message', 'dependencies', 'entity_uid', )
     fields = (
         'created', 'queue', 'entity_uid', '_exception', 'exception_type',
         'exception_message', '_dependencies', '_message', )
