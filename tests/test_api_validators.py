@@ -53,11 +53,7 @@ class TestNewestUpdateValidator:
 
         with pytest.raises(ValidationError) as error:
             serializer.is_valid(raise_exception=True)
-        # expected = ({'updated': [ErrorDetail(
-        #     string='Новое значене поля updated должно быть больше '
-        #            'предыдущего.',
-        #     code='newest_update_validation_error')]}, )
-        expected = ({'non_field_errors': [ErrorDetail(
+        expected = ({'updated': [ErrorDetail(
             string='Новое значене поля updated должно быть больше '
                    'предыдущего.',
             code='newest_update_validation_error')]}, )
