@@ -25,16 +25,10 @@ class NewestUpdateValidationError(ValidationError):
     def is_error_match(error: Exception):
         if not isinstance(error, ValidationError):
             return False
-        # updated = error.args[0].get('updated')
-        # if not updated:
-        #     return False
-        # return updated[0].code == NewestUpdateValidationError.code
-        non_field_errors = error.args[0].get('non_field_errors')
-        if not non_field_errors:
+        updated = error.args[0].get('updated')
+        if not updated:
             return False
-        return bool([
-            error.code == NewestUpdateValidationError.code
-            for error in non_field_errors if hasattr(error, 'code')])
+        return updated[0].code == NewestUpdateValidationError.code
 
 
 def extract_exception_data(exc):
