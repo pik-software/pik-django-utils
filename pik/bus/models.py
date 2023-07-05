@@ -9,7 +9,7 @@ from pik.core.models.base import PUided
 
 class PIKMessageException(PUided, Dated):
     entity_uid = models.UUIDField(
-        _('Идентификатор сущности'), blank=True, null=True, db_index=True)
+        _('Идентификатор сущности'), blank=True, null=True)
     body_hash = models.CharField(
         _('sha1'), max_length=40, blank=True, null=True)
     queue = models.CharField(_('Очередь'), max_length=255, db_index=True)
@@ -29,7 +29,6 @@ class PIKMessageException(PUided, Dated):
             GinIndex('dependencies', name='dependencies_indx_2412'),
             Index(fields=('has_dependencies', 'queue')),
             Index(fields=('queue', )),
-            Index(fields=('entity_uid', )),
         ]
         unique_together = [['queue', 'entity_uid'], ['queue', 'body_hash']]
 
