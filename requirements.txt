@@ -1,4 +1,4 @@
-# v6
+# v7
 
 # Django
 Django<4.0.0
