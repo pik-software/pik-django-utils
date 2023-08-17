@@ -29,6 +29,6 @@ class NewestUpdateValidator:
         updated = getattr(serializer_field.parent.instance, 'updated', None)
         if not updated:
             return
-        if value > updated:
+        if value >= updated:
             return
         raise NewestUpdateValidationError()
