@@ -1,8 +1,6 @@
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError
 
-from pik.api.exceptions import NewestUpdateValidationError
-
 
 class NonChangeableValidator:
     requires_context = True
@@ -21,14 +19,3 @@ class NonChangeableValidator:
             if old_value != value:
                 raise ValidationError(self.error_msg)
 
-
-class NewestUpdateValidator:
-    requires_context = True
-
-    def __call__(self, value, serializer_field):
-        updated = getattr(serializer_field.parent.instance, 'updated', None)
-        if not updated:
-            return
-        if value >= updated:
-            return
-        raise NewestUpdateValidationError()
