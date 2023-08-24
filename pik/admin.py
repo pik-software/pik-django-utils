@@ -37,10 +37,7 @@ class ModelGroupAdmin(GroupAdmin):
 
 
 def use_latin_permissions():
-    # Re-register UserAdmin
     admin.site.unregister(User)
     admin.site.register(User, ModelUserAdmin)
-
-    # don't show groups
     admin.site.unregister(Group)
     admin.site.register(Group, ModelGroupAdmin)
