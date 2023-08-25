@@ -115,13 +115,14 @@ class MessageHandler:
             try:
                 self._serializer.is_valid(raise_exception=True)
             except ValidationError as exc:
-                if NewestUpdateValidationError.is_error_match(exc):
-                    self._event_captor.capture(
-                        success=True,
-                        error=_("Объект не изменен!"),
-                        event="skip",
-                        entity_type=self._model.__name__,
-                        entity_guid=self._instance.uid)
+                if not NewestUpdateValidationError.is_error_match(exc):
+                    raise
+                self._event_captor.capture(
+                    success=True,
+                    error=_("Объект не изменен!"),
+                    event="skip",
+                    entity_type=self._model.__name__,
+                    entity_guid=self._instance.uid)
             else:
                 self._serializer.save()
 
