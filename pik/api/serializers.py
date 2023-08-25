@@ -134,7 +134,7 @@ class DatedSerializer(serializers.ModelSerializer):
         if updated and value and value < updated:
             mdm_event_captor.capture(
                 success=True,
-                error="Объект не изменен!",
+                error=_("Объект не изменен!"),
                 event="skip",
                 entity_type=instance._meta.model.__name__,
                 entity_guid=getattr(instance, 'uid', None))
