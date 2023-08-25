@@ -17,7 +17,7 @@ from .constants import SOFT_DELETE_FIELDS
 from .deprecated.serializers import UnderscorizeSerializerHookMixIn
 from .lazy_field import LazyFieldHandlerMixIn
 from .restql import DefaultRequestQueryParserMixin
-from ..bus.mdm import mdm_event_captor
+from .validators import NewestUpdateValidator
 
 
 def _normalize_label(label):
@@ -126,20 +126,9 @@ class StandardizedProtocolSerializer(serializers.ModelSerializer):
 
 class DatedSerializer(serializers.ModelSerializer):
     created = serializers.DateTimeField(required=False)
-    updated = serializers.DateTimeField(required=False)
-
-    def update(self, instance, validated_data):
-        updated = instance.updated
-        value = validated_data.get('updated')
-        if updated and value and value < updated:
-            mdm_event_captor.capture(
-                success=True,
-                error=_("Объект не изменен!"),
-                event="skip",
-                entity_type=instance._meta.model.__name__,
-                entity_guid=getattr(instance, 'uid', None))
-            return instance
-        return super().update(instance, validated_data)
+    updated = serializers.DateTimeField(
+        required=False, validators=[NewestUpdateValidator()],
+    )
 
 
 class LabeledModelSerializerMixIn:

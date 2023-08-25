@@ -11,23 +11,24 @@ from django.core.cache import cache
 from django.db.models import Q
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
+from django.utils.translation import gettext_lazy as _
 from pika import BlockingConnection, URLParameters
 from pika.exceptions import (
     AMQPConnectionError, ChannelWrongStateError, ChannelClosedByBroker,
     ChannelClosed)
-from rest_framework.parsers import JSONParser
 from rest_framework.exceptions import ValidationError
+from rest_framework.parsers import JSONParser
 from tenacity import retry, retry_if_exception_type, wait_fixed
 
 from pik.api.exceptions import (
     extract_exception_data, NewestUpdateValidationError)
+from pik.bus.exceptions import QueuesMissingError, SerializerMissingError
 from pik.bus.mdm import mdm_event_captor
 from pik.bus.models import PIKMessageException
 from pik.utils.bus import LiveBlockingConnection
 from pik.utils.case_utils import underscorize
-from pik.utils.sentry import capture_exception
-from pik.bus.exceptions import QueuesMissingError, SerializerMissingError
 from pik.utils.decorators import close_old_db_connections
+from pik.utils.sentry import capture_exception
 
 
 logger = logging.getLogger(__name__)
@@ -111,8 +112,18 @@ class MessageHandler:
             cache.lock(f'bus-{queue}-{guid}', timeout=self.LOCK_TIMEOUT)
             if guid else contextlib.nullcontext())
         with lock:
-            self._serializer.is_valid(raise_exception=True)
-            self._serializer.save()
+            try:
+                self._serializer.is_valid(raise_exception=True)
+            except ValidationError as exc:
+                if NewestUpdateValidationError.is_error_match(exc):
+                    self._event_captor.capture(
+                        success=True,
+                        error=_("Объект не изменен!"),
+                        event="skip",
+                        entity_type=self._model.__name__,
+                        entity_guid=self._instance.uid)
+            else:
+                self._serializer.save()
 
     @cached_property
     def _serializer(self):

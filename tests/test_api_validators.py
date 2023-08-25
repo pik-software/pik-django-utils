@@ -1,15 +1,14 @@
-import uuid
 from datetime import datetime
-
+import uuid
 import pytest
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, ErrorDetail
 
 import pik.api.serializers
-from pik.api.exceptions import NewestUpdateValidationError
 from pik.api.validators import NonChangeableValidator
-from test_core_models.models.dated import MyDated
+from pik.api.exceptions import NewestUpdateValidationError
 from test_core_models.models.uided import MyPUided
+from test_core_models.models.dated import MyDated
 
 
 class MyPUidedSerializer(serializers.ModelSerializer):
@@ -42,7 +41,7 @@ class MyDatedSerializer(pik.api.serializers.StandardizedModelSerializer):
 
 @pytest.mark.django_db
 class TestNewestUpdateValidator:
-    def test_update_fail(self):  # noqa: no-self-use
+    def test_newest_update_validator_exception(self):
         past_datetime = datetime.strptime(
             '2001-01-01T00:00:00.000000', '%Y-%m-%dT%H:%M:%S.%f')
 
@@ -52,18 +51,16 @@ class TestNewestUpdateValidator:
             'created': my_dated.created,
             'updated': past_datetime})
 
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        assert serializer.instance == my_dated
-        assert (
-            serializer.instance.updated !=
-            serializer.validated_data['updated'])
-        assert past_datetime == serializer.validated_data['updated']
-        assert (
-            serializer.instance.updated !=
-            past_datetime)
+        with pytest.raises(ValidationError) as error:
+            serializer.is_valid(raise_exception=True)
+        expected = ({'updated': [ErrorDetail(
+            string='Новое значене поля updated должно быть больше '
+                   'предыдущего.',
+            code='newest_update_validation_error')]}, )
+        assert error.value.args == expected
+        assert NewestUpdateValidationError.is_error_match(error.value)
 
-    def test_update_none_failed(self):  # noqa: no-self-use
+    def test_not_newest_update_validator_exception(self):
         my_dated = MyDated()
         my_dated.save()
         serializer = MyDatedSerializer(my_dated, {
