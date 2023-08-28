@@ -9,7 +9,8 @@ from rest_framework.fields import (
     ChoiceField, JSONField, MultipleChoiceField,
     SerializerMethodField, _UnvalidatedField, )
 from rest_framework.serializers import ModelSerializer
-from rest_framework.schemas.openapi import AutoSchema, SchemaGenerator
+from rest_framework.schemas.openapi import SchemaGenerator
+from drf_spectacular.openapi import AutoSchema
 # TODO: klimenkoas: Drop `drf_yasg` dependency
 from drf_yasg.inspectors.field import (
     get_basic_type_info_from_hint, typing, inspect_signature, )
