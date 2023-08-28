@@ -43,9 +43,7 @@ class MessageHandler:
     _event_captor = None
 
     _payload = None
-    _parsed_payload = None
     _serializers = None
-    _event_label = 'deserialization'
 
     def __init__(self, body, queue, event_captor):
         self._body = body
@@ -64,26 +62,6 @@ class MessageHandler:
         except Exception as error:  # noqa: too-broad-except
             self._register_error(error)
             return False
-
-    def _register_success(self):
-        for msg in self._error_messages:
-            msg.delete()
-        self._capture_event(success=True, error=None)
-
-    def _register_error(self, error):
-        self._capture_event(success=False, error=error)
-        self._capture_exception(error)
-
-    @property
-    def _error_messages(self):
-        lookups = Q(queue=self._queue) & Q(body_hash=self._body_hash)
-        if self._entity_uid:
-            lookups = (
-                Q(queue=self._queue)
-                & (Q(body_hash=self._body_hash)
-                   | Q(entity_uid=self._entity_uid)))
-        return (
-            PIKMessageException.objects.filter(lookups).order_by('-updated'))
 
     @cached_property
     def envelope(self):
@@ -164,10 +142,11 @@ class MessageHandler:
     @classmethod
     def _get_serializer(cls, queue):
         """
-            Queue name to serializer mapping dict `{queue:  serializer, ... }`
+        Queue name to serializer mapping dict `{queue:  serializer, ... }`
 
-            We want to build it once and use forever, but building it on
-                startup is redundant for other workers and tests
+        We want to build it once and use forever, but building it on
+            startup is redundant for other workers and tests
+
         """
         if cls._serializers is None:
             cls._serializers = cls.get_queue_serializers()
@@ -186,6 +165,26 @@ class MessageHandler:
                 dependant.message, dependant.queue, mdm_event_captor)
             if handler.handle():
                 dependant.delete()
+
+    def _register_success(self):
+        for msg in self._error_messages:
+            msg.delete()
+        self._capture_event()
+
+    def _register_error(self, error):
+        self._capture_event(error)
+        self._capture_exception(error)
+
+    @property
+    def _error_messages(self):
+        lookups = Q(queue=self._queue) & Q(body_hash=self._body_hash)
+        if self._entity_uid:
+            lookups = (
+                Q(queue=self._queue) &
+                (Q(body_hash=self._body_hash) |
+                 Q(entity_uid=self._entity_uid)))
+        return (
+            PIKMessageException.objects.filter(lookups).order_by('-updated'))
 
     def _capture_exception(self, exc):
         # Don't spam validation errors to sentry.
@@ -227,15 +226,32 @@ class MessageHandler:
 
         err_msg.save()
 
-    def _capture_event(self, **kwargs):
+    def _capture_event(self, error=None, **kwargs):
+        capture_data = {
+            'event': 'deserialization',
+            'success': True,
+            'error': None}
+
+        if error is not None:
+            capture_data.update({
+                'success': False,
+                'error': error})
+            # Capture race errors for consumer as warning.
+            if NewestUpdateValidationError.is_error_match(error):
+                capture_data.update({
+                    'event': 'skip',
+                    'success': True,
+                    'error': None,
+                    'warning': error})
+
         self._event_captor.capture(
-            event=self._event_label,
             entity_type=self.envelope.get('message', {}).get('type'),
             entity_guid=self.envelope.get('message', {}).get('guid'),
             transactionGUID=self.envelope.get(
                 'headers', {}).get('transactionGUID'),
             transactionMessageCount=self.envelope.get(
                 'headers', {}).get('transactionMessageCount'),
+            **capture_data,
             **kwargs)
 
 
@@ -307,9 +323,7 @@ class MessageConsumer:
     def get_handler_kwargs(**kwargs):
         return {**kwargs, 'event_captor': mdm_event_captor}
 
-    def _handle_message(  # noqa: too-many-arguments
-            self, channel, method, properties, body,
-            queue):
+    def _handle_message(self, channel, method, properties, body, queue):  # noqa: too-many-arguments
         logger.info(
             'Handling %s bytes message from %s queue', len(body), queue)
         handler = self._message_handler(**self.get_handler_kwargs(
@@ -332,8 +346,7 @@ class MessageConsumer:
             event='consumption',
             entity_type=envelope.get('message', {}).get('type'),
             entity_guid=envelope.get('message', {}).get('guid'),
-            transactionGUID=envelope.get('headers', {}).get(
-                'transactionGUID'),
+            transactionGUID=envelope.get('headers', {}).get('transactionGUID'),
             transactionMessageCount=envelope.get(
                 'headers', {}).get('transactionMessageCount'),
             **kwargs)
