@@ -112,19 +112,8 @@ class MessageHandler:
             cache.lock(f'bus-{queue}-{guid}', timeout=self.LOCK_TIMEOUT)
             if guid else contextlib.nullcontext())
         with lock:
-            try:
-                self._serializer.is_valid(raise_exception=True)
-            except ValidationError as exc:
-                if not NewestUpdateValidationError.is_error_match(exc):
-                    raise
-                self._event_captor.capture(
-                    success=True,
-                    error=_("Объект не изменен!"),
-                    event="skip",
-                    entity_type=self._model.__name__,
-                    entity_guid=self._instance.uid)
-            else:
-                self._serializer.save()
+            self._serializer.is_valid(raise_exception=True)
+            self._serializer.save()
 
     @cached_property
     def _serializer(self):
@@ -194,6 +183,12 @@ class MessageHandler:
 
         # Don't capture race errors for consumer.
         if NewestUpdateValidationError.is_error_match(exc):
+            self._event_captor.capture(
+                success=True,
+                error=_("Объект не изменен!"),
+                event="skip",
+                entity_type=self._model.__name__,
+                entity_guid=self._instance.uid)
             capture_exception(exc)
             return
 
