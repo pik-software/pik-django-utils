@@ -218,9 +218,11 @@ class MessageHandler:
 
         err_msg.save()
 
-    def _capture_event(self, **kwargs):
+    def _capture_event(self, event=None, **kwargs):
+        if not event:
+            event = self._event_label
         self._event_captor.capture(
-            event=self._event_label,
+            event=event,
             entity_type=self.envelope.get('message', {}).get('type'),
             entity_guid=self.envelope.get('message', {}).get('guid'),
             transactionGUID=self.envelope.get(
