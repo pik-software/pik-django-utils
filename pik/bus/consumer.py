@@ -71,7 +71,8 @@ class MessageHandler:
         self._capture_event(success=True, error=None)
 
     def _register_error(self, error):
-        self._capture_event(success=False, error=error)
+        if not NewestUpdateValidationError.is_error_match(error):
+            self._capture_event(success=False, error=error)
         self._capture_exception(error)
 
     @property
@@ -183,12 +184,7 @@ class MessageHandler:
 
         # Don't capture race errors for consumer.
         if NewestUpdateValidationError.is_error_match(exc):
-            self._event_captor.capture(
-                success=True,
-                error=_("Объект не изменен!"),
-                event="skip",
-                entity_type=self._model.__name__,
-                entity_guid=self._instance.uid)
+            self._capture_event(event='skip', success=True, error=_("Объект не изменен!"))
             capture_exception(exc)
             return
 
