@@ -18,6 +18,7 @@ class MySimpleModelFactory(factory.django.DjangoModelFactory):
 
     class Meta:
         model = MySimpleModel
+        skip_postgeneration_save = True
 
 
 class TestNameModelFactory(factory.django.DjangoModelFactory):
