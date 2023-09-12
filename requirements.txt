@@ -44,7 +44,8 @@ tenacity
 sentry-sdk
 
 # Logstash
-python-logstash-async
+# TODO: unfreeze after fix it https://github.com/eht16/python-logstash-async/issues/88
+python-logstash-async==2.7.0
 
 # converting roman numerals
 roman
