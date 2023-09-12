@@ -1,0 +1,25 @@
+{
+  "summary": {
+    "started": "2023-09-12 09:53:42.784529",
+    "libraries": [
+      "django",
+      "celery"
+    ],
+    "strictness": "from profile",
+    "profiles": "/home/spice/dev/pik/pik-django-utils/.prospector.yaml, strictness_veryhigh, no_doc_warnings, no_member_warnings",
+    "tools": [
+      "dodgy",
+      "mccabe",
+      "profile-validator",
+      "pycodestyle",
+      "pyflakes",
+      "pylint"
+    ],
+    "message_count": 0,
+    "completed": "2023-09-12 02:53:46.440756",
+    "time_taken": "-25196.34",
+    "external_config": "pylint: /home/spice/dev/pik/pik-django-utils/setup.cfg",
+    "formatter": "json"
+  },
+  "messages": []
+}
