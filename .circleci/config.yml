@@ -36,6 +36,7 @@ jobs:
       - run:
           name: install dependencies
           command: |
+            export
             python -V
             python3 -V
             python3 -m venv .venv
