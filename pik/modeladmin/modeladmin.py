@@ -231,7 +231,7 @@ class AdminProgressMixIn(AdminPageMixIn):
             raise Http404('Task not found')
 
         now = datetime.now()
-        elapsed = (now - progress['started'])
+        elapsed = now - progress['started']
         left = progress['total'] - progress['current']
         speed = progress['current'] / elapsed.total_seconds()
         percent = 0
