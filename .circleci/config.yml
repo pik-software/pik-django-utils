@@ -62,7 +62,8 @@ jobs:
             check-manifest
             python setup.py check -m -s
             pytest -V
-            pytest --cov-report term-missing --cov . --cov-config .coveragerc --durations=0 --junitxml=~/reports/report.xml
+            pytest
+            # pytest --cov-report term-missing --cov . --cov-config .coveragerc --durations=0 --junitxml=~/reports/report.xml
             prospector --profile-path . --profile .prospector.yaml pik
             mypy pik --ignore-missing-imports --install-types --non-interactive
             pip check

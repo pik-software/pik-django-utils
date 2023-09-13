@@ -4,7 +4,7 @@ psycopg2
 django-redis
 
 # tests
-faker<15.1.0  # Doesn't work with python3.7 https://github.com/joke2k/faker/issues/1732
+faker  # Doesn't work with python3.7 https://github.com/joke2k/faker/issues/1732
 prospector
 factory_boy
 freezegun
@@ -19,7 +19,7 @@ pytest-benchmark
 pytest-pythonpath
 # Error with all files Line: 1 pylint: fatal / Fatal error while checking
 # TODO: unfreeze
-pylint==2.12.2
+pylint
 
 # packaging
 pip
