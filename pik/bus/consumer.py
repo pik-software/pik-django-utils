@@ -38,6 +38,8 @@ class MessageHandler:
     LOCK_TIMEOUT = 60
     parser_class = JSONParser
 
+    object_unchanged_message = 'Объект не изменен!'
+
     _body = None
     _queue = None
     _event_captor = None
@@ -184,7 +186,9 @@ class MessageHandler:
 
         # Don't capture race errors for consumer.
         if NewestUpdateValidationError.is_error_match(exc):
-            self._capture_event(event='skip', success=True, error=_("Объект не изменен!"))
+            self._capture_event(
+                event='skip', success=True,
+                error=_(self.object_unchanged_message))
             capture_exception(exc)
             return
 
