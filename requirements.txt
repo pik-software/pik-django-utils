@@ -52,3 +52,6 @@ roman
 
 # https://git.pik.ru/mdm/entities-pipelines/-/jobs/1048468
 coreapi>=2.3.3
+
+# Workaround error with old pypeg2 version by pypi.
+pypeg2 @ git+https://gitea.pep.foundation/fdik/pypeg2.git@master
