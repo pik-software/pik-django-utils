@@ -57,12 +57,8 @@ jobs:
             set -x
             check-manifest
             python setup.py check -m -s
-            # python -c 'import re; re.compile("(?m)\s+")'
-            python -c 'from pypeg2 import List, contiguous, csl, name, optional, parse'
-            # echo "from pypeg2 import List, contiguous, csl, name, optional, parse" > 1.py
-            # python 1.py
-            # python3 1.py
-            # pytest --cov .
+#            python -c 'from pypeg2 import List, contiguous, csl, name, optional, parse'
+            python -c 'import pypeg2'
             pytest --cov-report term-missing --cov . --cov-config .coveragerc --durations=0 --junitxml=~/reports/report.xml
             prospector --profile-path . --profile .prospector.yaml pik
             mypy pik --ignore-missing-imports --install-types --non-interactive
