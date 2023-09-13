@@ -58,6 +58,7 @@ jobs:
             check-manifest
             python setup.py check -m -s
             # python -c 'import re; re.compile("(?m)\s+")'
+            python -c 'from pypeg2 import List, contiguous, csl, name, optional, parse'
             # echo "from pypeg2 import List, contiguous, csl, name, optional, parse" > 1.py
             # python 1.py
             # python3 1.py
