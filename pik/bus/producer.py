@@ -182,9 +182,7 @@ class InstanceHandler:
         except Exception as error:  # noqa broad-except
             self._capture_event(success=False, error=error)
             return
-        else:
-            self._capture_event(success=True, error=None)
-
+        self._capture_event(success=True, error=None)
         self._produce(envelope)
 
     def _produce(self, envelope):

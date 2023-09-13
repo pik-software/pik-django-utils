@@ -98,7 +98,7 @@ def get_history_serializer_class(model_name, serializer_class):
         field for field in serializer.Meta.fields
         if not isinstance(serializer.fields[field], ListSerializer))
 
-    fields = (HistoricalSerializerBase.Meta.fields + non_m2m_fields)
+    fields = HistoricalSerializerBase.Meta.fields + non_m2m_fields
 
     _meta = type(
         'Meta', (HistoricalSerializerBase.Meta, serializer_class.Meta), {

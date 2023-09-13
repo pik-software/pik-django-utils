@@ -311,9 +311,8 @@ class MessageConsumer:
             self._capture_event(envelope, success=False, error=error)
             channel.basic_nack(delivery_tag=method.delivery_tag)
             return
-        else:
-            channel.basic_ack(delivery_tag=method.delivery_tag)
-            self._capture_event(envelope, success=True, error=None)
+        channel.basic_ack(delivery_tag=method.delivery_tag)
+        self._capture_event(envelope, success=True, error=None)
 
     def _capture_event(self, envelope, **kwargs):
         self._event_captor.capture(

@@ -46,10 +46,11 @@ class InheritPrimaryUidField(models.OneToOneField):
 
     """
     def __init__(self, to, **kwargs):
-        kwargs.update(dict(
-            on_delete=models.CASCADE, parent_link=True,
-            primary_key=True, to_field='uid',
-        ))
+        kwargs.update({
+            'on_delete': models.CASCADE,
+            'parent_link': True,
+            'primary_key': True,
+            'to_field': 'uid'})
         super().__init__(to, **kwargs)
 
     def get_pk_value_on_save(self, instance):

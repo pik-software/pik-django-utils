@@ -36,10 +36,6 @@ jobs:
       - run:
           name: install dependencies
           command: |
-            pwd
-            ls -la
-            python -V
-            python3 -V
             python3 -m venv .venv
             . .venv/bin/activate
             pip install --upgrade pip
@@ -61,7 +57,6 @@ jobs:
             set -x
             check-manifest
             python setup.py check -m -s
-            pytest -V
             pytest
             # pytest --cov-report term-missing --cov . --cov-config .coveragerc --durations=0 --junitxml=~/reports/report.xml
             prospector --profile-path . --profile .prospector.yaml pik

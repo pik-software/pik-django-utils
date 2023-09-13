@@ -146,5 +146,4 @@ def is_iterable(obj):
         iter(obj)
     except TypeError:
         return False
-    else:
-        return True
+    return True
