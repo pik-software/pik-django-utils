@@ -58,6 +58,7 @@ jobs:
             check-manifest
             python setup.py check -m -s
             pytest -V
+            python -c "import re; re.compile('(?m)\s+')"
             pytest --cov .
             # pytest --cov-report term-missing --cov . --cov-config .coveragerc --durations=0 --junitxml=~/reports/report.xml
             prospector --profile-path . --profile .prospector.yaml pik
