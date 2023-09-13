@@ -58,8 +58,8 @@ jobs:
             check-manifest
             python setup.py check -m -s
             # python -c 'import re; re.compile("(?m)\s+")'
-            echo "from pypeg2 import List, contiguous, csl, name, optional, parse" > 1.py
-            python 1.py
+#            echo "from pypeg2 import List, contiguous, csl, name, optional, parse" > 1.py
+#            python 1.py
             # python3 1.py
             # pytest --cov .
             pytest --cov-report term-missing --cov . --cov-config .coveragerc --durations=0 --junitxml=~/reports/report.xml
