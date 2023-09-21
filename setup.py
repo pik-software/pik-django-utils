@@ -26,7 +26,7 @@ with codecs.open(
 
 setup(
     name='pik-django-utils',
-    version='2.0.5',
+    version='2.1.0',
     description='Common PIK Django utils and tools',
     # https://packaging.python.org/specifications/core-metadata/#description-optional
     long_description=long_description,

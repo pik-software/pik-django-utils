@@ -5,6 +5,7 @@ from django.db.models import Q
 from django.db.models.sql import DeleteQuery
 from django.db.models.sql.where import WhereNode
 from django.utils.translation import gettext_lazy as _
+
 from ._collector_delete import Collector  # noqa: cyclic-import
 
 assert Collector.delete
@@ -166,9 +167,9 @@ class SoftDeleted(models.Model):
     def delete(self, using=None, keep_parents=False):
         using = using or router.db_for_write(self.__class__, instance=self)
 
-        assert self._get_pk_val() is not None,\
-            f"{self._meta.object_name} object can't be deleted because its " \
-            f"{self._meta.pk.attname} attribute is set to None."
+        assert self._get_pk_val() is not None, (
+            f"{self._meta.object_name} object can't be deleted because its "
+            f"{self._meta.pk.attname} attribute is set to None.")
 
         if self.deleted:
             return 0, {}  # short-circuit here to prevent lots of nesting
