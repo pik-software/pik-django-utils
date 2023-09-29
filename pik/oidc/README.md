@@ -33,6 +33,7 @@
 
 ```python
 
+OIDC_DEFAULT_BACKEND = 'pik'
 from pik.oidc.settings import set_oidc_settings
 set_oidc_settings(globals())
 
