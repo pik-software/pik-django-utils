@@ -74,8 +74,8 @@ class PIKOpenIdConnectAuth(OpenIdConnectAuth):  # noqa: abstract-method
         """ Validated logout_token """
         try:
             # Decode the JWT and raise an error if the sig is invalid
-            id_token = JWS().verify_compact(jws.encode('utf-8'),
-                                            self.get_jwks_keys())
+            id_token = JWS().verify_compact(
+                jws.encode('utf-8'), self.get_jwks_keys())
         except JWKESTException as exc:
             raise AuthTokenError(
                 self, 'Signature verification failed') from exc
