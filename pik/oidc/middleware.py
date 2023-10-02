@@ -18,7 +18,7 @@ class OIDCDefaultBackendMiddleware(MiddlewareMixin):
     def process_request(request):
         """ Backend forcing middleware """
 
-        if not settings.OIDC_DEFAULT_BACKEND:
+        if not getattr(settings, 'OIDC_DEFAULT_BACKEND', None):
             return
 
         auth = request.META.get('HTTP_AUTHORIZATION', b'')
