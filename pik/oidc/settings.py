@@ -273,7 +273,7 @@ def set_oidc_settings(settings):
 
     _insert(settings, 'MIDDLEWARE',
             'django.contrib.sessions.middleware.SessionMiddleware',
-            'pik.oidc_relied.middleware.OIDCDefaultBackendMiddleware')
+            'pik.oidc.middleware.OIDCDefaultBackendMiddleware')
 
     _append(settings, 'AUTHENTICATION_BACKENDS',
             'pik.oidc.backends.PIKOpenIdConnectAuth')
