@@ -32,8 +32,10 @@ class Command(BaseCommand):
 
     def _run_process(self):
         logger.info(self.help)
-        with cache.lock(LOCK_KEY, timeout=LOCK_TIMEOUT, blocking=False) as lock:
+        with cache.lock(
+                LOCK_KEY, timeout=LOCK_TIMEOUT, blocking=False) as lock:
             if not lock:
+                logger.info('Lock is not released now.')
                 return
             self._process()
 
