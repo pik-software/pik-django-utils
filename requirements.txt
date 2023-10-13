@@ -1,4 +1,4 @@
-# v8
+# v7
 
 # Django
 Django<4.0.0
@@ -44,13 +44,13 @@ tenacity
 sentry-sdk
 
 # Logstash
-# TODO: unfreeze after fix it https://github.com/eht16/python-logstash-async/issues/88
-python-logstash-async==2.7.0
+python-logstash-async
 
-# converting roman numerals
+# Converting roman numerals
 roman
 
 # https://git.pik.ru/mdm/entities-pipelines/-/jobs/1048468
 coreapi>=2.3.3
 
+# Progressbar in terminal
 tqdm
