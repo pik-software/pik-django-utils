@@ -19,4 +19,4 @@ app.autodiscover_tasks()
 
 @app.task(bind=True)
 def debug_task(self: celery.Task):
-    return 'Request: {0!r}'.format(self.request.task)
+    return f'Request: {self.request.task!r}'

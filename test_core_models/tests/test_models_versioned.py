@@ -4,22 +4,23 @@ from .factories import MyVersionedFactory, MyStrictVersionedFactory
 from ..models import MyVersioned, MyStrictVersioned
 
 
-@pytest.fixture(params=[
+@pytest.fixture(name='versioned_model', params=[
     (MyVersioned, MyVersionedFactory),
 ])
-def versioned_model(request):
+def versioned_model_fixture(request):
     return request.param
 
 
-@pytest.fixture(params=[
+@pytest.fixture(name='strict_versioned_model', params=[
     (MyStrictVersioned, MyStrictVersionedFactory),
 ])
-def strict_versioned_model(request):
+def strict_versioned_model_fixture(request):
     return request.param
 
 
+@pytest.mark.django_db
 def test_versioned_protocol(versioned_model):
-    model, factory = versioned_model
+    _, factory = versioned_model
     obj = factory.create()
     version1 = obj.version
     assert isinstance(obj.version, int)
@@ -30,8 +31,9 @@ def test_versioned_protocol(versioned_model):
     assert version2 > version1
 
 
+@pytest.mark.django_db
 def test_strict_versioned_protocol(strict_versioned_model):
-    model, factory = strict_versioned_model
+    _, factory = strict_versioned_model
     obj = factory.create()
     version1 = obj.version
     assert isinstance(obj.version, int)
@@ -46,8 +48,9 @@ def test_strict_versioned_protocol(strict_versioned_model):
     assert obj.version > version1
 
 
+@pytest.mark.django_db
 def test_optimistic_concurrency_update(versioned_model):
-    model, factory = versioned_model
+    _, factory = versioned_model
     obj = factory.create()
     version1 = obj.version
     is_updated = obj.optimistic_concurrency_update()

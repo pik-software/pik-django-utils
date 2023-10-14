@@ -1,9 +1,11 @@
 from django.db import models
 
-from pik.core.models import SoftDeleted
+from pik.core.models import SoftDeleted, Uided
 
 
-# Based on https://github.com/MnogoByte/django-permanent/blob/bdde297233eb7c83c862358854127c8654410aae/django_permanent/tests/test_app/models.py
+# Based on https://github.com/MnogoByte/django-permanent/blob/
+# bdde297233eb7c83c862358854127c8654410aae/django_permanent/tests/
+# test_app/models.py
 
 
 class BaseTestModel(models.Model):
@@ -16,12 +18,10 @@ class BaseTestModel(models.Model):
 
 class MyPermanentModel(SoftDeleted, BaseTestModel):
     name = models.CharField(max_length=255, blank=True, null=True)
-    pass
 
 
-class RegularModel(BaseTestModel):
+class RegularModel(Uided, BaseTestModel):
     name = models.CharField(max_length=255, blank=True, null=True)
-    pass
 
 
 class RemovableRegularDepended(SoftDeleted, BaseTestModel):
@@ -33,15 +33,18 @@ class RemovableDepended(BaseTestModel):
 
 
 class NonRemovableDepended(SoftDeleted, BaseTestModel):
-    dependence = models.ForeignKey(MyPermanentModel, on_delete=models.DO_NOTHING)
+    dependence = models.ForeignKey(
+        MyPermanentModel, on_delete=models.DO_NOTHING)
 
 
 class NonRemovableNullableDepended(SoftDeleted, BaseTestModel):
-    dependence = models.ForeignKey(MyPermanentModel, on_delete=models.SET_NULL, null=True)
+    dependence = models.ForeignKey(
+        MyPermanentModel, on_delete=models.SET_NULL, null=True)
 
 
 class RemovableNullableDepended(SoftDeleted, BaseTestModel):
-    dependence = models.ForeignKey(MyPermanentModel, on_delete=models.SET_NULL, null=True)
+    dependence = models.ForeignKey(
+        MyPermanentModel, on_delete=models.SET_NULL, null=True)
 
 
 class PermanentDepended(SoftDeleted, BaseTestModel):

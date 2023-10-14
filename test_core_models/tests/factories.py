@@ -1,55 +1,55 @@
-import factory
+from test_core_shortcuts.tests.factories import MyDjangoModelFactory
+from ..models import (
+    MyDated, MyOwned, MyNullOwned, MyUided, MyPUided,
+    MyVersioned, MyStrictVersioned, MyHistorized, MyBasePHistorical,
+    MyBaseHistorical)
 
-from ..models import MyDated, MyOwned, MyNullOwned, MyUided, MyPUided, \
-    MyVersioned, MyStrictVersioned, MyHistorized, MyBasePHistorical, \
-    MyBaseHistorical
 
-
-class MyDatedFactory(factory.django.DjangoModelFactory):
+class MyDatedFactory(MyDjangoModelFactory):
     class Meta:
         model = MyDated
 
 
-class MyOwnedFactory(factory.django.DjangoModelFactory):
+class MyOwnedFactory(MyDjangoModelFactory):
     class Meta:
         model = MyOwned
 
 
-class MyNullOwnedFactory(factory.django.DjangoModelFactory):
+class MyNullOwnedFactory(MyDjangoModelFactory):
     class Meta:
         model = MyNullOwned
 
 
-class MyUidedFactory(factory.django.DjangoModelFactory):
+class MyUidedFactory(MyDjangoModelFactory):
     class Meta:
         model = MyUided
 
 
-class MyPUidedFactory(factory.django.DjangoModelFactory):
+class MyPUidedFactory(MyDjangoModelFactory):
     class Meta:
         model = MyPUided
 
 
-class MyVersionedFactory(factory.django.DjangoModelFactory):
+class MyVersionedFactory(MyDjangoModelFactory):
     class Meta:
         model = MyVersioned
 
 
-class MyStrictVersionedFactory(factory.django.DjangoModelFactory):
+class MyStrictVersionedFactory(MyDjangoModelFactory):
     class Meta:
         model = MyStrictVersioned
 
 
-class MyHistorizedFactory(factory.django.DjangoModelFactory):
+class MyHistorizedFactory(MyDjangoModelFactory):
     class Meta:
         model = MyHistorized
 
 
-class MyBasePHistoricalFactory(factory.django.DjangoModelFactory):
+class MyBasePHistoricalFactory(MyDjangoModelFactory):
     class Meta:
         model = MyBasePHistorical
 
 
-class MyBaseHistoricalFactory(factory.django.DjangoModelFactory):
+class MyBaseHistoricalFactory(MyDjangoModelFactory):
     class Meta:
         model = MyBaseHistorical

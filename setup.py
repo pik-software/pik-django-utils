@@ -1,21 +1,23 @@
+from os import path
+# To use a consistent encoding
+import codecs
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
-# To use a consistent encoding
-from codecs import open
-from os import path
+
 
 here = path.abspath(path.dirname(__file__))
 
-with open(path.join(here, 'README.md'), encoding='utf-8') as f:
+with codecs.open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
-with open(path.join(here, 'requirements.txt'), encoding='utf-8') as f:
+with codecs.open(path.join(here, 'requirements.txt'), encoding='utf-8') as f:
     requirements = [
         line for line in f.readlines()
         if line and not line.startswith('#')
     ]
 
-with open(path.join(here, 'requirements.dev.txt'), encoding='utf-8') as f:
+with codecs.open(
+        path.join(here, 'requirements.dev.txt'), encoding='utf-8') as f:
     requirements_dev = [
         line for line in f.readlines()
         if line and not line.startswith('#')
@@ -47,6 +49,8 @@ setup(
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=requirements,
     python_requires='~=3.6',
+
+    include_package_data=True,
 
     # List additional groups of dependencies here
     #   $ pip install sampleproject[dev]
@@ -84,7 +88,8 @@ setup(
     # },
 
     project_urls={
-        'Bug Reports': 'https://github.com/pik-software/pik-django-utils/issues',
+        'Bug Reports':
+            'https://github.com/pik-software/pik-django-utils/issues',
         'Funding': 'https://github.com/pik-software/pik-django-utils',
         'Say Thanks!': 'https://saythanks.io/to/pik_software',
         'Source': 'https://github.com/pik-software/pik-django-utils',

@@ -4,10 +4,18 @@ include README.md
 include CHANGELOG.md
 include requirements.txt
 include requirements.dev.txt
+include .coveragerc
+include pytest.ini
+include mypy.ini
 
 # Include the data files
 recursive-include data *
 recursive-include docs *.md
+
+# Include the pik files
+recursive-include pik *.html
+recursive-include pik *.md
+recursive-include pik *.py
 
 # EXCLUDE
 prune .circleci

@@ -11,6 +11,9 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import os
+from unittest.mock import patch
+
+import dj_database_url
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -22,12 +25,16 @@ REDIS_URL = 'redis://@127.0.0.1:6379'
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '+!1n5nglwv!@i^od9f9+srz$0*u_*(k0k)ann3@3uc$f#1*b6i'
+SECRET_KEY = '+!1n5nglwv!@i^od9f9+srz$0*u_*(k0k)ann3@3uc$f#1*b6i'  # noqa: dodgy - secret
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
 ALLOWED_HOSTS = []
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
 
 
 # Application definition
@@ -40,12 +47,15 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'pik.cors',
+    'pik.bus',
     'test_core_models',
     'test_core_models_fields',
     'test_core_shortcuts',
 ]
 
 MIDDLEWARE = [
+    'pik.cors.middleware.CachedCorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -73,14 +83,20 @@ TEMPLATES = [
     },
 ]
 
+BASE_DIR_NAME = os.path.basename(BASE_DIR)
+SERVICE_NAME = os.environ.get('SERVICE_NAME', BASE_DIR_NAME)
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
+DATABASE_URL = os.environ.get(
+    'DATABASE_URL',
+    'postgres://@127.0.0.1:5432/' + SERVICE_NAME)
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
+    'default': dj_database_url.parse(
+        DATABASE_URL,
+        engine='django.contrib.gis.db.backends.postgis'
+    )
 }
 
 CACHES = {
@@ -116,4 +132,39 @@ STATIC_URL = '/static/'
 # SOFT DELETE
 # when SOFT_DELETE_SAFE_MODE is True - not soft deletion restricted
 SOFT_DELETE_SAFE_MODE = True
-SOFT_DELETE_EXCLUDE = []
+SOFT_DELETE_EXCLUDE = [
+    'sessions.Session',
+    'bus.PIKMessageException'
+]
+
+
+HISTORY_SERIALIZER_CACHE_TTL_SEC = int(os.environ.get(
+    'HISTORY_SERIALIZER_CACHE_TTL_SEC', 24 * 3600))
+
+ONLY_LAST_VERSION_ALLOWED_DAYS_RANGE = os.environ.get(
+    'ONLY_LAST_VERSION_ALLOWED_DAYS_RANGE', 1)
+
+
+from pik.oidc.settings import set_oidc_settings  # noqa: pylint=wrong-import-position
+set_oidc_settings(globals())
+
+
+# Stub for rabbitMQ settings
+RABBITMQ_PRODUCER_ENABLE = False
+RABBITMQ_CONSUMER_ENABLE = False
+RABBITMQ_URL = ''
+RABBITMQ_PRODUCES = {}
+RABBITMQ_CONSUMES = {}
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
+
+# Mock decorator for pik.bus.consumer.MessageHandler before load him from
+# tasks.py. Do here because tasks.py is loaded before conftest.py.
+patch('pik.utils.decorators.close_old_db_connections', lambda x: x).start()
+
+
+try:
+    from .settings_local import *  # noqa: pylint=unused-wildcard-import, pylint=wildcard-import
+except ImportError:
+    pass

@@ -5,8 +5,23 @@ from test_core_shortcuts.models import OverriddenQuerysetModel
 from ..models import MySimpleModel, TestNameModel
 
 
-class MySimpleModelFactory(factory.django.DjangoModelFactory):
-    data = factory.LazyFunction(get_random_string)
+class MyDjangoModelFactory(factory.django.DjangoModelFactory):
+    """
+    DeprecationWarning resolving:
+    https://factoryboy.readthedocs.io/en/latest/changelog.html (since 3.3.0)
+    DjangoModelFactory will stop issuing a second call to save()
+    on the created instance when Post-generation hooks return a value.
+    """
+
+    @classmethod
+    def _after_postgeneration(cls, instance, create, results=None):
+        """Save again the instance if creating and at least one hook ran."""
+        if create and results and not cls._meta.skip_postgeneration_save:
+            instance.save()
+
+
+class MySimpleModelFactory(MyDjangoModelFactory):
+    data = factory.LazyFunction(lambda: get_random_string(12))
 
     @factory.post_generation
     def names(self, create, extracted):
@@ -18,19 +33,20 @@ class MySimpleModelFactory(factory.django.DjangoModelFactory):
 
     class Meta:
         model = MySimpleModel
+        skip_postgeneration_save = True
 
 
-class TestNameModelFactory(factory.django.DjangoModelFactory):
+class TestNameModelFactory(MyDjangoModelFactory):
     __test__ = False  # prevent PytestCollectionWarning
 
-    name = factory.LazyFunction(get_random_string)
+    name = factory.LazyFunction(lambda: get_random_string(12))
 
     class Meta:
         model = TestNameModel
 
 
-class OverriddenQuerysetModelFactory(factory.django.DjangoModelFactory):
-    name = factory.LazyFunction(get_random_string)
+class OverriddenQuerysetModelFactory(MyDjangoModelFactory):
+    name = factory.LazyFunction(lambda: get_random_string(12))
 
     class Meta:
         model = OverriddenQuerysetModel

@@ -6,7 +6,7 @@ from django.db.models.sql import DeleteQuery
 from django.db.models.sql.where import WhereNode
 from django.utils.translation import gettext_lazy as _
 
-from ._collector_delete import Collector
+from ._collector_delete import Collector  # noqa: cyclic-import
 
 assert Collector.delete
 

@@ -1,0 +1,1 @@
+PG_SEARCH_RUSSIAN_LANGUAGE_CONFIG = 'unaccent_russian'

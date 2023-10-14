@@ -1,12 +1,56 @@
+# v7
+
 # Django
-Django>=1.11.15
-django-simple-history>=2.4.0
+Django<4.0.0
+django-simple-history
+djangorestframework<3.14.0
+django-restql
+django-filter
+djangorestframework-filters==1.0.0.dev0  # TODO: move to 1.0.0.dev2
+django-model-utils
+django-private-storage
+django-documents-tools
+django-cors-headers
+drf_yasg
+django-autocomplete-light
+dal_admin_filters
+django-prettyjson
+dj_database_url
+
+# OIDC
+social-auth-app-django
+django_cors_headers
+django-oauth-toolkit
+django-rest-framework-social-oauth2
+pyjwkest
+future
+social_auth_core
+python-jose
 
 # Celery
-celery>=4.2.1
-kombu>=4.2.1
+celery
+kombu
+# TODO: unfrezze after resolve this issue: https://github.com/celery/kombu/issues/1620
+importlib-metadata==4.13.0
 
 # Text normalization library
-cucco==2.2.1
+cucco
 
+# Rabbit
+pika
+tenacity
+
+# Sentry
+sentry-sdk
+
+# Logstash
+python-logstash-async
+
+# Converting roman numerals
+roman
+
+# https://git.pik.ru/mdm/entities-pipelines/-/jobs/1048468
+coreapi>=2.3.3
+
+# Progressbar in terminal
 tqdm
