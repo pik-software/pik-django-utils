@@ -35,3 +35,20 @@ class PIKMessageException(PUided, Dated):
     def save(self, *args, **kwargs):
         self.has_dependencies = bool(self.dependencies)
         super().save(*args, **kwargs)
+
+
+class PIKMessageExceptionAction(PUided, Dated):
+    PROCESS = 'process'
+    DELETE = 'delete'
+    ACTION = [
+        (PROCESS, 'Обработка'),
+        (DELETE, 'Удаление')]
+
+    pik_message_exception = models.ForeignKey(
+        to=PIKMessageException, on_delete=models.PROTECT)
+    action = models.CharField(
+        verbose_name='Действие', max_length=16, choices=ACTION)
+
+    class Meta:
+        verbose_name = _('Действие для сообщения шины')
+        verbose_name_plural = _('Действия для сообщений шины')
