@@ -111,12 +111,11 @@ class ModelSerializerRegistratorMetaclass(SerializerMetaclass):
         ...         return 'TestRegistered2'
         >>> ModelSerializerRegistratorMetaclass.SERIALIZERS['TestRegistered2']
         <class 'pik.api.lazy_field.TestRegistered'>
-
-
     """
+
     SERIALIZERS: Dict[str, type] = {}
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, **kwargs):  # noqa: bad-mcs-classmethod-argument
         new = super().__new__(cls, *args, **kwargs)
         if not issubclass(new, ModelSerializer):
             return new

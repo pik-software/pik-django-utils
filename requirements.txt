@@ -1,4 +1,4 @@
-# v2
+# v7
 
 # Django
 Django<4.0.0
@@ -46,8 +46,11 @@ sentry-sdk
 # Logstash
 python-logstash-async
 
-# converting roman numerals
+# Converting roman numerals
 roman
 
 # https://git.pik.ru/mdm/entities-pipelines/-/jobs/1048468
 coreapi>=2.3.3
+
+# Progressbar in terminal
+tqdm

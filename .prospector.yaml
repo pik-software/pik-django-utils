@@ -7,14 +7,12 @@ uses:
 
 ignore-paths:
   - docs
-  - migrations
   - templates
   - codegen_templates
   - .venv
   - _project_/settings_local.py
   - _project_/templates
   - _project_/static
-  - README.md
   - __data__
   - .circleci
   - lib/codegen/tests/testcases
@@ -25,6 +23,8 @@ ignore-patterns:
   - .*/api_v1/base_serializers.py
   - .*/api_v1/base_viewsets.py
   - .*/site-packages/.*
+  - .*/migrations/.*
+  - .*/README.md
 
 pylint:
   options:

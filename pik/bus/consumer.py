@@ -11,23 +11,24 @@ from django.core.cache import cache
 from django.db.models import Q
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
+from django.utils.translation import gettext_lazy as _
 from pika import BlockingConnection, URLParameters
 from pika.exceptions import (
     AMQPConnectionError, ChannelWrongStateError, ChannelClosedByBroker,
     ChannelClosed)
-from rest_framework.parsers import JSONParser
 from rest_framework.exceptions import ValidationError
+from rest_framework.parsers import JSONParser
 from tenacity import retry, retry_if_exception_type, wait_fixed
 
 from pik.api.exceptions import (
     extract_exception_data, NewestUpdateValidationError)
+from pik.bus.exceptions import QueuesMissingError, SerializerMissingError
 from pik.bus.mdm import mdm_event_captor
 from pik.bus.models import PIKMessageException
 from pik.utils.bus import LiveBlockingConnection
 from pik.utils.case_utils import underscorize
-from pik.utils.sentry import capture_exception
-from pik.bus.exceptions import QueuesMissingError, SerializerMissingError
 from pik.utils.decorators import close_old_db_connections
+from pik.utils.sentry import capture_exception
 
 
 logger = logging.getLogger(__name__)
@@ -36,6 +37,8 @@ logger = logging.getLogger(__name__)
 class MessageHandler:
     LOCK_TIMEOUT = 60
     parser_class = JSONParser
+
+    object_unchanged_message = 'Объект не изменен!'
 
     _body = None
     _queue = None
@@ -70,7 +73,8 @@ class MessageHandler:
         self._capture_event(success=True, error=None)
 
     def _register_error(self, error):
-        self._capture_event(success=False, error=error)
+        if not NewestUpdateValidationError.is_error_match(error):
+            self._capture_event(success=False, error=error)
         self._capture_exception(error)
 
     @cached_property
@@ -167,6 +171,9 @@ class MessageHandler:
 
         # Don't capture race errors for consumer.
         if NewestUpdateValidationError.is_error_match(exc):
+            self._capture_event(
+                event='skip', success=True,
+                error=_(self.object_unchanged_message))
             capture_exception(exc)
             return
 
@@ -215,9 +222,11 @@ class MessageHandler:
     def _body_hash(self):
         return sha1(self._body).hexdigest()
 
-    def _capture_event(self, **kwargs):
+    def _capture_event(self, event=None, **kwargs):
+        if not event:
+            event = self._event_label
         self._event_captor.capture(
-            event=self._event_label,
+            event=event,
             entity_type=self.envelope.get('message', {}).get('type'),
             entity_guid=self.envelope.get('message', {}).get('guid'),
             transactionGUID=self.envelope.get(
@@ -311,9 +320,8 @@ class MessageConsumer:
             self._capture_event(envelope, success=False, error=error)
             channel.basic_nack(delivery_tag=method.delivery_tag)
             return
-        else:
-            channel.basic_ack(delivery_tag=method.delivery_tag)
-            self._capture_event(envelope, success=True, error=None)
+        channel.basic_ack(delivery_tag=method.delivery_tag)
+        self._capture_event(envelope, success=True, error=None)
 
     def _capture_event(self, envelope, **kwargs):
         self._event_captor.capture(

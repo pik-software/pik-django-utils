@@ -1,5 +1,16 @@
 ## ??? ##
 
+## 2.1.0 ##
+
+### NEW ###
+
+- Automatic history cleaning tools by @John2013
+- 
+### FIX ###
+
+- Fixed qa by @John2013
+
+
 ## 2.0.5 ##
 
 ### CHANGE ###

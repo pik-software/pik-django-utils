@@ -1,5 +1,5 @@
-from inspect import getfullargspec
 from functools import wraps
+from inspect import getfullargspec
 from typing import Any, Callable
 
 from django.core.cache import caches
@@ -95,8 +95,9 @@ def cachedmethod(key: str, ttl: int = 5 * 60, cachename: str = 'default') \
         def decorator(*args, **kwargs) -> Any:
             positional = dict(zip(spec.args, args))
             if set(positional) & set(kwargs):
-                msg = f'{method.__name__}()' \
-                      f' got multiple values for some argument'
+                msg = (
+                    f'{method.__name__}() got multiple values for some '
+                    f'argument')
                 raise TypeError(msg)
             merged_kwargs = {**defaults, **positional, **kwargs}
             cachekey = key.format(**merged_kwargs)

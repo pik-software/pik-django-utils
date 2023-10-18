@@ -5,6 +5,7 @@ from django.utils.module_loading import import_string
 
 
 def create_user(username=None, password=None, **kwargs):
+    username_length = 16
     factory_class = getattr(settings, 'USER_FACTORY_CLASS', '')
     try:
         factory = import_string(factory_class)
@@ -21,7 +22,7 @@ def create_user(username=None, password=None, **kwargs):
         username = kwargs.get(User.USERNAME_FIELD)
 
     if not username:
-        username = get_random_string(12)
+        username = get_random_string(username_length)
 
     kwargs.update({
         User.USERNAME_FIELD: username,
