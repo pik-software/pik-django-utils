@@ -38,21 +38,29 @@ class Command(BaseCommand):
                 else:
                     time.sleep(WAIT_TIME)
 
-    def _process_actions(self, qs):
-        logger.info('Processing %s PIKMessageExceptionAction:', qs.count())
-        for message_action in tqdm(qs, total=qs.count()):
-            if message_action.action == Action.PROCESS:
-                self._process_message(message_action.pik_message_exception)
-            if message_action.action == Action.DELETE:
-                self._delete_message(message_action.pik_message_exception)
-            message_action.delete()
+    def _process_actions(self, message_actions):
+        logger.info('Processing %s error messages:', message_actions.count())
+        strategies = {
+            Action.PROCESS: self._process_message,
+            Action.DELETE: self._delete_message}
+        for message_action in tqdm(message_actions):
+            strategy = strategies.get(
+                message_action.action, self._pass_message)
+            strategy(message_action)
 
     @staticmethod
-    def _process_message(pik_message_exception):
+    def _pass_message(message_action):
+        logger.warning(
+            '%s PIKMessageExceptionAction is passed', message_action.uid)
+
+    @staticmethod
+    def _process_message(message_action):
         handler_class(
-            pik_message_exception.message, pik_message_exception.queue,
+            message_action.message.message, message_action.message.queue,
             mdm_event_captor).handle()
+        message_action.delete()
 
     @staticmethod
-    def _delete_message(pik_message_exception):
-        pik_message_exception.delete()
+    def _delete_message(message_action):
+        message_action.message.delete()
+        message_action.delete()

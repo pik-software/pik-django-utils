@@ -37,14 +37,14 @@ class PIKMessageException(PUided, Dated):
         super().save(*args, **kwargs)
 
 
-class PIKMessageExceptionAction(PUided, Dated):
+class PIKMessageExceptionAction(PUided):
     PROCESS = 'process'
     DELETE = 'delete'
     ACTION = [
         (PROCESS, 'Обработка'),
         (DELETE, 'Удаление')]
 
-    pik_message_exception = models.ForeignKey(
+    message = models.ForeignKey(
         to=PIKMessageException, on_delete=models.PROTECT)
     action = models.CharField(
         verbose_name='Действие', max_length=16, choices=ACTION)
@@ -52,3 +52,8 @@ class PIKMessageExceptionAction(PUided, Dated):
     class Meta:
         verbose_name = _('Действие для сообщения шины')
         verbose_name_plural = _('Действия для сообщений шины')
+
+# TODO:
+#  * Свяжи действия в админке с действиями в PIKMessageExceptionAction
+#  * По действиям в админке создавай PIKMessageExceptionAction
+#  * Протестируй локально
