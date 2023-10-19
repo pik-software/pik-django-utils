@@ -14,7 +14,7 @@ from simple_history.admin import SimpleHistoryAdmin
 from pik.core.permitted_fields.admin import (
     PermittedFieldsAdminMixIn, PermittedFieldsInlineAdminMixIn)
 
-from .tasks import register_progress, get_progress
+from .tasks import set_progress, get_progress
 
 
 class ReasonedMixIn:
@@ -215,7 +215,7 @@ class AdminProgressMixIn(AdminPageMixIn):
     def execute_task_progress(
             self, process_name, task, *args, total=None, **kwargs):
         task_id = task.apply_async(*args, **kwargs)
-        register_progress(task_id, total=total)
+        set_progress(task_id, total=total)
         return HttpResponseRedirect(self.get_progress_url(
             process_name, task_id))
 

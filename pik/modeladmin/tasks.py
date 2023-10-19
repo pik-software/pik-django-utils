@@ -14,7 +14,7 @@ def get_progress(task_id):
     return cache.get(PROGRESS_KEY.format(task_id=task_id))
 
 
-def register_progress(task_id, **kwargs):
+def set_progress(task_id, **kwargs):
     progress_defaults = {
         'started': datetime.now(),
         'current': 0,

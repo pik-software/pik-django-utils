@@ -13,6 +13,8 @@ from .tasks import task_process_messages, task_delete_messages
 
 @admin.register(PIKMessageException)
 class PIKMessageExceptionAdmin(AdminProgressMixIn, admin.ModelAdmin):
+    CHUNK_SIZE = 2**8
+
     page_contexts = ['get_progress_context']
     progress_pages = {'processing': _('Обработка'), 'deletion': _('Удаление')}
 
@@ -48,9 +50,14 @@ class PIKMessageExceptionAdmin(AdminProgressMixIn, admin.ModelAdmin):
 
     @admin.action(description=_('Обработать сообщения'))
     def _process_message(self, request, queryset):
-        return self.execute_task_progress(
-            'processing', task_process_messages, total=queryset.count(),
-            kwargs={'pks': tuple(queryset.values_list('pk', flat=True))})
+        for chunk in self._split_sliced(queryset, self.CHUNK_SIZE):
+            pks = [i.uid for i in chunk]
+            task_process_messages.apply_async(kwargs={'pks': pks})
+
+    @staticmethod
+    def _split_sliced(sliced, chunk_size):
+        for index in range(0, len(sliced), chunk_size):
+            yield sliced[index:index + chunk_size]
 
     @admin.action(description=_('Удалить сообщения'))
     def _delete_selected(self, request, queryset):
