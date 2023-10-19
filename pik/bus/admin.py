@@ -6,6 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from prettyjson.templatetags.prettyjson import prettyjson
 
 from pik.modeladmin.modeladmin import AdminProgressMixIn
+from pik.utils.itertools import batched
 
 from .models import PIKMessageException
 from .tasks import task_process_messages, task_delete_messages
@@ -50,20 +51,15 @@ class PIKMessageExceptionAdmin(AdminProgressMixIn, admin.ModelAdmin):
 
     @admin.action(description=_('Обработать сообщения'))
     def _process_message(self, request, queryset):
-        for chunk in self._split_sliced(queryset, self.CHUNK_SIZE):
+        for chunk in batched(queryset, self.CHUNK_SIZE):
             pks = [i.uid for i in chunk]
             task_process_messages.apply_async(kwargs={'pks': pks})
 
-    @staticmethod
-    def _split_sliced(sliced, chunk_size):
-        for index in range(0, len(sliced), chunk_size):
-            yield sliced[index:index + chunk_size]
-
     @admin.action(description=_('Удалить сообщения'))
     def _delete_selected(self, request, queryset):
-        return self.execute_task_progress(
-            'deletion', task_delete_messages, total=queryset.count(),
-            kwargs={'pks': tuple(queryset.values_list('pk', flat=True))})
+        for chunk in batched(queryset, self.CHUNK_SIZE):
+            pks = [i.uid for i in chunk]
+            task_delete_messages.apply_async(kwargs={'pks': pks})
 
     def get_actions(self, request):
         actions = super().get_actions(request)
