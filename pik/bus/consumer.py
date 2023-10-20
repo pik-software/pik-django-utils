@@ -105,6 +105,8 @@ class MessageHandler:
             if guid else contextlib.nullcontext())
         with lock:
             self._serializer.is_valid(raise_exception=True)
+            import time
+            time.sleep(2)
             self._serializer.save()
 
     @cached_property

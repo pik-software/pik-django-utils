@@ -1,4 +1,5 @@
 import json
+import uuid
 
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
@@ -6,16 +7,14 @@ from django.utils.translation import gettext_lazy as _
 from prettyjson.templatetags.prettyjson import prettyjson
 
 from pik.modeladmin.modeladmin import AdminProgressMixIn
-from pik.utils.itertools import batched
 
 from .models import PIKMessageException
-from .tasks import task_process_messages, task_delete_messages
+# from .tasks import task_process_messages, task_delete_messages
+from .tasks import task_process_messages
 
 
 @admin.register(PIKMessageException)
 class PIKMessageExceptionAdmin(AdminProgressMixIn, admin.ModelAdmin):
-    CHUNK_SIZE = 2**8
-
     page_contexts = ['get_progress_context']
     progress_pages = {'processing': _('Обработка'), 'deletion': _('Удаление')}
 
@@ -51,15 +50,13 @@ class PIKMessageExceptionAdmin(AdminProgressMixIn, admin.ModelAdmin):
 
     @admin.action(description=_('Обработать сообщения'))
     def _process_message(self, request, queryset):
-        for chunk in batched(queryset, self.CHUNK_SIZE):
-            pks = [i.uid for i in chunk]
-            task_process_messages.apply_async(kwargs={'pks': pks})
+        return self.execute_task_progress(
+            name='processing', task=task_process_messages,
+            queryset=queryset, action_uid=str(uuid.uuid4()))
 
-    @admin.action(description=_('Удалить сообщения'))
-    def _delete_selected(self, request, queryset):
-        for chunk in batched(queryset, self.CHUNK_SIZE):
-            pks = [i.uid for i in chunk]
-            task_delete_messages.apply_async(kwargs={'pks': pks})
+    # @admin.action(description=_('Удалить сообщения'))
+    # def _delete_selected(self, request, queryset):
+    #     self._run_tasks(queryset, task_delete_messages)
 
     def get_actions(self, request):
         actions = super().get_actions(request)

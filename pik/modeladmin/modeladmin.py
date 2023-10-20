@@ -13,8 +13,9 @@ from simple_history.admin import SimpleHistoryAdmin
 
 from pik.core.permitted_fields.admin import (
     PermittedFieldsAdminMixIn, PermittedFieldsInlineAdminMixIn)
+from pik.utils.itertools import batched
 
-from .tasks import set_progress, get_progress
+from .tasks import Action
 
 
 class ReasonedMixIn:
@@ -209,51 +210,69 @@ class AdminPageMixIn(ModelAdmin):
 
 
 class AdminProgressMixIn(AdminPageMixIn):
+    # CHUNK_SIZE = 2 ** 10
+    CHUNK_SIZE = 4
+
     page_contexts = ['get_progress_context']
     progress_pages: Optional[Dict[str, str]] = None
 
-    def execute_task_progress(
-            self, process_name, task, *args, total=None, **kwargs):
-        task_id = task.apply_async(*args, **kwargs)
-        set_progress(task_id, total=total)
-        return HttpResponseRedirect(self.get_progress_url(
-            process_name, task_id))
+    def execute_task_progress(self, name, task, queryset, action_uid):
+        self._run_tasks(task, queryset, action_uid)
+        return HttpResponseRedirect(self.get_progress_url(name, action_uid))
+
+    def _run_tasks(self, task, queryset, action_uid):
+        Action(action_uid).set_values(total=queryset.count())
+        for chunk in batched(queryset, self.CHUNK_SIZE):
+            kwargs = {
+                'action_uid': action_uid,
+                'pks': [obj.uid for obj in chunk]}
+            task.apply_async(kwargs=kwargs)
 
     @admin_page(
         template='admin/progress.html',
-        url_pattern='page/progress/<path:process>/<path:task_id>')
-    def get_progress_context(self, request, process, task_id):
-        return self.render_progress(request, process, task_id)
+        url_pattern='page/progress/<path:process>/<path:action_id>')
+    def get_progress_context(self, request, process, action_id):
+        return self.render_progress(request, process, action_id)
 
-    def render_progress(self, request, process, task_id, **kwargs):
-        progress = get_progress(task_id)
+    def render_progress(self, request, name, action_id, **kwargs):
+        progress = Action(action_id).get_progress()
         if progress is None:
             raise Http404('Task not found')
+        return {
+            **self.admin_site.each_context(request),
+            **self._get_progress_context(progress),
+            'title': self.progress_pages[name],
+            **kwargs}
 
-        now = datetime.now()
-        elapsed = now - progress['started']
-        left = progress['total'] - progress['current']
-        speed = progress['current'] / elapsed.total_seconds()
-        percent = 0
-        if progress['total']:
-            percent = ceil(100 * progress['current'] / progress['total'])
+    @staticmethod
+    def _get_progress_context(progress):
+        started = progress.get('started')
+        finished = progress.get('finished')
+        processed = progress['successful'] + progress['failed']
+        total = progress['total']
+        elapsed = (
+            timedelta(seconds=ceil(
+                ((finished or datetime.now()) - started).total_seconds()))
+            if started else None)
+        speed = (
+            processed / elapsed.total_seconds()
+            if processed and elapsed else None)
+        percent = ceil(100 * processed / progress['total'])
+        eta = (
+            timedelta(seconds=ceil((total - processed) / speed))
+            if speed else None)
+        error = progress['error']
 
         return {
-            **self.admin_site.each_context(request), **progress, **kwargs,
-            'title': self.progress_pages[process],
+            'started': started,
+            'processed': processed,
+            'total': total,
+            'elapsed': elapsed,
             'speed': speed,
-            'progress': percent,
-            'started': progress['started'],
-            'elapsed': timedelta(seconds=ceil(
-                (now - progress['started']).total_seconds())),
-            'per_s': (
-                elapsed / progress['current']
-                if progress['current'] > 0 else None),
-            'left': left,
-            'eta': (
-                timedelta(seconds=ceil(left / speed))
-                if progress['current'] > 0 else None),
-            'error': progress['error']}
+            'percent': percent,
+            'eta': eta,
+            'error': error,
+            'finished': finished}
 
     def get_progress_url(self, process, task_id):
         app_label = self.model._meta.app_label
