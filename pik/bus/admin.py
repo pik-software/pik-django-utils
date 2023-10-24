@@ -9,8 +9,7 @@ from prettyjson.templatetags.prettyjson import prettyjson
 from pik.modeladmin.modeladmin import AdminProgressMixIn
 
 from .models import PIKMessageException
-# from .tasks import task_process_messages, task_delete_messages
-from .tasks import task_process_messages
+from .tasks import task_process_messages, task_delete_messages
 
 
 @admin.register(PIKMessageException)
@@ -52,11 +51,13 @@ class PIKMessageExceptionAdmin(AdminProgressMixIn, admin.ModelAdmin):
     def _process_message(self, request, queryset):
         return self.execute_task_progress(
             name='processing', task=task_process_messages,
-            queryset=queryset, action_uid=str(uuid.uuid4()))
+            queryset=queryset, action_id=str(uuid.uuid4()))
 
-    # @admin.action(description=_('Удалить сообщения'))
-    # def _delete_selected(self, request, queryset):
-    #     self._run_tasks(queryset, task_delete_messages)
+    @admin.action(description=_('Удалить сообщения'))
+    def _delete_selected(self, request, queryset):
+        return self.execute_task_progress(
+            name='deleting', task=task_delete_messages,
+            queryset=queryset, action_id=str(uuid.uuid4()))
 
     def get_actions(self, request):
         actions = super().get_actions(request)

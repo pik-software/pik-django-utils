@@ -46,9 +46,8 @@
     <div style="text-align: center">
         {% if started %}
             {% if total %}
-                {{ processed }} of {{ total }}
-                {{ elapsed }}
-                [{% if speed %}{{ speed | floatformat:-2 }}{% endif %} it/s]
+                {{ processed }}/{{ total }} in {{ elapsed }}
+                {% if speed != None %}[{{ speed | floatformat:-2 }} it/s]{% endif %}
                 {% if failed %}
                     {{ failed }} failed
                 {% endif %}
@@ -57,7 +56,7 @@
             <progress {% if error or failed %} class="error" {% elif finished %} class="successful" {% endif %} value="{{ processed }}" max="{{ total }}"></progress>
 
             {{ percent }}%
-            ETA {% if eta %}{{ eta }}{% endif %}
+            ETA {% if eta != None %}{{ eta }}{% endif %}
         {% else %}
             Task not started yet
         {% endif %}

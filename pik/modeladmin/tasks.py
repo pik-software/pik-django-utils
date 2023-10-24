@@ -9,16 +9,9 @@ PROGRESS_KEY = 'progress_{action_id}'
 CACHE_TIMEOUT = 7 * 24 * 60 * 60
 
 logger = logging.getLogger('celery')
-# default_progress = {
-#     'current': 0,
-#     'successful': 0,
-#     'failed': 0,
-#     'total': 0,
-#     'error': None}
 
 
-# TODO: naming
-class Action:
+class PIKMessageExceptionAction:
     _action_id = None
 
     def __init__(self, action_id):
@@ -35,19 +28,19 @@ class Action:
             PROGRESS_KEY.format(action_id=self._action_id), default)
 
     def set_values(self, **kwargs):
-        # with cache.lock(LOCK_KEY.format(action_id=self._action_id)) as lock:
-        #     lock.acquire(blocking=False)
         self._save({
             **self.get_progress(),
             **kwargs})
 
     def apply_message_status(self, success: bool):
-        progress = self.get_progress()
-        key = 'successful' if success else 'failed'
-        progress[key] += 1
-        self.set_values(**progress)
-        if self._is_finished:
-            self.set_values(finished=datetime.now())
+        with cache.lock(LOCK_KEY.format(action_id=self._action_id)) as lock:
+            lock.acquire(blocking=False)
+            progress = self.get_progress()
+            key = 'successful' if success else 'failed'
+            progress[key] += 1
+            self.set_values(**progress)
+            if self._is_finished:
+                self.set_values(finished=datetime.now())
 
     @property
     def _is_finished(self):
@@ -59,28 +52,3 @@ class Action:
             key=PROGRESS_KEY.format(action_id=self._action_id),
             value=progress,
             timeout=CACHE_TIMEOUT)
-
-
-# def get_progress(action_id):
-#     return cache.get(
-#         PROGRESS_KEY.format(action_id=action_id), default_progress)
-
-
-# def set_progress(action_id, **kwargs):
-#     progress = get_progress(action_id)
-#     progress = {**progress, **kwargs}
-#     logger.info('action_id: %s, progress: %s', action_id, progress)
-#     cache.set(
-#         PROGRESS_KEY.format(action_id=action_id), progress,
-#         timeout=CACHE_TIMEOUT)
-#
-# def set_message_result(action_id, success: bool):
-#     progress = get_progress(action_id)
-#     if success:
-#         progress['successful'] += 1
-#     else:
-#         progress['failed'] += 1
-#     logger.info('action_id: %s, progress: %s', action_id, progress)
-#     cache.set(
-#         PROGRESS_KEY.format(action_id=action_id), progress,
-#         timeout=CACHE_TIMEOUT)
