@@ -32,7 +32,7 @@
 
 {% block extrahead %}
     {{ block.super }}
-    {% if not error and processed < total %}
+    {% if not finished %}
     <script>
         window.setTimeout( function() {
             window.location.reload();
@@ -47,7 +47,7 @@
         {% if started %}
             {% if total %}
                 {{ processed }}/{{ total }} in {{ elapsed }}
-                {% if speed != None %}[{{ speed | floatformat:-2 }} it/s]{% endif %}
+                {% if speed is not None %}[{{ speed | floatformat:-2 }} it/s]{% endif %}
                 {% if failed %}
                     {{ failed }} failed
                 {% endif %}
@@ -56,7 +56,7 @@
             <progress {% if error or failed %} class="error" {% elif finished %} class="successful" {% endif %} value="{{ processed }}" max="{{ total }}"></progress>
 
             {{ percent }}%
-            ETA {% if eta != None %}{{ eta }}{% endif %}
+            ETA {% if eta is not None %}{{ eta }}{% endif %}
         {% else %}
             Task not started yet
         {% endif %}

@@ -15,7 +15,7 @@ from pik.core.permitted_fields.admin import (
     PermittedFieldsAdminMixIn, PermittedFieldsInlineAdminMixIn)
 from pik.utils.itertools import batched
 
-from .tasks import PIKMessageExceptionAction
+from .tasks import PIKProgressor
 
 
 class ReasonedMixIn:
@@ -210,33 +210,33 @@ class AdminPageMixIn(ModelAdmin):
 
 
 class AdminProgressMixIn(AdminPageMixIn):
-    CHUNK_SIZE = 2 ** 10
+    CHUNK_SIZE = 2 ** 13
 
     page_contexts = ['get_progress_context']
     progress_pages: Optional[Dict[str, str]] = None
 
-    def execute_task_progress(self, name, task, queryset, action_id):
-        self._run_tasks(task, queryset, action_id)
-        return HttpResponseRedirect(self.get_progress_url(name, action_id))
+    def execute_task_progress(self, name, task, queryset, progress_id):
+        self._run_tasks(task, queryset, progress_id)
+        return HttpResponseRedirect(self.get_progress_url(name, progress_id))
 
-    def _run_tasks(self, task, queryset, action_id):
-        action = PIKMessageExceptionAction(action_id)
-        action.set_values(started=datetime.now(), total=queryset.count())
+    def _run_tasks(self, task, queryset, progress_id):
+        progressor = PIKProgressor(progress_id)
+        progressor.set_values(started=datetime.now(), total=queryset.count())
         for chunk in batched(queryset, self.CHUNK_SIZE):
             kwargs = {
-                'action_id': action_id,
+                'progress_id': progress_id,
                 'pks': [obj.uid for obj in chunk]}
             task.apply_async(kwargs=kwargs)
 
     @admin_page(
         template='admin/progress.html',
-        url_pattern='page/progress/<path:process>/<path:action_id>')
-    def get_progress_context(self, request, process, action_id):
-        return self.render_progress(request, process, action_id)
+        url_pattern='page/progress/<path:process>/<path:progress_id>')
+    def get_progress_context(self, request, process, progress_id):
+        return self.render_progress(request, process, progress_id)
 
-    def render_progress(self, request, name, action_id, **kwargs):
-        action = PIKMessageExceptionAction(action_id)
-        progress = action.get_progress()
+    def render_progress(self, request, name, progress_id, **kwargs):
+        progressor = PIKProgressor(progress_id)
+        progress = progressor.get_progress()
         if progress is None:
             raise Http404('Task not found')
         return {
@@ -247,18 +247,18 @@ class AdminProgressMixIn(AdminPageMixIn):
 
     @staticmethod
     def _get_progress_context(progress):
-        started = progress.get('started')
-        finished = progress.get('finished')
+        started = progress['started']
+        finished = progress['finished']
         processed = progress['successful'] + progress['failed']
         total = progress['total']
-        elapsed = (
-            timedelta(seconds=ceil(
-                ((finished or datetime.now()) - started).total_seconds()))
-            if started else None)
+        last_time = finished or datetime.now()
+        seconds = (last_time - started).total_seconds() if started else None
+        elapsed = timedelta(seconds=ceil(seconds)) if seconds else None
         speed = (
             processed / elapsed.total_seconds()
             if processed and elapsed else None)
-        percent = ceil(100 * processed / progress['total'])
+        failed = progress['failed']
+        percent = ceil(100 * processed / total)
         eta = (
             timedelta(seconds=ceil((total - processed) / speed))
             if speed else None)
@@ -270,6 +270,7 @@ class AdminProgressMixIn(AdminPageMixIn):
             'total': total,
             'elapsed': elapsed,
             'speed': speed,
+            'failed': failed,
             'percent': percent,
             'eta': eta,
             'error': error,
