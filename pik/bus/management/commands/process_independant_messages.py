@@ -33,11 +33,14 @@ class Command(BaseCommand):
     def _run_process(self):
         logger.info(self.help)
         lock = cache.lock(LOCK_KEY, timeout=LOCK_TIMEOUT)
-        locked = lock.acquire(blocking=False)
-        if not locked:
+        released = lock.acquire(blocking=False)
+        if not released:
             logger.info('Lock is not released now.')
             return
-        self._process()
+        try:
+            self._process()
+        finally:
+            lock.release()
 
     @staticmethod
     def _process():
