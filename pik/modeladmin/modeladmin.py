@@ -210,7 +210,7 @@ class AdminPageMixIn(ModelAdmin):
 
 
 class AdminProgressMixIn(AdminPageMixIn):
-    CHUNK_SIZE = 2 ** 13
+    CHUNK_SIZE = 2**13
 
     page_contexts = ['get_progress_context']
     progress_pages: Optional[Dict[str, str]] = None
