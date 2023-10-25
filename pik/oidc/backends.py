@@ -201,6 +201,9 @@ class PIKOpenIdConnectAuth(OpenIdConnectAuth):  # noqa: abstract-method
         try:
             return super().request(url, *args, **kwargs)
         except HTTPError as exc:
+            if exc.response is None:
+                raise HTTPError('exc.response is None') from exc
+
             if exc.response.status_code != 401:
                 raise
 

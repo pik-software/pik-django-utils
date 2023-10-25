@@ -12,7 +12,7 @@ from pik.utils.sentry import capture_exception
 
 
 LOCK_KEY = 'bus-process-independant-message'
-LOCK_TIMEOUT = 24 * 60 * 60
+LOCK_TIMEOUT = 7 * 24 * 60 * 60
 CHUNK_SIZE = 2**10
 
 logger = logging.getLogger(__name__)
@@ -32,12 +32,15 @@ class Command(BaseCommand):
 
     def _run_process(self):
         logger.info(self.help)
-        with cache.lock(
-                LOCK_KEY, timeout=LOCK_TIMEOUT, blocking=False) as lock:
-            if not lock:
-                logger.info('Lock is not released now.')
-                return
+        lock = cache.lock(LOCK_KEY, timeout=LOCK_TIMEOUT)
+        released = lock.acquire(blocking=False)
+        if not released:
+            logger.info('Lock is not released now.')
+            return
+        try:
             self._process()
+        finally:
+            lock.release()
 
     @staticmethod
     def _process():

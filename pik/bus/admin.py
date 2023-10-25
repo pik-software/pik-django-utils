@@ -1,4 +1,5 @@
 import json
+import uuid
 
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
@@ -49,14 +50,14 @@ class PIKMessageExceptionAdmin(AdminProgressMixIn, admin.ModelAdmin):
     @admin.action(description=_('Обработать сообщения'))
     def _process_message(self, request, queryset):
         return self.execute_task_progress(
-            'processing', task_process_messages, total=queryset.count(),
-            kwargs={'pks': tuple(queryset.values_list('pk', flat=True))})
+            name='processing', task=task_process_messages,
+            queryset=queryset, progress_id=str(uuid.uuid4()))
 
     @admin.action(description=_('Удалить сообщения'))
     def _delete_selected(self, request, queryset):
         return self.execute_task_progress(
-            'deletion', task_delete_messages, total=queryset.count(),
-            kwargs={'pks': tuple(queryset.values_list('pk', flat=True))})
+            name='deletion', task=task_delete_messages,
+            queryset=queryset, progress_id=str(uuid.uuid4()))
 
     def get_actions(self, request):
         actions = super().get_actions(request)
