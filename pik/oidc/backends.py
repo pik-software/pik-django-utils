@@ -3,8 +3,8 @@ from calendar import timegm
 from importlib import import_module
 from typing import Any, Tuple
 
-from jwkest.jws import JWS
-from jwkest import JWKESTException
+from jose import jwk, jwt
+from jose.exceptions import JWTClaimsError, JWTError
 
 from django.conf import settings
 from django.contrib.auth import logout
@@ -72,17 +72,32 @@ class PIKOpenIdConnectAuth(OpenIdConnectAuth):  # noqa: abstract-method
 
     def validate_and_return_logout_token(self, jws: str) -> dict:  # noqa invalid-name
         """ Validated logout_token """
+        client_id, _ = self.get_key_and_secret()
+
+        key = self.find_valid_key(jws)
+
+        if not key:
+            raise AuthTokenError(self, 'Signature verification failed')
+
+        rsakey = jwk.construct(key)
+
         try:
-            # Decode the JWT and raise an error if the sig is invalid
-            id_token = JWS().verify_compact(
-                jws.encode('utf-8'), self.get_jwks_keys())
-        except JWKESTException as exc:
-            raise AuthTokenError(
-                self, 'Signature verification failed') from exc
+            claims = jwt.decode(
+                jws,
+                rsakey.to_pem().decode('utf-8'),
+                algorithms=self.JWT_ALGORITHMS,
+                audience=client_id,
+                issuer=self.id_token_issuer(),
+                options={**self.JWT_DECODE_OPTIONS, 'verify_at_hash': False},
+            )
+        except JWTClaimsError as exc:
+            raise AuthTokenError(self, str(exc)) from exc
+        except JWTError as exc:
+            raise AuthTokenError(self, 'Invalid signature') from exc
 
-        self.validate_logout_claims(id_token)
+        self.validate_logout_claims(claims)
 
-        return id_token
+        return claims
 
     def validate_logout_claims(self, id_token: dict) -> None:
         """ Validated logout_token claims
@@ -118,8 +133,9 @@ class PIKOpenIdConnectAuth(OpenIdConnectAuth):  # noqa: abstract-method
     def backchannel_logout(self, logout_token: str) -> HttpResponse:
         """ Process backchannel logout """
 
-        logout_token = self.validate_and_return_logout_token(logout_token)
-        sid = logout_token.get('sid')
+        valid_logout_token = self.validate_and_return_logout_token(
+            logout_token)
+        sid = valid_logout_token.get('sid')
 
         if sid:
             cache_key = self.SID_TOKENS_KEY.format(sid=sid)
@@ -131,7 +147,7 @@ class PIKOpenIdConnectAuth(OpenIdConnectAuth):  # noqa: abstract-method
             cache_key = self.SID_SESSIONS_KEY.format(sid=sid)
             for session in cache.get(cache_key, ()):
                 engine = import_module(settings.SESSION_ENGINE)
-                engine.SessionStore(session).delete(session)
+                engine.SessionStore(session).delete(session)  # type: ignore
             cache.delete(cache_key)
 
         return HttpResponse()
@@ -193,17 +209,17 @@ class PIKOpenIdConnectAuth(OpenIdConnectAuth):  # noqa: abstract-method
 
             try:
                 view = resolve(self.strategy.request.path)
-            except Resolver404 as exc:
-                raise exc from exc
+            except Resolver404 as sub_exc:
+                raise exc from sub_exc
 
             view = getattr(view.func, 'cls')
             if not issubclass(view, APIView):
-                raise
+                raise exc
 
             auth = parse_dict_header(exc.response.headers['WWW-Authenticate'])
 
             if not ('error' in auth and 'error_description' in auth):
-                raise
+                raise exc
 
             raise AuthenticationFailed(
                 auth['error_description'].strip('"\''),

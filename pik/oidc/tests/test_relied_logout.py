@@ -1,8 +1,9 @@
 from unittest.mock import patch, Mock
 from urllib.parse import urlencode
 
-import django.test
 import pytest
+
+import django.test
 from django.urls import reverse
 
 from rest_framework import status
@@ -17,6 +18,7 @@ def test_logout(client):
     client.session['id_token'] = '{testidtoken}'
     resp = client.get(reverse('admin:logout'))
     assert resp.status_code == status.HTTP_302_FOUND
+
     params = urlencode({
         "post_logout_redirect_uri": "http://testserver/logout/"})
     assert resp['Location'] == f'http://op/openid/end-session/?{params}'
