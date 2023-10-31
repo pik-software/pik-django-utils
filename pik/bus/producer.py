@@ -27,6 +27,7 @@ from pik.utils.case_utils import camelize
 from pik.bus.mdm import mdm_event_captor
 from pik.bus.exceptions import (
     ModelMissingError, MDMTransactionIsAlreadyStartedError)
+from pik.bus.utils import get_guid_value
 
 
 logger = logging.getLogger(__name__)
@@ -122,7 +123,7 @@ class MessageProducer:
             self._produce(envelope, exchange, routing_key)
 
     def _capture_event(self, envelope, **kwargs):
-        entity_guid = envelope.get('message', {}).get('guid')
+        entity_guid = get_guid_value(envelope.get('message', {}))
         # Wrong rendered uid format workaround
         entity_guid = str(entity_guid) if entity_guid is not None else None
         if envelope.get('headers', {}).get('transactionGUID'):
@@ -191,7 +192,7 @@ class InstanceHandler:
     def _capture_event(self, **kwargs):
         try:
             _type = self._message['type']
-            _guid = str(self._message['guid'])
+            _guid = str(get_guid_value(self._message))
         except Exception:  # noqa: exception already captured
             _type, _guid = None, None
         self._event_captor.capture(
@@ -256,6 +257,9 @@ class InstanceHandler:
         return {'type_field_hook': camelcase_type_field_hook}
 
 
+# TODO: оберни это все в класс и передавай список сущностей и класс, их обрабатывающий
+#  RABBITMQ_PRODUCES и MessageProducer (переименовать?)
+#  RABBITMQ_RESPONSES и CommandProducer
 @receiver(post_save)
 def push_model_instance_to_rabbit_queue(instance, **kwargs):
     if not settings.RABBITMQ_PRODUCER_ENABLE:
