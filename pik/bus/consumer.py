@@ -89,6 +89,10 @@ class MessageHandler:
             queue: import_string(serializer)
             for queue, serializer in settings.RABBITMQ_CONSUMES.items()}
 
+    # TODO: change to
+    #  @cached_property
+    #  def _payload(self):
+    #      return self.envelope['message']
     def _fetch_payload(self):
         self._payload = self.envelope['message']
 

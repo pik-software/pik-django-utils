@@ -147,6 +147,7 @@ class InstanceHandler:
     _instance = NotImplemented
     _model_info_cache: Dict[str, Dict[str, Union[str, Serializer]]] = {}
 
+    # TODO: rename _producer to producer
     def __init__(self, instance, event_captor, _producer):
         self._producer = _producer
         self._instance = instance
