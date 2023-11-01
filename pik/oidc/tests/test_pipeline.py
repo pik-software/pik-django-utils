@@ -6,8 +6,8 @@ from django.contrib.auth.models import Group
 from pik.oidc.pipeline import actualize_roles
 
 
-@pytest.fixture(name='user')
-def user_fixture():
+@pytest.fixture
+def user():
     return get_user_model().objects.create(username="testuser")
 
 
