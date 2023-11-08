@@ -7,7 +7,6 @@ from django.core.exceptions import FieldDoesNotExist
 from django.forms.utils import pretty_name
 from django_filters import OrderingFilter
 from django_restql.mixins import DynamicFieldsMixin
-
 from rest_framework import serializers
 from rest_framework.fields import (
     ChoiceField, JSONField, MultipleChoiceField,
