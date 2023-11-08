@@ -1,8 +1,5 @@
-import warnings
-
 import coreapi
 from django.contrib.postgres.fields import ArrayField
-from django.core.exceptions import FieldDoesNotExist
 from django.db.models import DateTimeField, F, Value
 from django.db.models.functions import Lower, NullIf
 from django_filters import OrderingFilter
