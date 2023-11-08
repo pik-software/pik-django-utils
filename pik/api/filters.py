@@ -57,60 +57,6 @@ class StandardizedFieldFilters(RestFrameworkFilterBackend):
             ))
         return filters
 
-    def get_verbose_name(self, field_name):
-        desc = False
-        if field_name.startswith('-'):
-            desc = True
-            field_name = field_name[1:]
-
-        try:
-            model_field = self.model._meta.get_field(field_name)
-            label = (model_field.verbose_name if model_field.verbose_name
-                     else field_name)
-        except FieldDoesNotExist:
-            label = field_name
-
-        if desc:
-            label += ' (по убыванию)'
-
-        return label
-
-    def get_schema_operation_parameters(self, view):
-        try:
-            queryset = view.get_queryset()
-        except Exception:
-            queryset = None
-            warnings.warn(
-                "{} is not compatible with schema generation".format(view.__class__)
-            )
-
-        filterset_class = self.get_filterset_class(view, queryset)
-
-        if not filterset_class:
-            return []
-
-        self.model = view.serializer_class.Meta.model
-
-        parameters = []
-        for field_name, field in filterset_class.base_filters.items():
-            parameter = {
-                "name": field_name,
-                "required": field.extra["required"],
-                "in": "query",
-                "description": field.label if field.label is not None else field_name,
-                "schema": {
-                    "type": "string",
-                },
-            }
-            if field.extra and "choices" in field.extra:
-                parameter["schema"]["enum"] = [c[0] for c in field.extra["choices"]]
-                if isinstance(field, OrderingFilter):
-                    parameter["schema"]["x-enumNames"] = [self.get_verbose_name(c[0]) for c in field.extra["choices"]]
-                else:
-                    parameter["schema"]["x-enumNames"] = [c[1] for c in field.extra["choices"]]
-            parameters.append(parameter)
-        return parameters
-
 
 class StandardizedSearchFilter(StandardizedAPISearchIndex, SearchFilter):
     pass

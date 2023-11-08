@@ -3,7 +3,11 @@ import inspect
 from django.conf import settings
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
+from django.core.exceptions import FieldDoesNotExist
+from django.forms.utils import pretty_name
+from django_filters import OrderingFilter
 from django_restql.mixins import DynamicFieldsMixin
+
 from rest_framework import serializers
 from rest_framework.fields import (
     ChoiceField, JSONField, MultipleChoiceField,
@@ -90,7 +94,7 @@ class ListFieldAutoSchema(AutoSchema):
 
 
 class EnumNamesAutoSchema(AutoSchema):
-    """ Adds enumNames for choice fields """
+    """ Adds enumNames for choice and ordering fields """
 
     def map_field(self, field):
         schema = super().map_field(field)
@@ -107,6 +111,43 @@ class EnumNamesAutoSchema(AutoSchema):
                 schema['x-enumNames'] = enum_values
 
         return schema
+
+    def get_model_field_label(self, field_name):
+        desc = False
+        model = self.view.serializer_class.Meta.model
+        if field_name.startswith('-'):
+            desc = True
+            field_name = field_name[1:]
+
+        try:
+            model_field = model._meta.get_field(field_name)
+            label = (model_field.verbose_name if model_field.verbose_name
+                     else field_name)
+        except FieldDoesNotExist:
+            label = field_name
+
+        label = pretty_name(label)
+        if desc:
+            label = label + _(' (по убыванию)')
+
+        return label
+
+    def get_operation(self, path, method):
+        operation = super().get_operation(path, method)
+        parameters = operation['parameters']
+
+        ordering_field_names = [
+            field_name for field_name, filter
+            in self.view.filterset_class.declared_filters.items()
+            if isinstance(filter, OrderingFilter)]
+
+        for parameter in parameters:
+            if parameter['name'] in ordering_field_names:
+                schema = parameter['schema']
+                schema['x-enumNames'] = [
+                    self.get_model_field_label(val) for val in schema['enum']]
+
+        return operation
 
 
 class DeprecatedFieldAutoSchema(AutoSchema):
