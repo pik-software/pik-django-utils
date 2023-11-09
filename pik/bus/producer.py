@@ -175,6 +175,8 @@ class InstanceHandler:
 
     def handle(self):
         if self.model_name not in self.models_info:
+            logger.warning(
+                'Model %s not found in producer settings.', self.model_name)
             return
 
         try:
