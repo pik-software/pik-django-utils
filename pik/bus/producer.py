@@ -175,10 +175,9 @@ class InstanceHandler:
 
     def handle(self):
         if self.model_name not in self.models_info:
-            logger.warning(
-                'Non-ESB model %s skipped.', self.model_name)
             return
 
+        logger.warning('Handling ESB model %s...', self.model_name)
         try:
             envelope = self._envelope
         except Exception as error:  # noqa broad-except
