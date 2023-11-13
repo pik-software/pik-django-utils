@@ -113,7 +113,7 @@ class EnumNamesAutoSchema(AutoSchema):
 
     def get_model_field_label(self, field_name):
         desc = False
-        model = self.view.serializer_class.Meta.model
+        model = self.view.filterset_class.Meta.model
         if field_name.startswith('-'):
             desc = True
             field_name = field_name[1:]
@@ -136,9 +136,9 @@ class EnumNamesAutoSchema(AutoSchema):
         parameters = operation['parameters']
 
         ordering_field_names = [
-            field_name for field_name, filter
+            field_name for field_name, field_filter
             in self.view.filterset_class.declared_filters.items()
-            if isinstance(filter, OrderingFilter)]
+            if isinstance(field_filter, OrderingFilter)]
 
         for parameter in parameters:
             if parameter['name'] in ordering_field_names:
