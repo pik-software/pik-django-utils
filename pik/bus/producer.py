@@ -155,7 +155,7 @@ class InstanceHandler:
         if self.model_name not in self.models_info:
             return
 
-        logger.warning('Handling ESB model %s...', self.model_name)
+        logger.info('Handling ESB model %s...', self.model_name)
         try:
             envelope = self._envelope
         except Exception as error:  # noqa broad-except

@@ -1,3 +1,4 @@
+import uuid
 from io import BytesIO
 import json
 from pprint import pformat
@@ -135,14 +136,15 @@ class TestMessageHandlerUpdateInstance:
     @staticmethod
     @pytest.mark.django_db
     def test_instance_missing():
+        guid = str(uuid.uuid4())
         handler = MessageHandler(
             Mock(name='message'), Mock(name='queue'),
             Mock(name='event_captor'))
-        handler._payload = {'guid': 42}  # noqa: protected-access
+        handler._payload = {'guid': guid}  # noqa: protected-access
         with patch.object(
                 MessageHandler, '_serializer_class', RegularModelSerializer):
             assert isinstance(handler._instance, RegularModel)  # noqa: protected-access
-            assert handler._instance.uid == 42  # noqa: protected-access
+            assert handler._instance.uid == guid  # noqa: protected-access
             assert handler._instance._state.adding  # noqa: protected-access
 
     @staticmethod
