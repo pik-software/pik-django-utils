@@ -39,7 +39,7 @@ class MessageHandler:
     PARSER_CLASS = JSONParser
     OBJECT_UNCHANGED_MESSAGE = 'Объект не изменен!'
 
-    _queues_info_cache = None
+    _queue_serializers_cache = None
     _event_label = 'deserialization'
 
     def __init__(self, body, queue, event_captor):
@@ -106,12 +106,12 @@ class MessageHandler:
         redundant for other workers and tests
         """
 
-        if self._queues_info_cache is None:
-            self._queues_info_cache = self._queues_info
-        return self._queues_info_cache
+        if self._queue_serializers_cache is None:
+            self._queue_serializers_cache = self.queue_serializers
+        return self._queue_serializers_cache
 
     @property
-    def _queues_info(self) -> dict:
+    def queue_serializers(self) -> dict:
         """
         Example of return value:
         ```{
@@ -119,7 +119,6 @@ class MessageHandler:
             ...
         }```
         """
-
         return {
             queue: import_string(serializer)
             for queue, serializer in self.consumes_setting.items()}

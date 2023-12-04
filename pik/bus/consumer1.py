@@ -1,7 +1,7 @@
 import contextlib
 import io
 import logging
-from functools import partial, wraps
+from functools import partial
 from hashlib import sha1
 from typing import Set
 from uuid import UUID
