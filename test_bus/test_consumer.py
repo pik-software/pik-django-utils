@@ -624,9 +624,9 @@ class TestMessageHandlerMultipleErrors:
             'queue': 'test_queue',
             'exception': {
                 'code': 'SerializerMissingError',
-                'message': 'Unable to find serializer for test_queue'},
+                'message': 'Unable to find serializer for `test_queue`'},
             'exception_type': 'SerializerMissingError',
-            'exception_message': 'Unable to find serializer for test_queue'}
+            'exception_message': 'Unable to find serializer for `test_queue`'}
         assert (
             messages_qs.values(
                 'uid', 'entity_uid', 'body_hash', 'queue',
@@ -673,9 +673,9 @@ class TestMessageHandlerMultipleErrors:
             'queue': 'test_queue',
             'exception': {
                 'code': 'SerializerMissingError',
-                'message': 'Unable to find serializer for test_queue'},
+                'message': 'Unable to find serializer for `test_queue`'},
             'exception_type': 'SerializerMissingError',
-            'exception_message': 'Unable to find serializer for test_queue'}
+            'exception_message': 'Unable to find serializer for `test_queue`'}
         assert (
             messages_qs.values(
                 'uid', 'entity_uid', 'body_hash', 'queue',
@@ -861,9 +861,9 @@ class TestMessageHandlerMultipleErrors:
             'queue': 'test_queue',
             'exception': {
                 'code': 'SerializerMissingError',
-                'message': 'Unable to find serializer for test_queue'},
+                'message': 'Unable to find serializer for `test_queue`'},
             'exception_type': 'SerializerMissingError',
-            'exception_message': 'Unable to find serializer for test_queue'}
+            'exception_message': 'Unable to find serializer for `test_queue`'}
         assert (
             messages_qs.values(
                 'uid', 'entity_uid', 'body_hash', 'queue',

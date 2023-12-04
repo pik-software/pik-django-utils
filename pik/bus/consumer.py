@@ -36,16 +36,9 @@ logger = logging.getLogger(__name__)
 
 class MessageHandler:
     LOCK_TIMEOUT = 60
-    parser_class = JSONParser
+    PARSER_CLASS = JSONParser
+    OBJECT_UNCHANGED_MESSAGE = 'Объект не изменен!'
 
-    object_unchanged_message = 'Объект не изменен!'
-
-    _body = None
-    _queue = None
-    _event_captor = None
-
-    _payload = None
-    _parsed_payload = None
     _serializers = None
     _event_label = 'deserialization'
 
@@ -57,6 +50,10 @@ class MessageHandler:
     @close_old_db_connections
     def handle(self):
         try:
+            # TODO: union _fetch_payload and _prepare_payload to _payload
+            #  property. Now it impossible because after SerializerMissingError
+            #  exception in _fetch_payload method, property _payload using to
+            #  get _entity_uid in _error_messages method.
             self._fetch_payload()
             self._prepare_payload()
             self._update_instance()
@@ -66,26 +63,6 @@ class MessageHandler:
         except Exception as error:  # noqa: too-broad-except
             self._register_error(error)
             return False
-
-    def _register_success(self):
-        for msg in self._error_messages:
-            msg.delete()
-        self._capture_event(success=True, error=None)
-
-    def _register_error(self, error):
-        if not NewestUpdateValidationError.is_error_match(error):
-            self._capture_event(success=False, error=error)
-        self._capture_exception(error)
-
-    @cached_property
-    def envelope(self):
-        return self.parser_class().parse(io.BytesIO(self._body))
-
-    @classmethod
-    def get_queue_serializers(cls) -> dict:
-        return {
-            queue: import_string(serializer)
-            for queue, serializer in settings.RABBITMQ_CONSUMES.items()}
 
     def _fetch_payload(self):
         self._payload = self.envelope['message']
@@ -108,33 +85,10 @@ class MessageHandler:
             self._serializer.save()
 
     @cached_property
-    def _serializer(self):
-        return self._serializer_class(self._instance, self._payload)
+    def envelope(self):
+        return self.PARSER_CLASS().parse(io.BytesIO(self._body))
 
     @cached_property
-    def _entity_uid(self):
-        try:
-            return str(UUID(self._payload.get('guid')))
-        except Exception as error:  # noqa: broad-except
-            capture_exception(error)
-            return None
-
-    @cached_property
-    def _instance(self):
-        try:
-            return self._queryset.get(uid=self._entity_uid)
-        except self._model.DoesNotExist:
-            return self._model(uid=self._payload['guid'])
-
-    @property
-    def _model(self):
-        return self._serializer_class.Meta.model
-
-    @property
-    def _queryset(self):
-        return getattr(self._model, 'all_objects', self._model.objects)
-
-    @property
     def _serializer_class(self):
         return self._get_serializer(self._queue)
 
@@ -146,12 +100,53 @@ class MessageHandler:
             We want to build it once and use forever, but building it on
                 startup is redundant for other workers and tests
         """
+
         if cls._serializers is None:
             cls._serializers = cls.get_queue_serializers()
         if not cls._serializers or queue not in cls._serializers:  # noqa: unsupported-membership-test
             raise SerializerMissingError(
-                f'Unable to find serializer for {queue}')
+                f'Unable to find serializer for `{queue}`')
         return cls._serializers[queue]  # noqa: unsupported-membership-test
+
+    @cached_property
+    def _serializer(self):
+        return self._serializer_class(self._instance, self._payload)
+
+    # TODO: make as produces.models_info, then fix
+    #  TestCommandMessageHandlerExecCommand in ds.
+    @classmethod
+    def get_queue_serializers(cls) -> dict:
+        return {
+            queue: import_string(serializer)
+            for queue, serializer in cls.get_consumes_setting().items()}
+
+    @classmethod
+    def get_consumes_setting(cls):
+        return settings.RABBITMQ_CONSUMES
+
+    @cached_property
+    def _instance(self):
+        try:
+            return self._queryset.get(uid=self._entity_uid)
+        except self._model.DoesNotExist:
+            return self._model(uid=self._payload['guid'])
+
+    @cached_property
+    def _queryset(self):
+        return getattr(self._model, 'all_objects', self._model.objects)
+
+    @cached_property
+    def _entity_uid(self):
+        try:
+            return str(UUID(self._payload.get('guid')))
+        except Exception as error:  # noqa: broad-except
+            capture_exception(error)
+            return None
+
+    @cached_property
+    def _model(self):
+        # More easy way is get model from instance? No, we get cyclic call.
+        return self._serializer_class.Meta.model
 
     def _process_dependants(self):
         from .models import PIKMessageException  # noqa: cyclic import workaround
@@ -164,6 +159,20 @@ class MessageHandler:
             if handler.handle():
                 dependant.delete()
 
+    def _register_success(self):
+        for msg in self._error_messages:
+            msg.delete()
+        self._capture_event(success=True, error=None)
+
+    @cached_property
+    def _body_hash(self):
+        return sha1(self._body).hexdigest()
+
+    def _register_error(self, error):
+        if not NewestUpdateValidationError.is_error_match(error):
+            self._capture_event(success=False, error=error)
+        self._capture_exception(error)
+
     def _capture_exception(self, exc):
         # Don't spam validation errors to sentry.
         if not isinstance(exc, ValidationError):
@@ -173,7 +182,7 @@ class MessageHandler:
         if NewestUpdateValidationError.is_error_match(exc):
             self._capture_event(
                 event='skip', success=True,
-                error=_(self.object_unchanged_message))
+                error=_(self.OBJECT_UNCHANGED_MESSAGE))
             capture_exception(exc)
             return
 
@@ -217,10 +226,6 @@ class MessageHandler:
                  Q(entity_uid=self._entity_uid)))
         return (
             PIKMessageException.objects.filter(lookups).order_by('-updated'))
-
-    @cached_property
-    def _body_hash(self):
-        return sha1(self._body).hexdigest()
 
     def _capture_event(self, event=None, **kwargs):
         if not event:

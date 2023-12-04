@@ -139,39 +139,17 @@ class MessageProducer:
             **kwargs)
 
 
-producer = MessageProducer(settings.RABBITMQ_URL, mdm_event_captor)
+message_producer = MessageProducer(settings.RABBITMQ_URL, mdm_event_captor)
 
 
 class InstanceHandler:
-    _instance = NotImplemented
-    _model_info_cache: Dict[str, Dict[str, Union[str, Serializer]]] = {}
+    _model_info_cache: Dict[
+        str, Dict[str, Dict[str, Union[str, Serializer]]]] = {}
 
-    def __init__(self, instance, event_captor, _producer):
-        self._producer = _producer
+    def __init__(self, instance, event_captor, producer):
         self._instance = instance
         self._event_captor = event_captor
-
-    @property
-    def producers_setting(self):
-        return settings.RABBITMQ_PRODUCES
-
-    @property
-    def models_info(self):
-        """```{
-            model: {
-               'serializer': serializer,
-               'exchange': exchange
-           },
-           ...
-        }```"""
-        if not self.__class__._model_info_cache:  # noqa: protect-access
-            self.__class__._model_info_cache.update({  # noqa: protect-access
-                import_string(serializer).Meta.model.__name__: {
-                    'serializer': import_string(serializer),
-                    'exchange': exchange}
-                for exchange, serializer in self.producers_setting.items()
-            })
-        return self.__class__._model_info_cache  # noqa: protect-access
+        self._producer = producer
 
     def handle(self):
         if self.model_name not in self.models_info:
@@ -186,8 +164,103 @@ class InstanceHandler:
         self._capture_event(success=True, error=None)
         self._produce(envelope)
 
+    @property
+    def models_info(self):
+        """
+        Caching _models_info property by class name key and return it.
+        Key with class name necessary for correct work in inheritance case
+        with override _models_info property.
+        """
+
+        key = self.__class__.__name__
+        if key not in self._model_info_cache:
+            self._model_info_cache[key] = self._models_info
+        return self._model_info_cache[key]
+
+    @cached_property
+    def _models_info(self):
+        """
+        Example of return value:
+        ```{
+            model: {
+               'serializer': serializer,
+               'exchange': exchange
+           },
+           ...
+        }```
+        """
+
+        return {
+            import_string(serializer).Meta.model.__name__: {
+                'serializer': import_string(serializer),
+                'exchange': exchange}
+            for exchange, serializer in self.producers_setting.items()}
+
+    @property
+    def producers_setting(self):
+        return settings.RABBITMQ_PRODUCES
+
+    @property
+    def _envelope(self):
+        message = self._message
+        return {
+            'messageType': [f'urn:message:PIK.MDM.Messages:{message["type"]}'],
+            'message': message,
+            'host': self.host,
+            'headers': self.headers}
+
+    @cached_property  # to avoid 2nd serialization via _capture_event
+    def _message(self):
+        data = self._serializer(
+            self._instance, context=self.serializer_context).data
+        data = camelize(data, **api_settings.JSON_UNDERSCORIZE)
+        if hasattr(self._serializer, 'camelization_hook'):
+            return self._serializer.camelization_hook(data)
+        return data
+
+    @property
+    def _serializer(self) -> type(Serializer):
+        try:
+            return self.models_info[self.model_name]['serializer']
+        except KeyError as exc:
+            raise ModelMissingError from exc
+
+    @property
+    def model_name(self):
+        return self._instance.__class__.__name__
+
+    @property
+    def serializer_context(self):  # noqa: no-self-use, is property
+        return {'type_field_hook': camelcase_type_field_hook}
+
+    @property
+    def host(self):
+        return {
+            'machineName': platform.node(),
+            'processId': os.getpid(),
+            'frameworkVersion': django.get_version(),
+            'operatingSystemVersion': (
+                f'{platform.system()} {platform.version()}'),
+            # TODO: why it`s methods of MDMCaptor?
+            **self._event_captor.service_version,
+            **self._event_captor.generator_version,
+            **self._event_captor.lib_version}
+
+    @property
+    def headers(self):
+        return {
+            # TODO: why it`s methods of MDMCaptor?
+            **self._event_captor.entities_version}
+
     def _produce(self, envelope):
         self._producer.produce(envelope, exchange=self._exchange)
+
+    @property
+    def _exchange(self):
+        try:
+            return self.models_info[self.model_name]['exchange']
+        except KeyError as exc:
+            raise ModelMissingError from exc
 
     def _capture_event(self, **kwargs):
         try:
@@ -202,60 +275,6 @@ class InstanceHandler:
             **kwargs
         )
 
-    @property
-    def _envelope(self):
-        message = self._message
-        return {
-            'messageType': [f'urn:message:PIK.MDM.Messages:{message["type"]}'],
-            'message': message,
-            'host': self.host,
-            'headers': self._event_captor.entities_version,
-        }
-
-    @cached_property  # to avoid 2nd serialization via _capture_event
-    def _message(self):
-        data = self._serializer(
-            self._instance, context=self.serializer_context).data
-        data = camelize(data, **api_settings.JSON_UNDERSCORIZE)
-        if hasattr(self._serializer, 'camelization_hook'):
-            return self._serializer.camelization_hook(data)
-        return data
-
-    @property
-    def host(self):
-        return {
-            'machineName': platform.node(),
-            'processId': os.getpid(),
-            'frameworkVersion': django.get_version(),
-            'operatingSystemVersion': (
-                f'{platform.system()} {platform.version()}'),
-            **self._event_captor.service_version,
-            **self._event_captor.generator_version,
-            **self._event_captor.lib_version,
-        }
-
-    @property
-    def _serializer(self):
-        try:
-            return self.models_info[self.model_name]['serializer']
-        except KeyError as exc:
-            raise ModelMissingError from exc
-
-    @property
-    def _exchange(self):
-        try:
-            return self.models_info[self.model_name]['exchange']
-        except KeyError as exc:
-            raise ModelMissingError from exc
-
-    @property
-    def model_name(self):
-        return self._instance.__class__.__name__
-
-    @property
-    def serializer_context(self):  # noqa: no-self-use, is property
-        return {'type_field_hook': camelcase_type_field_hook}
-
 
 @receiver(post_save)
 def push_model_instance_to_rabbit_queue(instance, **kwargs):
@@ -265,14 +284,14 @@ def push_model_instance_to_rabbit_queue(instance, **kwargs):
     if instance.__module__ == '__fake__':
         return
     try:
-        InstanceHandler(instance, mdm_event_captor, producer).handle()
+        InstanceHandler(instance, mdm_event_captor, message_producer).handle()
     except Exception as exc:  # noqa: broad-except
         capture_exception(exc)
 
 
 class MDMTransaction(ContextDecorator):
     def __enter__(self):
-        producer.start_transaction()
+        message_producer.start_transaction()
 
     def __exit__(self, exc_type, exc_value, traceback):
-        producer.finish_transaction()
+        message_producer.finish_transaction()
