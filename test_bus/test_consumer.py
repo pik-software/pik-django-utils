@@ -7,6 +7,7 @@ from uuid import UUID
 
 import pytest
 from django.db.models import Manager
+from django.core.cache import cache
 from rest_framework.exceptions import ParseError, ValidationError, ErrorDetail
 from rest_framework.fields import DateTimeField
 from rest_framework.serializers import CharField
@@ -96,7 +97,6 @@ class TestMessageHandlerPrepare:
             Mock(name='message'), Mock(name='queue'),
             Mock(name='event_captor'))
         handler._payload = {'someValue': 42}  # noqa: protected-access
-        handler._serializers = {}  # noqa: protected-access
         with pytest.raises(SerializerMissingError):
             handler._prepare_payload()  # noqa: protected-access
         assert handler._payload == {'some_value': 42}  # noqa: protected-access
@@ -235,6 +235,20 @@ class TestMessageHandlerUpdateInstance:
                     'Недопустимый guid "b24d988e-42aa-477d-a8c3-a88b127b9b31" '
                     '- объект не существует.'), code='does_not_exist')]}
 
+    @staticmethod
+    @pytest.mark.django_db
+    def test_cache_lock():
+        uid = str(uuid.uuid4())
+        handler = MessageHandler(
+            Mock(name='message'), 'test_queue', Mock(name='event_captor'))
+        handler._serializer = Mock()
+        cache.lock = Mock(wraps=cache.lock)
+        with patch.object(MessageHandler, '_uid', uid):
+            handler._update_instance()
+
+        expected = [
+            call(f"bus-test_queue-{uid}", timeout=60)]
+        assert cache.lock.mock_calls == expected
 
 @pytest.mark.django_db
 class TestMessageHandlerException:
@@ -413,7 +427,7 @@ class TestMessageConsumerEvents:
 
     @staticmethod
     @pytest.mark.django_db
-    @patch('pik.bus.consumer.MessageHandler._get_serializer', Mock())
+    @patch('pik.bus.consumer.MessageHandler._serializer_class', Mock())
     def test_success_consumption():
         event_captor = Mock(name='event_captor')
         message_consumer = MessageConsumer(
@@ -437,7 +451,7 @@ class TestMessageConsumerEvents:
 
     @staticmethod
     @pytest.mark.django_db
-    @patch('pik.bus.consumer.MessageHandler._get_serializer', Mock())
+    @patch('pik.bus.consumer.MessageHandler._serializer', Mock())
     def test_success_consumption_transactions():
         event_captor = Mock(name='event_captor')
         message_consumer = MessageConsumer(
@@ -509,7 +523,7 @@ class TestMessageHandlerEvents:
 
     @staticmethod
     @pytest.mark.django_db
-    @patch('pik.bus.consumer.MessageHandler._get_serializer', Mock())
+    @patch('pik.bus.consumer.MessageHandler._serializer_class', Mock())
     @patch('pik.bus.consumer.MessageHandler._update_instance', Mock())
     @patch('pik.bus.consumer.MessageHandler._process_dependants', Mock())
     @patch('pik.bus.consumer.MessageHandler._capture_exception', Mock())

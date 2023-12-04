@@ -170,6 +170,8 @@ class InstanceHandler:
         Caching _models_info property by class name key and return it.
         Key with class name necessary for correct work in inheritance case
         with override _models_info property.
+        We want to build it once and use forever, but building it on startup is
+        redundant for other workers and tests
         """
 
         key = self.__class__.__name__
@@ -177,7 +179,7 @@ class InstanceHandler:
             self._model_info_cache[key] = self._models_info
         return self._model_info_cache[key]
 
-    @cached_property
+    @property
     def _models_info(self):
         """
         Example of return value:

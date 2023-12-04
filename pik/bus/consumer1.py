@@ -1,7 +1,7 @@
 import contextlib
 import io
 import logging
-from functools import partial
+from functools import partial, wraps
 from hashlib import sha1
 from typing import Set
 from uuid import UUID
@@ -39,7 +39,7 @@ class MessageHandler:
     PARSER_CLASS = JSONParser
     OBJECT_UNCHANGED_MESSAGE = 'Объект не изменен!'
 
-    _queues_info_cache = None
+    _serializers = None
     _event_label = 'deserialization'
 
     def __init__(self, body, queue, event_captor):
@@ -93,22 +93,17 @@ class MessageHandler:
 
     @property
     def _serializer_class(self):
-        if not self.queues_info or self._queue not in self.queues_info:  # noqa: unsupported-membership-test
-            raise SerializerMissingError(
-                f'Unable to find serializer for `{self._queue}`')
-        return self.queues_info[self._queue]  # noqa: unsupported-membership-test
-
-    @property
-    def queues_info(self) -> dict:
         """
         Caching _queues_info property and return it.
         We want to build it once and use forever, but building it on startup is
         redundant for other workers and tests
         """
 
-        if self._queues_info_cache is None:
-            self._queues_info_cache = self._queues_info
-        return self._queues_info_cache
+        if self._serializers is None:
+            if not self._queues_inf or self._queue not in self._queues_inf:  # noqa: unsupported-membership-test
+                raise SerializerMissingError(
+                    f'Unable to find serializer for `{self._queue}`')
+        return self._queues_inf[self._queue]  # noqa: unsupported-membership-test
 
     @property
     def _queues_info(self) -> dict:
