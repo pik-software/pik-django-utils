@@ -57,9 +57,7 @@ class MessageHandler:
         try:
             # TODO: separate class to MessageHandler and ErrorHandler.
             # TODO: union _fetch_payload and _prepare_payload to _payload
-            #  property. Now it impossible because after SerializerMissingError
-            #  exception in _fetch_payload method, property _payload using to
-            #  get _entity_uid in _error_messages method.
+            #  property.
             self._fetch_payload()
             self._prepare_payload()
             self._update_instance()
@@ -85,10 +83,25 @@ class MessageHandler:
                 self._payload)
 
     def _update_instance(self):
-        with cache.lock(
-                f'bus-{self._queue}-{self._uid}', timeout=self.LOCK_TIMEOUT):
+        # TODO: remove `contextlib.nullcontext()`, guid must be only UUID..
+        lock = (
+            cache.lock(
+                f'bus-{self._queue}-{self._uid}', timeout=self.LOCK_TIMEOUT)
+            if self._uid else contextlib.nullcontext())
+        with lock:
             self._serializer.is_valid(raise_exception=True)
             self._serializer.save()
+
+    @cached_property
+    def _uid(self):
+        # TODO: remove try-except, guid must be only UUID.
+        try:
+            guid = self._payload.get('guid')
+            UUID(guid)  # For validation.
+            return guid
+        except Exception as error:  # noqa: broad-except
+            capture_exception(error)
+            return None
 
     @cached_property
     def _serializer(self):
@@ -134,7 +147,7 @@ class MessageHandler:
     @cached_property
     def _instance(self):
         try:
-            # TODO: self._uid can be None.
+            # TODO: self._uid can be None, it`s wrong.
             return self._queryset.get(uid=self._uid)
         except self._model.DoesNotExist:
             return self._model(uid=self._uid)
@@ -142,16 +155,6 @@ class MessageHandler:
     @cached_property
     def _queryset(self):
         return getattr(self._model, 'all_objects', self._model.objects)
-
-    @cached_property
-    def _uid(self):
-        try:
-            guid = self._payload.get('guid')
-            UUID(guid)  # For validation.
-            return guid
-        except Exception as error:  # noqa: broad-except
-            capture_exception(error)
-            return None
 
     @cached_property
     def _model(self):
@@ -243,6 +246,7 @@ class MessageHandler:
         self._event_captor.capture(
             event=event,
             entity_type=self.envelope.get('message', {}).get('type'),
+            # TODO: use self._uid property.
             entity_guid=self.envelope.get('message', {}).get('guid'),
             transactionGUID=self.envelope.get(
                 'headers', {}).get('transactionGUID'),

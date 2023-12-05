@@ -145,6 +145,7 @@ message_producer = MessageProducer(settings.RABBITMQ_URL, mdm_event_captor)
 class InstanceHandler:
     _models_dispatch_cache: Dict[
         str, Dict[str, Dict[str, Union[str, Serializer]]]] = {}
+    _event_label = 'serialization'
 
     def __init__(self, instance, event_captor, producer):
         self._instance = instance
@@ -265,17 +266,12 @@ class InstanceHandler:
             raise ModelMissingError from exc
 
     def _capture_event(self, **kwargs):
-        try:
-            _type = self._message['type']
-            _guid = str(self._message['guid'])
-        except Exception:  # noqa: exception already captured
-            _type, _guid = None, None
         self._event_captor.capture(
-            event='serialization',
-            entity_type=_type,
-            entity_guid=_guid,
-            **kwargs
-        )
+            event=self._event_label,
+            entity_type=self._message.get('type'),
+            # TODO: self._message['guid'] it`s UUID? need convert to str?
+            entity_guid=str(self._message.get('guid')),
+            **kwargs)
 
 
 @receiver(post_save)

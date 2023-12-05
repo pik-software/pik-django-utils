@@ -889,8 +889,7 @@ class TestMessageHandlerMultipleErrors:
         PIKMessageException(**exc_data_system).save()
         PIKMessageException(**exc_data_validation).save()
         handler = MessageHandler(
-            message, queue,
-            Mock(name='event_captor'))
+            message, queue, Mock(name='event_captor'))
         handler.handle()
         messages_qs = PIKMessageException.objects.all()
         assert messages_qs.count() == 1
