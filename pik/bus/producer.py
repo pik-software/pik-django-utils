@@ -143,7 +143,7 @@ message_producer = MessageProducer(settings.RABBITMQ_URL, mdm_event_captor)
 
 
 class InstanceHandler:
-    _model_config_cache: Dict[
+    _models_dispatch_cache: Dict[
         str, Dict[str, Dict[str, Union[str, Serializer]]]] = {}
 
     def __init__(self, instance, event_captor, producer):
@@ -152,7 +152,7 @@ class InstanceHandler:
         self._producer = producer
 
     def handle(self):
-        if self.model_name not in self.models_config:
+        if self.model_name not in self.models_dispatch:
             return
 
         logger.info('Handling ESB model %s...', self.model_name)
@@ -165,7 +165,7 @@ class InstanceHandler:
         self._produce(envelope)
 
     @property
-    def models_config(self):
+    def models_dispatch(self):
         """
         Caching _models_config property by class name key and return it.
         Key with class name necessary for correct work in inheritance case
@@ -175,12 +175,12 @@ class InstanceHandler:
         """
 
         key = self.__class__.__name__
-        if key not in self._model_config_cache:
-            self._model_config_cache[key] = self._models_config
-        return self._model_config_cache[key]
+        if key not in self._models_dispatch_cache:
+            self._models_dispatch_cache[key] = self._models_dispatch
+        return self._models_dispatch_cache[key]
 
     @property
-    def _models_config(self):
+    def _models_dispatch(self):
         """
         Example of return value:
         ```{
@@ -223,7 +223,7 @@ class InstanceHandler:
     @property
     def _serializer(self) -> type(Serializer):
         try:
-            return self.models_config[self.model_name]['serializer']
+            return self.models_dispatch[self.model_name]['serializer']
         except KeyError as exc:
             raise ModelMissingError from exc
 
@@ -260,7 +260,7 @@ class InstanceHandler:
     @property
     def _exchange(self):
         try:
-            return self.models_config[self.model_name]['exchange']
+            return self.models_dispatch[self.model_name]['exchange']
         except KeyError as exc:
             raise ModelMissingError from exc
 

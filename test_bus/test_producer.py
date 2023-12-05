@@ -53,20 +53,20 @@ def test_transaction_publish_multiple():
 
 @override_settings(RABBITMQ_PRODUCES={
     'test_exchange': 'rest_framework.serializers.Serializer'})
-@patch('pik.bus.producer.InstanceHandler._model_config_cache', {})
-def test_instance_handler_models_info():
+@patch('pik.bus.producer.InstanceHandler._models_dispatch_cache', {})
+def test_instance_handler_models_dispatch():
     serializer = Mock(Meta=Mock(model=Mock(__name__='test_model')))
     # to restore cache
     expected = {'test_model': {
         'exchange': 'test_exchange', 'serializer': serializer}}
     with patch('rest_framework.serializers.Serializer', serializer):
-        assert InstanceHandler(None, None, None).models_config == expected
+        assert InstanceHandler(None, None, None).models_dispatch == expected
 
 
 @patch('pik.bus.producer.InstanceHandler._envelope', property(Mock(
     side_effect=ZeroDivisionError)))
 @patch('pik.bus.producer.InstanceHandler._capture_event', Mock())
-@patch('pik.bus.producer.InstanceHandler._model_config_cache', {
+@patch('pik.bus.producer.InstanceHandler._models_dispatch_cache', {
     'InstanceHandler': {'Mock': {}}})
 @patch('pik.bus.producer.MessageProducer.produce', Mock())
 def test_serialization_event_failed():
@@ -83,7 +83,7 @@ def test_serialization_event_failed():
 @patch('pik.bus.producer.MessageProducer._publish', Mock())
 @patch('pik.bus.producer.InstanceHandler._capture_event', Mock())
 @patch('pik.bus.producer.InstanceHandler._exchange', Mock())
-@patch('pik.bus.producer.InstanceHandler._model_config_cache', {
+@patch('pik.bus.producer.InstanceHandler._models_dispatch_cache', {
     'InstanceHandler': {'Mock': {}}})
 def test_serialization_event_ok():
     handler = InstanceHandler(
