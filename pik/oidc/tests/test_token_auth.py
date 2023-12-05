@@ -31,13 +31,10 @@ class JsonResponse(Response):
 
 
 make_api_request = partial(
-    django.test.Client().get, "/api/v3/",  # noqa invalid-name
+    django.test.Client().get, "/api/v1/",  # noqa invalid-name
     **{'HTTP_AUTHORIZATION': 'Bearer pik token'})
 
 
-@pytest.mark.skip(
-    'Failed after https://github.com/pik-software/pik-django-utils/pull/158'
-    '@dzen90 must fix it.')
 @pytest.mark.django_db
 @patch("social_core.backends.base.BaseAuth.request")
 def test_correct_token_api(oidc_request_mock):
@@ -86,9 +83,6 @@ def test_correct_token_api(oidc_request_mock):
     assert user.username == "newUserPreferredUserName"
 
 
-@pytest.mark.skip(
-    'Failed after https://github.com/pik-software/pik-django-utils/pull/158'
-    '@dzen90 must fix it.')
 @pytest.mark.django_db
 @patch("social_core.backends.base.BaseAuth.request")
 def test_wrong_token_api(oidc_request_mock):
