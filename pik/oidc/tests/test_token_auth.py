@@ -31,7 +31,7 @@ class JsonResponse(Response):
 
 
 make_api_request = partial(
-    django.test.Client().get, "/api/v3/",  # noqa invalid-name
+    django.test.Client().get, "/api/v1/",  # noqa invalid-name
     **{'HTTP_AUTHORIZATION': 'Bearer pik token'})
 
 

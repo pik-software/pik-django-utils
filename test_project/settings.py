@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
 
     'pik.cors',
     'pik.bus',
@@ -137,6 +138,12 @@ SOFT_DELETE_EXCLUDE = [
     'bus.PIKMessageException'
 ]
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+    'EXCEPTION_HANDLER': 'pik.api.exception_handler.standardized_handler',
+}
 
 HISTORY_SERIALIZER_CACHE_TTL_SEC = int(os.environ.get(
     'HISTORY_SERIALIZER_CACHE_TTL_SEC', 24 * 3600))
@@ -145,6 +152,7 @@ ONLY_LAST_VERSION_ALLOWED_DAYS_RANGE = os.environ.get(
     'ONLY_LAST_VERSION_ALLOWED_DAYS_RANGE', 1)
 
 
+OIDC_DEFAULT_BACKEND = 'pik'
 from pik.oidc.settings import set_oidc_settings  # noqa: pylint=wrong-import-position
 set_oidc_settings(globals())
 
