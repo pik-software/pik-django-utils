@@ -1,4 +1,4 @@
-from django.conf.urls import include, re_path
+from django.urls.conf import include, re_path, path
 from django.contrib import admin
 
 from .views import (
@@ -12,9 +12,9 @@ urlpatterns = [  # noqa: invalid-name
     re_path(r'^openid/logout/(?P<backend>[^/]+)/$',
         oidc_backchannel_logout, name='oidc_backchannel_logout'),
 
-    re_path(r'^openid/', include('social_django.urls', namespace='social')),
-    re_path(r'^login/$', admin.site.login, name='login'),
-    re_path(r'^logout/$', admin.site.logout, name='logout'),
-    re_path(r'^admin/login/$', oidc_admin_login),
-    re_path(r'^admin/logout/$', oidc_admin_logout)
+    path(r'openid/', include('social_django.urls', namespace='social')),
+    path(r'login/', admin.site.login, name='login'),
+    path(r'logout/', admin.site.logout, name='logout'),
+    path(r'admin/login/', oidc_admin_login),
+    path(r'admin/logout/', oidc_admin_logout),
 ]

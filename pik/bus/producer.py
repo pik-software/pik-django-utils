@@ -167,11 +167,11 @@ class InstanceHandler:
     @property
     def models_dispatch(self):
         """
-        Caching _models_config property by class name key and return it.
+        Caching _models_dispatch property by class name key and return it.
         Key with class name necessary for correct work in inheritance case
         with override _models_info property.
         We want to build it once and use forever, but building it on startup is
-        redundant for other workers and tests
+        redundant for other workers and tests.
         """
 
         key = self.__class__.__name__

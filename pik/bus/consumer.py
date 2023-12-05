@@ -11,7 +11,6 @@ from django.core.cache import cache
 from django.db.models import Q
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
-from django.utils.translation import gettext_lazy as _
 from pika import BlockingConnection, URLParameters
 from pika.exceptions import (
     AMQPConnectionError, ChannelWrongStateError, ChannelClosedByBroker,
@@ -35,20 +34,23 @@ logger = logging.getLogger(__name__)
 
 
 class MessageHandler:
+    parser_class = JSONParser
+
     LOCK_TIMEOUT = 60
     OBJECT_UNCHANGED_MESSAGE = 'Object unchanged.'
 
-    parser_class = JSONParser
+    _body = None
+    _queue = None
+    _event_captor = None
 
-    _queue_serializers_cache = None
+    _payload = None
+    _queue_serializers_cache = {}
     _event_label = 'deserialization'
 
     def __init__(self, body, queue, event_captor):
         self._body = body
         self._queue = queue
         self._event_captor = event_captor
-
-        self._payload = None
 
     @close_old_db_connections
     def handle(self):
@@ -94,25 +96,25 @@ class MessageHandler:
 
     @property
     def _serializer_class(self):
-        if not self.queues_info or self._queue not in self.queues_info:  # noqa: unsupported-membership-test
+        if self._queue not in self.queue_serializers:  # noqa: unsupported-membership-test
             raise SerializerMissingError(
                 f'Unable to find serializer for `{self._queue}`')
-        return self.queues_info[self._queue]  # noqa: unsupported-membership-test
-
-    @property
-    def queues_info(self) -> dict:
-        """
-        Caching _queues_info property and return it.
-        We want to build it once and use forever, but building it on startup is
-        redundant for other workers and tests
-        """
-
-        if self._queue_serializers_cache is None:
-            self._queue_serializers_cache = self.queue_serializers
-        return self._queue_serializers_cache
+        return self.queue_serializers[self._queue]  # noqa: unsupported-membership-test
 
     @property
     def queue_serializers(self) -> dict:
+        """
+        Caching _queue_serializers property and return it.
+        We want to build it once and use forever, but building it on startup is
+        redundant for other workers and tests.
+        """
+
+        if not self._queue_serializers_cache:
+            self._queue_serializers_cache.update(self._queue_serializers)
+        return self._queue_serializers_cache
+
+    @property
+    def _queue_serializers(self) -> dict:
         """
         Example of return value:
         ```{
@@ -120,6 +122,7 @@ class MessageHandler:
             ...
         }```
         """
+
         return {
             queue: import_string(serializer)
             for queue, serializer in self.consumes_setting.items()}
@@ -131,7 +134,7 @@ class MessageHandler:
     @cached_property
     def _instance(self):
         try:
-            # TODO: self._uid can get None.
+            # TODO: self._uid can be None.
             return self._queryset.get(uid=self._uid)
         except self._model.DoesNotExist:
             return self._model(uid=self._uid)
@@ -143,7 +146,9 @@ class MessageHandler:
     @cached_property
     def _uid(self):
         try:
-            return str(UUID(self._payload.get('guid')))
+            guid = self._payload.get('guid')
+            UUID(guid)  # For validation.
+            return guid
         except Exception as error:  # noqa: broad-except
             capture_exception(error)
             return None

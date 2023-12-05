@@ -2,7 +2,7 @@ import uuid
 from io import BytesIO
 import json
 from pprint import pformat
-from unittest.mock import Mock, patch, call
+from unittest.mock import Mock, patch, call, PropertyMock
 from uuid import UUID
 
 import pytest
@@ -249,6 +249,30 @@ class TestMessageHandlerUpdateInstance:
         expected = [
             call(f"bus-test_queue-{uid}", timeout=60)]
         assert cache.lock.mock_calls == expected
+
+
+class TestMessageHandlerQueueSerializers:
+    TEST_QUEUE_SERIALIZERS_CACHE = {'test_key': 'test_value'}
+
+    @pytest.mark.django_db
+    @patch.object(
+        MessageHandler, '_queue_serializers',
+        return_value=TEST_QUEUE_SERIALIZERS_CACHE, new_callable=PropertyMock)
+    def test_queue_serializers_cache(self, _queue_serializers):
+        handler1 = MessageHandler(
+            Mock(name='message'), Mock(name='queue'),
+            Mock(name='event_captor'))
+        queue_serializers = handler1.queue_serializers
+        assert len(_queue_serializers.mock_calls) == 1
+        assert queue_serializers == self.TEST_QUEUE_SERIALIZERS_CACHE
+
+        handler2 = MessageHandler(
+            Mock(name='message'), Mock(name='queue'),
+            Mock(name='event_captor'))
+        queue_serializers = handler2.queue_serializers
+        assert len(_queue_serializers.mock_calls) == 1
+        assert queue_serializers == self.TEST_QUEUE_SERIALIZERS_CACHE
+
 
 @pytest.mark.django_db
 class TestMessageHandlerException:
