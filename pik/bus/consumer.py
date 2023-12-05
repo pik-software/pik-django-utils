@@ -36,8 +36,9 @@ logger = logging.getLogger(__name__)
 
 class MessageHandler:
     LOCK_TIMEOUT = 60
-    PARSER_CLASS = JSONParser
-    OBJECT_UNCHANGED_MESSAGE = 'Объект не изменен!'
+    OBJECT_UNCHANGED_MESSAGE = 'Object unchanged.'
+
+    parser_class = JSONParser
 
     _queue_serializers_cache = None
     _event_label = 'deserialization'
@@ -72,7 +73,7 @@ class MessageHandler:
 
     @cached_property
     def envelope(self):
-        return self.PARSER_CLASS().parse(io.BytesIO(self._body))
+        return self.parser_class().parse(io.BytesIO(self._body))
 
     def _prepare_payload(self):
         self._payload = underscorize(self._payload)
@@ -186,7 +187,7 @@ class MessageHandler:
         if NewestUpdateValidationError.is_error_match(exc):
             self._capture_event(
                 event='skip', success=True,
-                error=_(self.OBJECT_UNCHANGED_MESSAGE))
+                error=self.OBJECT_UNCHANGED_MESSAGE)
             capture_exception(exc)
             return
 
