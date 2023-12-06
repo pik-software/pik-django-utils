@@ -3,7 +3,7 @@ import io
 import logging
 from functools import partial
 from hashlib import sha1
-from typing import Set
+from typing import Set, Dict, Type
 from uuid import UUID
 
 from django.conf import settings
@@ -17,6 +17,7 @@ from pika.exceptions import (
     ChannelClosed)
 from rest_framework.exceptions import ValidationError
 from rest_framework.parsers import JSONParser
+from rest_framework.serializers import Serializer
 from tenacity import retry, retry_if_exception_type, wait_fixed
 
 from pik.api.exceptions import (
@@ -39,15 +40,15 @@ class MessageHandler:
     LOCK_TIMEOUT = 60
     OBJECT_UNCHANGED_MESSAGE = 'Object unchanged.'
 
-    _body = None
-    _queue = None
-    _event_captor = None
+    _body: bytes = b''
+    _queue: str = ''
+    _event_captor: object = None
 
     _payload = None
-    _queue_serializers_cache = {}
+    _queue_serializers_cache: Dict[str, Type[Serializer]] = {}
     _event_label = 'deserialization'
 
-    def __init__(self, body, queue, event_captor):
+    def __init__(self, body: bytes, queue: str, event_captor: object):
         self._body = body
         self._queue = queue
         self._event_captor = event_captor
@@ -109,14 +110,14 @@ class MessageHandler:
         return self._serializer_class(self._instance, self._payload)
 
     @property
-    def _serializer_class(self):
+    def _serializer_class(self) -> Type[Serializer]:
         if self._queue not in self.queue_serializers:  # noqa: unsupported-membership-test
             raise SerializerMissingError(
                 f'Unable to find serializer for `{self._queue}`')
         return self.queue_serializers[self._queue]  # noqa: unsupported-membership-test
 
     @property
-    def queue_serializers(self) -> dict:
+    def queue_serializers(self) -> Dict[str, Type[Serializer]]:
         """
         Caching _queue_serializers property and return it.
         We want to build it once and use forever, but building it on startup is
@@ -128,11 +129,11 @@ class MessageHandler:
         return self._queue_serializers_cache
 
     @property
-    def _queue_serializers(self) -> dict:
+    def _queue_serializers(self) -> Dict[str, Type[Serializer]]:
         """
         Example of return value:
         ```{
-            queue: serializer,
+            'queue': serializer_cls,
             ...
         }```
         """

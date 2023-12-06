@@ -3,7 +3,7 @@ import platform
 import logging
 import uuid
 from contextlib import ContextDecorator
-from typing import Dict, Union
+from typing import Dict, TypedDict, Type
 
 import django
 from django.db.models.signals import post_save
@@ -143,8 +143,15 @@ message_producer = MessageProducer(settings.RABBITMQ_URL, mdm_event_captor)
 
 
 class InstanceHandler:
-    _models_dispatch_cache: Dict[
-        str, Dict[str, Dict[str, Union[str, Serializer]]]] = {}
+    class ModelDispatch(TypedDict):
+        serializer: Type[Serializer]
+        exchange: str
+
+    _instance = None
+    _event_captor = None
+    _producer = None
+
+    _models_dispatch_cache: Dict[str, Dict[str, ModelDispatch]] = {}
     _event_label = 'serialization'
 
     def __init__(self, instance, event_captor, producer):
@@ -166,7 +173,7 @@ class InstanceHandler:
         self._produce(envelope)
 
     @property
-    def models_dispatch(self):
+    def models_dispatch(self) -> Dict[str, ModelDispatch]:
         """
         Caching _models_dispatch property by class name key and return it.
         Key with class name necessary for correct work in inheritance case
@@ -181,13 +188,13 @@ class InstanceHandler:
         return self._models_dispatch_cache[key]
 
     @property
-    def _models_dispatch(self):
+    def _models_dispatch(self) -> Dict[str, ModelDispatch]:
         """
         Example of return value:
         ```{
-            model: {
-               'serializer': serializer,
-               'exchange': exchange
+            'model': {
+               'serializer': serializer_cls,
+               'exchange': 'exchange'
            },
            ...
         }```
@@ -222,7 +229,7 @@ class InstanceHandler:
         return data
 
     @property
-    def _serializer(self) -> type(Serializer):
+    def _serializer(self) -> Type[Serializer]:
         try:
             return self.models_dispatch[self.model_name]['serializer']
         except KeyError as exc:
