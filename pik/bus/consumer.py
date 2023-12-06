@@ -88,6 +88,7 @@ class MessageHandler:
             cache.lock(
                 f'bus-{self._queue}-{self._uid}', timeout=self.LOCK_TIMEOUT)
             if self._uid else contextlib.nullcontext())
+        # TODO: move context manager to class decorator for reuse.
         with lock:
             self._serializer.is_valid(raise_exception=True)
             self._serializer.save()
