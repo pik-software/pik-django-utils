@@ -83,7 +83,7 @@ class MessageHandler:
                 self._payload)
 
     def _update_instance(self):
-        # TODO: remove `contextlib.nullcontext()`, guid must be only UUID..
+        # TODO: remove `contextlib.nullcontext()`, guid must be only UUID.
         lock = (
             cache.lock(
                 f'bus-{self._queue}-{self._uid}', timeout=self.LOCK_TIMEOUT)
