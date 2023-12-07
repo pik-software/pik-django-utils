@@ -6,8 +6,6 @@ from contextlib import ContextDecorator
 from typing import Dict, TypedDict, Type
 
 import django
-from django.db.models.signals import post_save
-from django.dispatch import receiver
 from django.conf import settings
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
@@ -20,7 +18,7 @@ from rest_framework.serializers import Serializer
 from tenacity import (
     retry, retry_if_exception_type, stop_after_attempt, wait_fixed, )
 
-from pik.utils.sentry import capture_exception
+
 from pik.api.camelcase.viewsets import camelcase_type_field_hook
 from pik.api_settings import api_settings
 from pik.utils.case_utils import camelize
@@ -281,22 +279,82 @@ class InstanceHandler:
             **kwargs)
 
 
-@receiver(post_save)
-def push_model_instance_to_rabbit_queue(instance, **kwargs):
-    if not settings.RABBITMQ_PRODUCER_ENABLE:
-        return
-    # Ignoring migration signals
-    if instance.__module__ == '__fake__':
-        return
-    try:
-        InstanceHandler(instance, mdm_event_captor, message_producer).handle()
-    except Exception as exc:  # noqa: broad-except
-        capture_exception(exc)
-
-
 class MDMTransaction(ContextDecorator):
     def __enter__(self):
         message_producer.start_transaction()
 
     def __exit__(self, exc_type, exc_value, traceback):
         message_producer.finish_transaction()
+
+
+def get_produces_settings4response_command():
+    """
+    Converting RABBITMQ_RESPONSES
+    {
+        'module.RequestCommandSerializer': (
+            'module.ResponseCommandSerializer',
+            'module.exec_command_function')}
+    to RABBITMQ_PRODUCES
+    {
+        'ResponseCommand':
+            'module.ResponseCommandSerializer'}
+    """
+
+    result = {}
+    for config in settings.RABBITMQ_RESPONSES.values():
+        serializer_cls = import_string(config[0])
+        result[serializer_cls.Meta.model.__name__] = (
+            f'{serializer_cls.__module__}.{serializer_cls.__name__}')
+    return result
+
+
+class ResponseCommandInstanceHandler(InstanceHandler):
+    """
+    Handling the responses of commands.
+    """
+
+    def __init__(self, instance, event_captor, producer, routing_key):
+        super().__init__(instance, event_captor, producer)
+        self._routing_key = routing_key
+
+    @property
+    def producers_setting(self):
+        return get_produces_settings4response_command()
+
+    def _produce(self, envelope):
+        self._producer.produce(
+            envelope, exchange=self._exchange, routing_key=self._routing_key)
+
+
+class CommandEntityInstanceHandler(InstanceHandler):
+    """
+    Handling of entities generated during execution command.
+    """
+
+    def __init__(
+            self, instance, event_captor, producer,
+            routing_key, request_command):
+        super().__init__(instance, event_captor, producer)
+        self._routing_key = routing_key
+        self._request_command = request_command
+
+    @property
+    def producers_setting(self):
+        return {
+            f'{s.Meta.model.__name__}.routed': f'{s.__module__}.{s.__name__}'
+            for s in super().producers_setting}
+
+    def _produce(self, envelope):
+        self._producer.produce(
+            envelope, exchange=self._exchange, routing_key=self._routing_key)
+
+    @property
+    def _envelope(self):
+        # TODO: stype method return lowercase string, but camelCase need.
+        envelop = super()._envelope
+        envelop['headers'] = {
+            **envelop.get('headers', {}),
+            **{
+                'requestGuid': str(self._request_command.uid),
+                'requestType': self._request_command.stype}}
+        return envelop

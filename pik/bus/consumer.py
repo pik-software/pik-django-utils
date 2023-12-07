@@ -4,10 +4,11 @@ import logging
 from functools import partial
 from hashlib import sha1
 from typing import Set, Dict, Type
-from uuid import UUID
+import uuid
 
 from django.conf import settings
 from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
@@ -29,9 +30,14 @@ from pik.utils.bus import LiveBlockingConnection
 from pik.utils.case_utils import underscorize
 from pik.utils.decorators import close_old_db_connections
 from pik.utils.sentry import capture_exception
+from mdm.models import ResponseBackfill
 
 
 logger = logging.getLogger(__name__)
+
+
+class CommandError(Exception):
+    pass
 
 
 class MessageHandler:
@@ -99,7 +105,7 @@ class MessageHandler:
         # TODO: remove try-except, guid must be only UUID.
         try:
             guid = self._payload.get('guid')
-            UUID(guid)  # For validation.
+            uuid.UUID(guid)  # For validation.
             return guid
         except Exception as error:  # noqa: broad-except
             capture_exception(error)
@@ -425,3 +431,67 @@ class AllQueueMessageConsumer(MessageConsumer):
         finally:
             if _channel is not None:
                 _channel.close()
+
+
+class RequestCommandMessageHandler(MessageHandler):
+    """
+    Message handler that executes command request.
+    """
+
+    DUPLICATE_REQUEST_ERROR = 'Duplicate request guid for command `{}`.'
+    STATUSES = ResponseBackfill.STATUS_CHOICES
+
+    _requests_config_cache = {}
+
+    def _update_instance(self):
+        super()._update_instance()
+        with cache.lock(
+                f'bus-{self._queue}-{self._uid}', timeout=self.LOCK_TIMEOUT):
+            self._process_command()
+
+    def _process_command(self):
+        if self._serializer_cls not in self.responses_config:
+            return
+        response_serializer_cls, exec_command_function = self.responses_config[
+            self._serializer_cls]
+        response_model_cls = response_serializer_cls.Meta.model
+
+        self._check_request(response_model_cls)
+        self._create_response(response_model_cls)
+
+        exec_command_function(*(self._instance.uid, ))
+
+    def _check_request(self, response_model_cls):
+        try:
+            response = response_model_cls.objects.get(request=self._instance)
+        except ObjectDoesNotExist:
+            return
+        else:
+            error = self.DUPLICATE_REQUEST_ERROR.format(self._model.__name__)
+            response.error = error
+            response.status = self.STATUSES.failed
+            response.save()
+            raise CommandError(error)
+
+    def _create_response(self, response_model_cls):
+        response_model_cls(
+            uid=uuid.uuid4(),
+            request=self._instance,
+            status=self.STATUSES.accepted).save()
+
+    @property
+    def responses_config(self):
+        if not self._requests_config_cache:
+            self._requests_config_cache.update(self._responses_config)
+        return self._requests_config_cache
+
+    @property
+    def _responses_config(self):
+        return {
+            import_string(request_cls):
+                tuple(map(import_string, config))
+            for request_cls, config in self.responses_setting.items()}
+
+    @property
+    def responses_setting(self):
+        return settings.RABBITMQ_RESPONSES

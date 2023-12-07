@@ -7,5 +7,6 @@ class AppConfig(BaseConfig):
     verbose_name = _('Шина')
 
     def ready(self):
-        from pik.bus.producer import push_model_instance_to_rabbit_queue  ## noqa: import-outside-toplevel
-        assert push_model_instance_to_rabbit_queue  # noqa unused import
+        from pik.bus.signals import produce_entity, produce_command_response  # noqa: import-outside-toplevel
+        assert produce_entity  # noqa unused import
+        assert produce_command_response  # noqa unused import
