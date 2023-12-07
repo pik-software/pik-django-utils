@@ -198,7 +198,8 @@ class MessageHandler:
             for detail in exc_data.get('detail', {}).values()])
         if is_missing_dependency:
             error_message.dependencies = {
-                self._payload[field]['type']: self._payload[field]['guid']
+                self._payload[field]['type']:
+                    self._payload[field]['guid'].lower()
                 for field, errors in exc_data.get('detail', {}).items()
                 for error in errors if error['code'] == 'does_not_exist'}
 
