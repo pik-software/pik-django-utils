@@ -188,6 +188,9 @@ class MessageHandler:
                     queue=self._queue)]
 
         error_message, *same_error_messages = error_messages
+        for same_error_message in same_error_messages:
+            same_error_message.delete()
+
         error_message.message = self._body
         error_message.exception = exc_data
         error_message.exception_type = exc_data['code']
@@ -202,9 +205,6 @@ class MessageHandler:
                     self._payload[field]['guid'].lower()
                 for field, errors in exc_data.get('detail', {}).items()
                 for error in errors if error['code'] == 'does_not_exist'}
-
-        for same_error_message in same_error_messages:
-            same_error_message.delete()
 
         error_message.save()
 
