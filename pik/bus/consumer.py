@@ -79,8 +79,8 @@ class MessageHandler:
     def _prepare_payload(self):
         self._payload = underscorize(self._payload)
 
-        if hasattr(self._serializer_class, 'underscorize_hook'):
-            self._payload = self._serializer_class.underscorize_hook(
+        if hasattr(self._serializer_cls, 'underscorize_hook'):
+            self._payload = self._serializer_cls.underscorize_hook(
                 self._payload)
 
     def _update_instance(self):
@@ -107,10 +107,10 @@ class MessageHandler:
 
     @cached_property
     def _serializer(self):
-        return self._serializer_class(self._instance, self._payload)
+        return self._serializer_cls(self._instance, self._payload)
 
     @property
-    def _serializer_class(self) -> Type[Serializer]:
+    def _serializer_cls(self) -> Type[Serializer]:
         if self._queue not in self.queue_serializers:  # noqa: unsupported-membership-test
             raise SerializerMissingError(
                 f'Unable to find serializer for `{self._queue}`')
@@ -161,7 +161,7 @@ class MessageHandler:
     @cached_property
     def _model(self):
         # More easy way is get model from instance? No, we get cyclic call.
-        return self._serializer_class.Meta.model
+        return self._serializer_cls.Meta.model
 
     def _process_dependants(self):
         from .models import PIKMessageException  # noqa: cyclic import workaround

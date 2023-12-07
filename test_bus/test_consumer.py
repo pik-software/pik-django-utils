@@ -84,7 +84,7 @@ class TestMessageHandlerPrepare:
             Mock(name='message'), Mock(name='queue'),
             Mock(name='event_captor'))
         handler._payload = {'someValue': 42}  # noqa: protected-access
-        with patch.object(MessageHandler, '_serializer_class', Mock(
+        with patch.object(MessageHandler, '_serializer_cls', Mock(
                 underscorize_hook=Mock(
                     side_effect=lambda x: x))) as serializer:
             handler._prepare_payload()  # noqa: protected-access
@@ -109,7 +109,7 @@ class TestMessageHandlerPrepare:
         payload = Exception()
         handler._payload = payload  # noqa: protected-access
         with patch.object(
-                MessageHandler, '_serializer_class',
+                MessageHandler, '_serializer_cls',
                 Mock(underscorize_hook=Mock(side_effect=lambda x: x))):
             handler._prepare_payload()  # noqa: protected-access
         assert handler._payload == payload  # noqa: protected-access
@@ -127,7 +127,7 @@ class TestMessageHandlerUpdateInstance:
             Mock(name='event_captor'))
         handler._payload = {'guid': 'b24d988e-42aa-477d-a8c3-a88b127b9b31'}  # noqa: protected-access
         with patch.object(
-                MessageHandler, '_serializer_class', RegularModelSerializer):
+                MessageHandler, '_serializer_cls', RegularModelSerializer):
             assert isinstance(handler._instance, RegularModel)  # noqa: protected-access
             assert handler._instance.uid == UUID(  # noqa: protected-access
                 'b24d988e-42aa-477d-a8c3-a88b127b9b31')
@@ -142,7 +142,7 @@ class TestMessageHandlerUpdateInstance:
             Mock(name='event_captor'))
         handler._payload = {'guid': guid}  # noqa: protected-access
         with patch.object(
-                MessageHandler, '_serializer_class', RegularModelSerializer):
+                MessageHandler, '_serializer_cls', RegularModelSerializer):
             assert isinstance(handler._instance, RegularModel)  # noqa: protected-access
             assert handler._instance.uid == guid  # noqa: protected-access
             assert handler._instance._state.adding  # noqa: protected-access
@@ -153,7 +153,7 @@ class TestMessageHandlerUpdateInstance:
             Mock(name='message'), Mock(name='queue'),
             Mock(name='event_captor'))
         with patch.object(
-                MessageHandler, '_serializer_class', RegularModelSerializer):
+                MessageHandler, '_serializer_cls', RegularModelSerializer):
             assert isinstance(handler._queryset, Manager)  # noqa: protected-access
 
     @staticmethod
@@ -162,7 +162,7 @@ class TestMessageHandlerUpdateInstance:
             Mock(name='message'), Mock(name='queue'),
             Mock(name='event_captor'))
         with patch.object(
-                MessageHandler, '_serializer_class', RegularModelSerializer):
+                MessageHandler, '_serializer_cls', RegularModelSerializer):
             assert handler._model == RegularModel  # noqa: protected-access
 
     @staticmethod
@@ -174,7 +174,7 @@ class TestMessageHandlerUpdateInstance:
         handler._payload = {  # noqa: protected-access
             'guid': 'b24d988e-42aa-477d-a8c3-a88b127b9b31', 'name': 'Test'}
         with patch.object(
-                MessageHandler, '_serializer_class', RegularModelSerializer):
+                MessageHandler, '_serializer_cls', RegularModelSerializer):
                     handler._update_instance()  # noqa: protected-access
 
         assert list(RegularModel.objects.values('name', 'uid')) == [{
@@ -185,7 +185,7 @@ class TestMessageHandlerUpdateInstance:
     @staticmethod
     @pytest.mark.django_db
     @patch.object(
-        MessageHandler, '_serializer_class',
+        MessageHandler, '_serializer_cls',
         RemovableRegularDependedSerializer)
     def test_missing_depended_model():
         handler = MessageHandler(
@@ -211,7 +211,7 @@ class TestMessageHandlerUpdateInstance:
     @staticmethod
     @pytest.mark.django_db
     @patch.object(
-        MessageHandler, '_serializer_class',
+        MessageHandler, '_serializer_cls',
         RemovableRegularDependedSerializer)
     def test_multiple_error_model():
         handler = MessageHandler(
@@ -402,7 +402,7 @@ class TestMessageHandlerDependencies:
         handler._process_dependants()  # noqa: protected-access
 
     @staticmethod
-    @patch.object(MessageHandler, '_serializer_class', RegularModelSerializer)
+    @patch.object(MessageHandler, '_serializer_cls', RegularModelSerializer)
     def test_process_dependency():
         (PIKMessageException(
             message=json.dumps({'message': {
@@ -451,7 +451,7 @@ class TestMessageConsumerEvents:
 
     @staticmethod
     @pytest.mark.django_db
-    @patch('pik.bus.consumer.MessageHandler._serializer_class', Mock())
+    @patch('pik.bus.consumer.MessageHandler._serializer_cls', Mock())
     def test_success_consumption():
         event_captor = Mock(name='event_captor')
         message_consumer = MessageConsumer(
@@ -547,7 +547,7 @@ class TestMessageHandlerEvents:
 
     @staticmethod
     @pytest.mark.django_db
-    @patch('pik.bus.consumer.MessageHandler._serializer_class', Mock())
+    @patch('pik.bus.consumer.MessageHandler._serializer_cls', Mock())
     @patch('pik.bus.consumer.MessageHandler._update_instance', Mock())
     @patch('pik.bus.consumer.MessageHandler._process_dependants', Mock())
     @patch('pik.bus.consumer.MessageHandler._capture_exception', Mock())
@@ -728,7 +728,7 @@ class TestMessageHandlerMultipleErrors:
     @staticmethod
     @pytest.mark.django_db
     @patch.object(
-        MessageHandler, '_serializer_class',
+        MessageHandler, '_serializer_cls',
         RegularDatedModelSerializer)
     def test_validation_error_after_existing_validation_error():
         message = json.dumps({'message': {
@@ -789,7 +789,7 @@ class TestMessageHandlerMultipleErrors:
     @staticmethod
     @pytest.mark.django_db
     @patch.object(
-        MessageHandler, '_serializer_class',
+        MessageHandler, '_serializer_cls',
         RegularDatedModelSerializer)
     def test_validation_error_after_existing_system_error():
         message = json.dumps({'message': {
@@ -915,7 +915,7 @@ class TestMessageHandlerMultipleErrors:
     @staticmethod
     @pytest.mark.django_db
     @patch.object(
-        MessageHandler, '_serializer_class',
+        MessageHandler, '_serializer_cls',
         RegularDatedModelSerializer)
     def test_validation_error_after_existing_validation_and_system_errors():
         message = json.dumps({'message': {

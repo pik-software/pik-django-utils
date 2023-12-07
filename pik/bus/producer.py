@@ -177,7 +177,7 @@ class InstanceHandler:
         """
         Caching _models_dispatch property by class name key and return it.
         Key with class name necessary for correct work in inheritance case
-        with override _models_info property.
+        with override _models_dispatch property.
         We want to build it once and use forever, but building it on startup is
         redundant for other workers and tests.
         """
