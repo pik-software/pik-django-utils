@@ -4,7 +4,6 @@ import logging
 import django
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from django.utils.functional import cached_property
 from pika import URLParameters
 
 from pik.bus.consumer import MessageConsumer, MessageHandler
@@ -61,7 +60,6 @@ class Command(BaseCommand):
     def consumer_name(self) -> str:
         return URLParameters(settings.RABBITMQ_URL).credentials.username
 
-    # @cached_property
     @property
     def queues(self) -> list:
         return list(settings.RABBITMQ_CONSUMES.keys())
