@@ -13,6 +13,12 @@ def ignore_signal_if_fake_or_testing(func):
         # Ignoring migration signals.
         if instance.__module__ == '__fake__':
             return
+
+        print('!!!!!!!! ignore_signal_if_fake_or_testing !!!!!!!!')
+        testing = getattr(settings, 'TESTING', False)
+        print(f'testing: {testing}')
+        print('!!!!!!!! ignore_signal_if_fake_or_testing !!!!!!!!')
+
         # Ignoring test signals.
         if getattr(settings, 'TESTING', False):
             return
@@ -45,6 +51,12 @@ def produce_command_response(instance, **kwargs):
     # create decorators because is unnecessary complication.
     if instance.__class__.__name__ not in produces_settings4response_command:
         return
+
+    print('!!!!!!!! produce_command_response !!!!!!!!')
+    testing = getattr(settings, 'TESTING', False)
+    print(f'testing: {testing}')
+    print('!!!!!!!! produce_command_response !!!!!!!!')
+
     try:
         response = instance
         routing_key = response.request.requesting_service
