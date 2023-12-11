@@ -1,8 +1,8 @@
 from factory import SubFactory, Faker
 from factory.django import DjangoModelFactory
 
-
-from test_bus.models import MyTestEntity, MyTestRequestCommand, MyTestResponseCommand
+from test_bus.models import (
+    MyTestEntity, MyTestRequestCommand, MyTestResponseCommand)
 from test_bus.constants import TEST_SERVICE, TEST_STATUS
 
 
@@ -26,7 +26,3 @@ class MyTestResponseCommandFactory(DjangoModelFactory):
 
     class Meta:
         model = MyTestResponseCommand
-
-
-    # created = Faker('date_time_this_decade')
-    # name = 'ass'

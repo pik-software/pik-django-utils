@@ -466,12 +466,11 @@ class RequestCommandMessageHandler(MessageHandler):
             response = response_model_cls.objects.get(request=self._instance)
         except ObjectDoesNotExist:
             return
-        else:
-            error = self.DUPLICATE_REQUEST_ERROR.format(self._model.__name__)
-            response.error = error
-            response.status = self.STATUSES.failed
-            response.save()
-            raise CommandError(error)
+        error = self.DUPLICATE_REQUEST_ERROR.format(self._model.__name__)
+        response.error = error
+        response.status = self.STATUSES.failed
+        response.save()
+        raise CommandError(error)
 
     def _create_response(self, response_model_cls):
         response_model_cls(

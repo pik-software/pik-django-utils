@@ -1,6 +1,7 @@
 from pik.api.serializers import StandardizedModelSerializer
 
-from test_bus.models import MyTestEntity, MyTestRequestCommand, MyTestResponseCommand
+from test_bus.models import (
+    MyTestEntity, MyTestRequestCommand, MyTestResponseCommand)
 
 
 class MyTestEntitySerializer(StandardizedModelSerializer):

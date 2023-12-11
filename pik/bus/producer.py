@@ -3,7 +3,7 @@ import platform
 import logging
 import uuid
 from contextlib import ContextDecorator
-from typing import Dict, TypedDict, Type
+from typing import Dict, Type
 
 import django
 from django.conf import settings
@@ -14,10 +14,8 @@ from pika.exceptions import (
     AMQPConnectionError, ChannelWrongStateError, ChannelClosedByBroker, )
 from rest_framework.renderers import JSONRenderer
 from rest_framework.serializers import Serializer
-
 from tenacity import (
     retry, retry_if_exception_type, stop_after_attempt, wait_fixed, )
-
 
 from pik.api.camelcase.viewsets import camelcase_type_field_hook
 from pik.api_settings import api_settings
@@ -25,6 +23,7 @@ from pik.utils.case_utils import camelize
 from pik.bus.mdm import mdm_event_captor
 from pik.bus.exceptions import (
     ModelMissingError, MDMTransactionIsAlreadyStartedError)
+from pik.bus.types import ModelDispatch
 
 
 logger = logging.getLogger(__name__)
@@ -141,10 +140,6 @@ message_producer = MessageProducer(settings.RABBITMQ_URL, mdm_event_captor)
 
 
 class InstanceHandler:
-    class ModelDispatch(TypedDict):
-        serializer: Type[Serializer]
-        exchange: str
-
     _instance = None
     _event_captor = None
     _producer = None
@@ -331,7 +326,7 @@ class CommandEntityInstanceHandler(InstanceHandler):
     Handling of entities generated during execution command.
     """
 
-    def __init__(
+    def __init__(  # noqa: pylint - too-many-arguments
             self, instance, event_captor, producer,
             routing_key, request_command):
         super().__init__(instance, event_captor, producer)
