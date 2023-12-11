@@ -8,26 +8,17 @@ from pik.bus.producer import (
 from pik.bus.mdm import mdm_event_captor
 
 
-def ignore_signal_if_fake_or_testing(func):
+def ignore_if_migrate(func):
     def wrapper(instance, **kwargs):
         # Ignoring migration signals.
         if instance.__module__ == '__fake__':
-            return
-
-        print('!!!!!!!! ignore_signal_if_fake_or_testing !!!!!!!!')
-        testing = getattr(settings, 'TESTING', False)
-        print(f'testing: {testing}')
-        print('!!!!!!!! ignore_signal_if_fake_or_testing !!!!!!!!')
-
-        # Ignoring test signals.
-        if getattr(settings, 'TESTING', False):
             return
         func(instance, **kwargs)
     return wrapper
 
 
 @receiver(post_save)
-@ignore_signal_if_fake_or_testing
+@ignore_if_migrate
 def produce_entity(instance, **kwargs):
     if not settings.RABBITMQ_PRODUCER_ENABLE:
         return
@@ -42,7 +33,7 @@ produces_settings4response_command = (
 
 
 @receiver(post_save)
-@ignore_signal_if_fake_or_testing
+@ignore_if_migrate
 def produce_command_response(instance, **kwargs):
     if not settings.RABBITMQ_RESPONSER_ENABLE:
         return
@@ -51,12 +42,6 @@ def produce_command_response(instance, **kwargs):
     # create decorators because is unnecessary complication.
     if instance.__class__.__name__ not in produces_settings4response_command:
         return
-
-    print('!!!!!!!! produce_command_response !!!!!!!!')
-    testing = getattr(settings, 'TESTING', False)
-    print(f'testing: {testing}')
-    print('!!!!!!!! produce_command_response !!!!!!!!')
-
     try:
         response = instance
         routing_key = response.request.requesting_service
