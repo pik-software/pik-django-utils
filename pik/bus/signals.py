@@ -8,12 +8,22 @@ from pik.bus.producer import (
 from pik.bus.mdm import mdm_event_captor
 
 
+def ignore_signal_if_fake_or_testing(func):
+    def wrapper(instance, **kwargs):
+        # Ignoring migration signals.
+        if instance.__module__ == '__fake__':
+            return
+        # Ignoring test signals.
+        if getattr(settings, 'TESTING', False):
+            return
+        func(instance, **kwargs)
+    return wrapper
+
+
 @receiver(post_save)
+@ignore_signal_if_fake_or_testing
 def produce_entity(instance, **kwargs):
     if not settings.RABBITMQ_PRODUCER_ENABLE:
-        return
-    # Ignoring migration signals
-    if instance.__module__ == '__fake__':
         return
     try:
         InstanceHandler(instance, mdm_event_captor, message_producer).handle()
@@ -25,16 +35,14 @@ produces_settings4response_command = (
     ResponseCommandInstanceHandler.get_produce_settings())
 
 
-# TODO: add tests for signal
 @receiver(post_save)
+@ignore_signal_if_fake_or_testing
 def produce_command_response(instance, **kwargs):
     if not settings.RABBITMQ_RESPONSER_ENABLE:
         return
-    # Ignoring migration signals.
-    if instance.__module__ == '__fake__':
-        return
     # Ignoring not response command messages.
-    # TODO: generate senders from produces_settings4response_command?
+    # We dn`t generate senders from produces_settings4response_command to
+    # create decorators because is unnecessary complication.
     if instance.__class__.__name__ not in produces_settings4response_command:
         return
     try:
