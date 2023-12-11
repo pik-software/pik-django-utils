@@ -3,7 +3,7 @@ import io
 import logging
 from functools import partial
 from hashlib import sha1
-from typing import Set, Dict, Type
+from typing import Set, Dict, Type, Tuple, Any
 import uuid
 
 from django.conf import settings
@@ -441,7 +441,7 @@ class RequestCommandMessageHandler(MessageHandler):
     DUPLICATE_REQUEST_ERROR = 'Duplicate request guid for command `{}`.'
     STATUSES = REQUEST_COMMAND_STATUS_CHOICES
 
-    _responses_config_cache = {}
+    _responses_config_cache: Dict[Any, Tuple[Any, ...]] = {}
 
     def _update_instance(self):
         super()._update_instance()
