@@ -4,8 +4,7 @@ from django.dispatch import receiver
 
 from pik.utils.sentry import capture_exception
 from pik.bus.producer import (
-    InstanceHandler, message_producer, ResponseCommandInstanceHandler,
-    get_produces_settings4response_command)
+    InstanceHandler, message_producer, ResponseCommandInstanceHandler)
 from pik.bus.mdm import mdm_event_captor
 
 
@@ -22,10 +21,11 @@ def produce_entity(instance, **kwargs):
         capture_exception(exc)
 
 
-response_command4produces_settings = get_produces_settings4response_command()
+produces_settings4response_command = (
+    ResponseCommandInstanceHandler.get_produce_settings())
 
 
-# TODO: generate senders from response_command4produces_settings?
+# TODO: add tests for signal
 @receiver(post_save)
 def produce_command_response(instance, **kwargs):
     if not settings.RABBITMQ_RESPONSER_ENABLE:
@@ -34,7 +34,8 @@ def produce_command_response(instance, **kwargs):
     if instance.__module__ == '__fake__':
         return
     # Ignoring not response command messages.
-    if instance.__class__.__name__ not in response_command4produces_settings:
+    # TODO: generate senders from produces_settings4response_command?
+    if instance.__class__.__name__ not in produces_settings4response_command:
         return
     try:
         response = instance

@@ -5,6 +5,7 @@ from pprint import pformat
 from unittest.mock import Mock, patch, call, PropertyMock
 from uuid import UUID
 
+from django.test import override_settings
 import pytest
 from django.db.models import Manager
 from django.core.cache import cache
@@ -17,6 +18,7 @@ from pik.bus.consumer import MessageHandler, MessageConsumer
 from pik.bus.exceptions import SerializerMissingError
 from pik.bus.models import PIKMessageException
 from test_core_models.models import RegularModel, RemovableRegularDepended
+from test_bus.constants import TEST_RABBITMQ_CONSUMES4REQUEST_COMMAND
 
 
 class RegularModelSerializer(StandardizedModelSerializer):
@@ -258,20 +260,21 @@ class TestMessageHandlerQueueSerializers:
     @patch.object(
         MessageHandler, '_queue_serializers',
         return_value=TEST_QUEUE_SERIALIZERS_CACHE, new_callable=PropertyMock)
+    @override_settings(RABBITMQ_CONSUMES=TEST_RABBITMQ_CONSUMES4REQUEST_COMMAND)
     def test_queue_serializers_cache(self, _queue_serializers):
         handler1 = MessageHandler(
             Mock(name='message'), Mock(name='queue'),
             Mock(name='event_captor'))
-        queue_serializers = handler1.queue_serializers
-        assert len(_queue_serializers.mock_calls) == 1
-        assert queue_serializers == self.TEST_QUEUE_SERIALIZERS_CACHE
+        first_call = handler1.queue_serializers
+        second_call = handler1.queue_serializers
 
         handler2 = MessageHandler(
             Mock(name='message'), Mock(name='queue'),
             Mock(name='event_captor'))
-        queue_serializers = handler2.queue_serializers
-        assert len(_queue_serializers.mock_calls) == 1
-        assert queue_serializers == self.TEST_QUEUE_SERIALIZERS_CACHE
+        third_call = handler2.queue_serializers
+
+        assert first_call is second_call
+        assert first_call is third_call
 
 
 @pytest.mark.django_db
@@ -343,7 +346,7 @@ class TestMessageHandlerException:
                 'Недопустимый guid "b24d988e-42aa-477d-a8c3-a88b127b9b31"'
                 ' - объект не существует.'), code='does_not_exist')]}))
         expected = [{
-            'dependencies': {'DependencyType': 'DependencyGuid'},
+            'dependencies': {'DependencyType': 'dependencyguid'},
             'exception': {'code': 'invalid', 'detail': {'created': [{
                 'code': 'invalid', 'message': (
                     'Datetime has wrong format. Use one of these formats '

@@ -48,11 +48,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
 
+    'django_extensions',
+
     'pik.cors',
     'pik.bus',
     'test_core_models',
     'test_core_models_fields',
     'test_core_shortcuts',
+    'test_bus',
 ]
 
 MIDDLEWARE = [
@@ -157,12 +160,24 @@ from pik.oidc.settings import set_oidc_settings  # noqa: pylint=wrong-import-pos
 set_oidc_settings(globals())
 
 
-# Stub for rabbitMQ settings
+# # Stub for rabbitMQ settings
 RABBITMQ_PRODUCER_ENABLE = False
 RABBITMQ_CONSUMER_ENABLE = False
 RABBITMQ_URL = ''
 RABBITMQ_PRODUCES = {}
 RABBITMQ_CONSUMES = {}
+RABBITMQ_RESPONSER_ENABLE = True
+"""
+Example of RABBITMQ_RESPONSES:
+RABBITMQ_RESPONSES = {
+    'module.RequestCommandSerializer': (
+        'module.ResponseCommandSerializer',
+        'module.exec_command_function')}
+"""
+# Responses for commands should not be defined in RABBITMQ_PRODUCES,
+# because exchange are defined automatically with addition '.routed' suffix.
+# TODO: move this comment to documentation for commands.
+RABBITMQ_RESPONSES = {}
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 

@@ -1,21 +1,25 @@
 from django.db import models
-from model_utils import Choices
 
 from pik.core.models import BasePHistorical
+from pik.bus.choices import REQUEST_COMMAND_STATUS_CHOICES as STATUSES
 
 
-class TestRequestCommand(BasePHistorical):
+from pik.core.models.uided import PUided
+from pik.core.models.dated import Dated
+from pik.core.models.versioned import Versioned
+
+
+
+class MyTestEntity(PUided, Dated, Versioned):
+    pass
+
+
+class MyTestRequestCommand(PUided, Dated, Versioned):
     requesting_service = models.CharField(max_length=255)
 
 
-class TestResponseCommand(BasePHistorical):
-    STATUS_CHOICES = Choices(
-        ('accepted', 'принято'),
-        ('processing', 'обработка'),
-        ('completed', 'выполнено'),
-        ('failed', 'провал'))
-
+class MyTestResponseCommand(PUided, Dated, Versioned):
     request = models.ForeignKey(
-        to=TestRequestCommand, on_delete=models.CASCADE)
-    status = models.CharField(choices=STATUS_CHOICES, max_length=255)
+        to=MyTestRequestCommand, on_delete=models.CASCADE)
+    status = models.CharField(choices=STATUSES, max_length=255)
     error = models.CharField(max_length=255)

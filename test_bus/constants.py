@@ -1,25 +1,29 @@
 from datetime import datetime
 
-from test_bus.serializers import TestRequestCommandSerializer
+from pik.bus.choices import REQUEST_COMMAND_STATUS_CHOICES as STATUSES
 
 
 START_UNIX_EPOCH = datetime.utcfromtimestamp(0)
 TEST_SERVICE = 'test_service'
 TEST_ENTITY = 'TestEntity'
-TEST_EXCHANGE = TEST_ENTITY
-TEST_STATUS = 'accepted'
+TEST_REQUEST_COMMAND = 'TestRequestCommand'
+TEST_QUEUE4REQUEST_COMMAND = f'{TEST_SERVICE}.{TEST_REQUEST_COMMAND}'
+TEST_QUEUE4ENTITY = f'{TEST_SERVICE}.{TEST_ENTITY}'
+TEST_STATUS = STATUSES.accepted
 
-TEST_ENTITY_QUEUE = f'{TEST_SERVICE}.test_entity'
-TEST_ENTITY_CONSUMES_SETTINGS = {
-    TEST_ENTITY_QUEUE: TestEntitySerializer}
+TEST_RABBITMQ_CONSUMES4REQUEST_COMMAND = {
+    TEST_QUEUE4REQUEST_COMMAND:
+        'test_bus.serializers.MyTestRequestCommandSerializer'}
 
-TEST_REQUEST_COMMAND_QUEUE = f'{TEST_SERVICE}.test_request_command'
-TEST_REQUEST_COMMAND_CONSUMES_SETTINGS = {
-    TEST_REQUEST_COMMAND_QUEUE: TestRequestCommandSerializer}
+TEST_RABBITMQ_CONSUMES4ENTITY = {
+    TEST_QUEUE4ENTITY:
+        'test_bus.serializers.MyTestEntitySerializer'}
 
-TEST_REQUESTS_SETTING = {
-    'test_bus_local.models.TestRequestCommand': (
-        'test_bus_local.models.TestResponseCommand',
-        'test_bus_local.tasks.task_process_command')}
+TEST_RABBITMQ_RESPONSES = {
+    'test_bus.serializers.MyTestRequestCommandSerializer': (
+        'test_bus.serializers.MyTestResponseCommandSerializer',
+        'test_bus.tasks.exec_command')
+}
 
-TEST_MDM_SERIALIZERS = [TestEntitySerializer]
+TEST_RABBITMQ_PRODUCES = {
+    'TestEntity': 'test_bus.serializers.MyTestEntitySerializer'}

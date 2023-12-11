@@ -30,7 +30,7 @@ from pik.utils.bus import LiveBlockingConnection
 from pik.utils.case_utils import underscorize
 from pik.utils.decorators import close_old_db_connections
 from pik.utils.sentry import capture_exception
-from mdm.models import ResponseBackfill
+from pik.bus.choices import REQUEST_COMMAND_STATUS_CHOICES
 
 
 logger = logging.getLogger(__name__)
@@ -63,8 +63,7 @@ class MessageHandler:
     def handle(self):
         try:
             # TODO: separate class to MessageHandler and ErrorHandler.
-            # TODO: union _fetch_payload and _prepare_payload to _payload
-            #  property.
+            # TODO: union _fetch_payload and _prepare_payload to _payload?
             self._fetch_payload()
             self._prepare_payload()
             self._update_instance()
@@ -218,6 +217,9 @@ class MessageHandler:
                     queue=self._queue)]
 
         error_message, *same_error_messages = error_messages
+        for same_error_message in same_error_messages:
+            same_error_message.delete()
+
         error_message.message = self._body
         error_message.exception = exc_data
         error_message.exception_type = exc_data['code']
@@ -228,12 +230,10 @@ class MessageHandler:
             for detail in exc_data.get('detail', {}).values()])
         if is_missing_dependency:
             error_message.dependencies = {
-                self._payload[field]['type']: self._payload[field]['guid']
+                self._payload[field]['type']:
+                    self._payload[field]['guid'].lower()
                 for field, errors in exc_data.get('detail', {}).items()
                 for error in errors if error['code'] == 'does_not_exist'}
-
-        for same_error_message in same_error_messages:
-            same_error_message.delete()
 
         error_message.save()
 
@@ -439,9 +439,9 @@ class RequestCommandMessageHandler(MessageHandler):
     """
 
     DUPLICATE_REQUEST_ERROR = 'Duplicate request guid for command `{}`.'
-    STATUSES = ResponseBackfill.STATUS_CHOICES
+    STATUSES = REQUEST_COMMAND_STATUS_CHOICES
 
-    _requests_config_cache = {}
+    _responses_config_cache = {}
 
     def _update_instance(self):
         super()._update_instance()
@@ -481,9 +481,9 @@ class RequestCommandMessageHandler(MessageHandler):
 
     @property
     def responses_config(self):
-        if not self._requests_config_cache:
-            self._requests_config_cache.update(self._responses_config)
-        return self._requests_config_cache
+        if not self._responses_config_cache:
+            self._responses_config_cache.update(self._responses_config)
+        return self._responses_config_cache
 
     @property
     def _responses_config(self):

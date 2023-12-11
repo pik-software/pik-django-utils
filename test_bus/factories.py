@@ -1,21 +1,32 @@
-from factory import SubFactory
+from factory import SubFactory, Faker
 from factory.django import DjangoModelFactory
 
 
-from test_bus.models import TestRequestCommand, TestResponseCommand
+from test_bus.models import MyTestEntity, MyTestRequestCommand, MyTestResponseCommand
 from test_bus.constants import TEST_SERVICE, TEST_STATUS
 
 
-class TestRequestCommandFactory(DjangoModelFactory):
+class MyTestEntityFactory(DjangoModelFactory):
+    uid = Faker('uuid4')
+
+    class Meta:
+        model = MyTestEntity
+
+
+class MyTestRequestCommandFactory(DjangoModelFactory):
     requesting_service = TEST_SERVICE
 
     class Meta:
-        model = TestRequestCommand
+        model = MyTestRequestCommand
 
 
-class TestResponseCommandFactory(DjangoModelFactory):
-    request = SubFactory(TestRequestCommandFactory)
+class MyTestResponseCommandFactory(DjangoModelFactory):
+    request = SubFactory(MyTestRequestCommandFactory)
     status = TEST_STATUS
 
     class Meta:
-        model = TestResponseCommand
+        model = MyTestResponseCommand
+
+
+    # created = Faker('date_time_this_decade')
+    # name = 'ass'

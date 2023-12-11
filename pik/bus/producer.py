@@ -219,15 +219,15 @@ class InstanceHandler:
 
     @cached_property  # to avoid 2nd serialization via _capture_event
     def _message(self):
-        data = self._serializer(
+        data = self._serializer_cls(
             self._instance, context=self.serializer_context).data
         data = camelize(data, **api_settings.JSON_UNDERSCORIZE)
-        if hasattr(self._serializer, 'camelization_hook'):
-            return self._serializer.camelization_hook(data)
+        if hasattr(self._serializer_cls, 'camelization_hook'):
+            return self._serializer_cls.camelization_hook(data)
         return data
 
     @property
-    def _serializer(self) -> Type[Serializer]:
+    def _serializer_cls(self) -> Type[Serializer]:
         try:
             return self.models_dispatch[self.model_name]['serializer']
         except KeyError as exc:
@@ -287,27 +287,6 @@ class MDMTransaction(ContextDecorator):
         message_producer.finish_transaction()
 
 
-def get_produces_settings4response_command():
-    """
-    Converting RABBITMQ_RESPONSES
-    {
-        'module.RequestCommandSerializer': (
-            'module.ResponseCommandSerializer',
-            'module.exec_command_function')}
-    to RABBITMQ_PRODUCES
-    {
-        'ResponseCommand':
-            'module.ResponseCommandSerializer'}
-    """
-
-    result = {}
-    for config in settings.RABBITMQ_RESPONSES.values():
-        serializer_cls = import_string(config[0])
-        result[serializer_cls.Meta.model.__name__] = (
-            f'{serializer_cls.__module__}.{serializer_cls.__name__}')
-    return result
-
-
 class ResponseCommandInstanceHandler(InstanceHandler):
     """
     Handling the responses of commands.
@@ -319,7 +298,28 @@ class ResponseCommandInstanceHandler(InstanceHandler):
 
     @property
     def producers_setting(self):
-        return get_produces_settings4response_command()
+        return self.__class__.get_produce_settings()
+
+    @classmethod
+    def get_produce_settings(cls):
+        """
+        Converting RABBITMQ_RESPONSES
+        {
+            'module.RequestCommandSerializer': (
+                'module.ResponseCommandSerializer',
+                'module.exec_command_function')}
+        to RABBITMQ_PRODUCES
+        {
+            'ResponseCommand':
+                'module.ResponseCommandSerializer'}
+        """
+
+        result = {}
+        for config in settings.RABBITMQ_RESPONSES.values():
+            serializer_cls = import_string(config[0])
+            result[serializer_cls.Meta.model.__name__] = (
+                f'{serializer_cls.__module__}.{serializer_cls.__name__}')
+        return result
 
     def _produce(self, envelope):
         self._producer.produce(
@@ -341,8 +341,8 @@ class CommandEntityInstanceHandler(InstanceHandler):
     @property
     def producers_setting(self):
         return {
-            f'{s.Meta.model.__name__}.routed': f'{s.__module__}.{s.__name__}'
-            for s in super().producers_setting}
+            f'{key}.routed': value
+            for key, value in super().producers_setting.items()}
 
     def _produce(self, envelope):
         self._producer.produce(
