@@ -1,4 +1,4 @@
-from typing import TypedDict, Type
+from typing import TypedDict
 
 from rest_framework.serializers import Serializer
 
