@@ -116,10 +116,10 @@ class MessageHandler:
 
     @property
     def _serializer_cls(self) -> Type[Serializer]:
-        if self._queue not in self.queue_serializers:  # noqa: unsupported-membership-test
+        if self._queue not in self.queue_serializers:
             raise SerializerMissingError(
                 f'Unable to find serializer for `{self._queue}`')
-        return self.queue_serializers[self._queue]  # noqa: unsupported-membership-test
+        return self.queue_serializers[self._queue]
 
     @property
     def queue_serializers(self) -> Dict[str, Type[Serializer]]:
