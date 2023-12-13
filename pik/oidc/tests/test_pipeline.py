@@ -12,7 +12,7 @@ def user():
 
 
 @pytest.mark.django_db
-def test_actualize_roles_system(user):
+def test_actualize_roles_system(user):  # noqa: pylint - redefined-outer-name
     group = Group.objects.create(name='sys-group')
     group.user_set.add(user)
 
@@ -23,7 +23,7 @@ def test_actualize_roles_system(user):
 
 
 @pytest.mark.django_db
-def test_actualize_roles_extra(user):
+def test_actualize_roles_extra(user):  # noqa: pylint - redefined-outer-name
     actualize_roles(user=user, response={'access_token': 'access_token',
                                          'roles': [{'name': 'extra'}]})
 
@@ -32,7 +32,7 @@ def test_actualize_roles_extra(user):
 
 
 @pytest.mark.django_db
-def test_actualize_roles_redundant(user):
+def test_actualize_roles_redundant(user):  # noqa: pylint - redefined-outer-name
     group = Group.objects.create(name='redundant')
     group.user_set.add(user)
 

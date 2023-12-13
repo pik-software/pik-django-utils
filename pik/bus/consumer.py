@@ -3,21 +3,22 @@ import io
 import logging
 from functools import partial
 from hashlib import sha1
-from typing import Set
-from uuid import UUID
+from typing import Set, Dict, Type, Tuple, Any
+import uuid
 
 from django.conf import settings
 from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
-from django.utils.translation import gettext_lazy as _
 from pika import BlockingConnection, URLParameters
 from pika.exceptions import (
     AMQPConnectionError, ChannelWrongStateError, ChannelClosedByBroker,
     ChannelClosed)
 from rest_framework.exceptions import ValidationError
 from rest_framework.parsers import JSONParser
+from rest_framework.serializers import Serializer
 from tenacity import retry, retry_if_exception_type, wait_fixed
 
 from pik.api.exceptions import (
@@ -29,27 +30,31 @@ from pik.utils.bus import LiveBlockingConnection
 from pik.utils.case_utils import underscorize
 from pik.utils.decorators import close_old_db_connections
 from pik.utils.sentry import capture_exception
+from pik.bus.choices import REQUEST_COMMAND_STATUS_CHOICES
 
 
 logger = logging.getLogger(__name__)
 
 
+class CommandError(Exception):
+    pass
+
+
 class MessageHandler:
-    LOCK_TIMEOUT = 60
     parser_class = JSONParser
 
-    object_unchanged_message = 'Объект не изменен!'
+    LOCK_TIMEOUT = 60
+    OBJECT_UNCHANGED_MESSAGE = 'Object unchanged.'
 
-    _body = None
-    _queue = None
-    _event_captor = None
+    _body: bytes = b''
+    _queue: str = ''
+    _event_captor: object = None
 
     _payload = None
-    _parsed_payload = None
-    _serializers = None
+    _queue_serializers_cache: Dict[str, Type[Serializer]] = {}
     _event_label = 'deserialization'
 
-    def __init__(self, body, queue, event_captor):
+    def __init__(self, body: bytes, queue: str, event_captor: object):
         self._body = body
         self._queue = queue
         self._event_captor = event_captor
@@ -57,6 +62,8 @@ class MessageHandler:
     @close_old_db_connections
     def handle(self):
         try:
+            # TODO: separate class to MessageHandler and ErrorHandler.
+            # TODO: union _fetch_payload and _prepare_payload to _payload?
             self._fetch_payload()
             self._prepare_payload()
             self._update_instance()
@@ -67,102 +74,124 @@ class MessageHandler:
             self._register_error(error)
             return False
 
-    def _register_success(self):
-        for msg in self._error_messages:
-            msg.delete()
-        self._capture_event(success=True, error=None)
-
-    def _register_error(self, error):
-        if not NewestUpdateValidationError.is_error_match(error):
-            self._capture_event(success=False, error=error)
-        self._capture_exception(error)
+    def _fetch_payload(self):
+        self._payload = self.envelope['message']
 
     @cached_property
     def envelope(self):
         return self.parser_class().parse(io.BytesIO(self._body))
 
-    @classmethod
-    def get_queue_serializers(cls) -> dict:
-        return {
-            queue: import_string(serializer)
-            for queue, serializer in settings.RABBITMQ_CONSUMES.items()}
-
-    def _fetch_payload(self):
-        self._payload = self.envelope['message']
-
     def _prepare_payload(self):
         self._payload = underscorize(self._payload)
 
-        if hasattr(self._serializer_class, 'underscorize_hook'):
-            self._payload = self._serializer_class.underscorize_hook(
+        if hasattr(self._serializer_cls, 'underscorize_hook'):
+            self._payload = self._serializer_cls.underscorize_hook(
                 self._payload)
 
     def _update_instance(self):
-        guid = self._payload.get('guid')
-        queue = self._queue
+        # TODO: remove `contextlib.nullcontext()`, guid must be only UUID.
         lock = (
-            cache.lock(f'bus-{queue}-{guid}', timeout=self.LOCK_TIMEOUT)
-            if guid else contextlib.nullcontext())
+            cache.lock(
+                f'bus-{self._queue}-{self._uid}', timeout=self.LOCK_TIMEOUT)
+            if self._uid else contextlib.nullcontext())
+        # TODO: move context manager to class decorator for reuse.
         with lock:
             self._serializer.is_valid(raise_exception=True)
             self._serializer.save()
 
     @cached_property
-    def _serializer(self):
-        return self._serializer_class(self._instance, self._payload)
-
-    @cached_property
-    def _entity_uid(self):
+    def _uid(self):
+        # TODO: remove try-except, guid must be only UUID.
         try:
-            return str(UUID(self._payload.get('guid')))
+            guid = self._payload.get('guid')
+            uuid.UUID(guid)  # For validation.
+            return guid
         except Exception as error:  # noqa: broad-except
             capture_exception(error)
             return None
 
     @cached_property
+    def _serializer(self):
+        return self._serializer_cls(self._instance, self._payload)
+
+    @property
+    def _serializer_cls(self) -> Type[Serializer]:
+        if self._queue not in self.queue_serializers:
+            raise SerializerMissingError(
+                f'Unable to find serializer for `{self._queue}`')
+        return self.queue_serializers[self._queue]
+
+    @property
+    def queue_serializers(self) -> Dict[str, Type[Serializer]]:
+        """
+        Caching _queue_serializers property and return it.
+        We want to build it once and use forever, but building it on startup is
+        redundant for other workers and tests.
+        """
+
+        if not self._queue_serializers_cache:
+            self._queue_serializers_cache.update(self._queue_serializers)
+        return self._queue_serializers_cache
+
+    @property
+    def _queue_serializers(self) -> Dict[str, Type[Serializer]]:
+        """
+        Example of return value:
+        ```{
+            'queue': serializer_cls,
+            ...
+        }```
+        """
+
+        return {
+            queue: import_string(serializer)
+            for queue, serializer in self.consumes_setting.items()}
+
+    @property
+    def consumes_setting(self):
+        return settings.RABBITMQ_CONSUMES
+
+    @cached_property
     def _instance(self):
         try:
-            return self._queryset.get(uid=self._entity_uid)
+            # TODO: self._uid can be None, it`s wrong.
+            return self._queryset.get(uid=self._uid)
         except self._model.DoesNotExist:
-            return self._model(uid=self._payload['guid'])
+            return self._model(uid=self._uid)
 
-    @property
-    def _model(self):
-        return self._serializer_class.Meta.model
-
-    @property
+    @cached_property
     def _queryset(self):
         return getattr(self._model, 'all_objects', self._model.objects)
 
-    @property
-    def _serializer_class(self):
-        return self._get_serializer(self._queue)
-
-    @classmethod
-    def _get_serializer(cls, queue):
-        """
-            Queue name to serializer mapping dict `{queue:  serializer, ... }`
-
-            We want to build it once and use forever, but building it on
-                startup is redundant for other workers and tests
-        """
-        if cls._serializers is None:
-            cls._serializers = cls.get_queue_serializers()
-        if not cls._serializers or queue not in cls._serializers:  # noqa: unsupported-membership-test
-            raise SerializerMissingError(
-                f'Unable to find serializer for {queue}')
-        return cls._serializers[queue]  # noqa: unsupported-membership-test
+    @cached_property
+    def _model(self):
+        # More easy way is get model from instance? No, we get cyclic call.
+        return self._serializer_cls.Meta.model
 
     def _process_dependants(self):
         from .models import PIKMessageException  # noqa: cyclic import workaround
         dependants = PIKMessageException.objects.filter(
             dependencies__contains={
-                self._payload['type']: self._entity_uid})
+                self._payload['type']: self._uid})
         for dependant in dependants:
             handler = self.__class__(
                 dependant.message, dependant.queue, mdm_event_captor)
             if handler.handle():
                 dependant.delete()
+
+    def _register_success(self):
+        for msg in self._error_messages:
+            msg.delete()
+        self._capture_event(success=True, error=None)
+
+    @cached_property
+    def _body_hash(self):
+        return sha1(self._body).hexdigest()
+
+    def _register_error(self, error):
+        if not NewestUpdateValidationError.is_error_match(error):
+            self._capture_event(success=False, error=error)
+        self._capture_exception(error)
 
     def _capture_exception(self, exc):
         # Don't spam validation errors to sentry.
@@ -173,7 +202,7 @@ class MessageHandler:
         if NewestUpdateValidationError.is_error_match(exc):
             self._capture_event(
                 event='skip', success=True,
-                error=_(self.object_unchanged_message))
+                error=self.OBJECT_UNCHANGED_MESSAGE)
             capture_exception(exc)
             return
 
@@ -183,11 +212,14 @@ class MessageHandler:
         if not error_messages:
             error_messages = [
                 PIKMessageException(
-                    entity_uid=self._entity_uid,
+                    entity_uid=self._uid,
                     body_hash=self._body_hash,
                     queue=self._queue)]
 
         error_message, *same_error_messages = error_messages
+        for same_error_message in same_error_messages:
+            same_error_message.delete()
+
         error_message.message = self._body
         error_message.exception = exc_data
         error_message.exception_type = exc_data['code']
@@ -198,29 +230,23 @@ class MessageHandler:
             for detail in exc_data.get('detail', {}).values()])
         if is_missing_dependency:
             error_message.dependencies = {
-                self._payload[field]['type']: self._payload[field]['guid']
+                self._payload[field]['type']:
+                    self._payload[field]['guid'].lower()
                 for field, errors in exc_data.get('detail', {}).items()
                 for error in errors if error['code'] == 'does_not_exist'}
-
-        for same_error_message in same_error_messages:
-            same_error_message.delete()
 
         error_message.save()
 
     @property
     def _error_messages(self):
         lookups = Q(queue=self._queue) & Q(body_hash=self._body_hash)
-        if self._entity_uid:
+        if self._uid:
             lookups = (
                 Q(queue=self._queue) &
                 (Q(body_hash=self._body_hash) |
-                 Q(entity_uid=self._entity_uid)))
+                 Q(entity_uid=self._uid)))
         return (
             PIKMessageException.objects.filter(lookups).order_by('-updated'))
-
-    @cached_property
-    def _body_hash(self):
-        return sha1(self._body).hexdigest()
 
     def _capture_event(self, event=None, **kwargs):
         if not event:
@@ -228,6 +254,7 @@ class MessageHandler:
         self._event_captor.capture(
             event=event,
             entity_type=self.envelope.get('message', {}).get('type'),
+            # TODO: use self._uid property.
             entity_guid=self.envelope.get('message', {}).get('guid'),
             transactionGUID=self.envelope.get(
                 'headers', {}).get('transactionGUID'),
@@ -270,8 +297,7 @@ class MessageConsumer:
         after=lambda retry_state:
             logger.warning(
                 'Connecting to RabbitMQ. Attempt number: %s',
-                retry_state.attempt_number)
-    )
+                retry_state.attempt_number))
     def _consume(self):
         self._connect()
         self._config_channel()
@@ -405,3 +431,66 @@ class AllQueueMessageConsumer(MessageConsumer):
         finally:
             if _channel is not None:
                 _channel.close()
+
+
+class RequestCommandMessageHandler(MessageHandler):
+    """
+    Message handler that executes command request.
+    """
+
+    DUPLICATE_REQUEST_ERROR = 'Duplicate request guid for command `{}`.'
+    STATUSES = REQUEST_COMMAND_STATUS_CHOICES
+
+    _responses_config_cache: Dict[Any, Tuple[Any, ...]] = {}
+
+    def _update_instance(self):
+        super()._update_instance()
+        with cache.lock(
+                f'bus-{self._queue}-{self._uid}', timeout=self.LOCK_TIMEOUT):
+            self._process_command()
+
+    def _process_command(self):
+        if self._serializer_cls not in self.responses_config:
+            return
+        response_serializer_cls, exec_command_function = self.responses_config[
+            self._serializer_cls]
+        response_model_cls = response_serializer_cls.Meta.model
+
+        self._check_request(response_model_cls)
+        self._create_response(response_model_cls)
+
+        exec_command_function(*(self._instance.uid, ))
+
+    def _check_request(self, response_model_cls):
+        try:
+            response = response_model_cls.objects.get(request=self._instance)
+        except ObjectDoesNotExist:
+            return
+        error = self.DUPLICATE_REQUEST_ERROR.format(self._model.__name__)
+        response.error = error
+        response.status = self.STATUSES.failed
+        response.save()
+        raise CommandError(error)
+
+    def _create_response(self, response_model_cls):
+        response_model_cls(
+            uid=uuid.uuid4(),
+            request=self._instance,
+            status=self.STATUSES.accepted).save()
+
+    @property
+    def responses_config(self):
+        if not self._responses_config_cache:
+            self._responses_config_cache.update(self._responses_config)
+        return self._responses_config_cache
+
+    @property
+    def _responses_config(self):
+        return {
+            import_string(request_cls):
+                tuple(map(import_string, config))
+            for request_cls, config in self.responses_setting.items()}
+
+    @property
+    def responses_setting(self):
+        return settings.RABBITMQ_RESPONSES
