@@ -4,5 +4,5 @@ from rest_framework.serializers import Serializer
 
 
 class ModelDispatch(TypedDict):
-    serializer: Type[Serializer]
+    serializer: Serializer
     exchange: str

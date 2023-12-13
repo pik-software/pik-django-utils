@@ -4,7 +4,8 @@
 Django<4.0.0
 django-simple-history
 djangorestframework<3.14.0
-django-restql<0.15.0  #########################################################
+# https://jira.pik.ru/browse/MDM-2091
+django-restql<0.15.0
 django-filter
 djangorestframework-filters==1.0.0.dev0  # TODO: move to 1.0.0.dev2
 django-model-utils

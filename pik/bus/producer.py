@@ -165,7 +165,7 @@ class InstanceHandler:
         self._capture_event(success=True, error=None)
         self._produce(envelope)
 
-    @property
+    @property  # TODO: make as classproperty?
     def models_dispatch(self) -> Dict[str, ModelDispatch]:
         """
         Caching _models_dispatch property by class name key and return it.
