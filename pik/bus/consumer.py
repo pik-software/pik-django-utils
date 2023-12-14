@@ -149,7 +149,7 @@ class MessageHandler:
 
     @property
     def consumes_setting(self):
-        return settings.RABBITMQ_CONSUMES
+        return getattr(settings, 'RABBITMQ_CONSUMES', {})
 
     @cached_property
     def _instance(self):
@@ -493,4 +493,4 @@ class RequestCommandMessageHandler(MessageHandler):
 
     @property
     def responses_setting(self):
-        return settings.RABBITMQ_RESPONSES
+        return getattr(settings, 'RABBITMQ_RESPONSES', {})
