@@ -13,6 +13,7 @@ except ModuleNotFoundError:
     mdm_models = None  # noqa: invalid-name
 
 
+# TODO: make as static class.
 class LibraryVersions:
     @cached_property
     def versions(self):  # noqa: no-self-use, to use cached_property
@@ -49,10 +50,10 @@ library_versions = LibraryVersions()
 
 
 class MDMEventCaptor:
-    _versions = None
+    _library_versions = None
 
-    def __init__(self, versions):
-        self._versions = versions
+    def __init__(self, library_versions):  # noqa: pylint - redefined-outer-name
+        self._library_versions = library_versions
 
     def capture(self, event, entity_type, entity_guid, **kwargs):
         if not self._is_bus_enabled:
@@ -70,7 +71,7 @@ class MDMEventCaptor:
                 'event': event,
                 'objectType': entity_type,
                 'objectGuid': entity_guid},
-            **self._versions,
+            **self._library_versions.versions,
             **kwargs})
 
     @cached_property
