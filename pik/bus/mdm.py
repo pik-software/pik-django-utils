@@ -13,6 +13,7 @@ except ModuleNotFoundError:
     mdm_models = None  # noqa: invalid-name
 
 
+# TODO: make as static class.
 class LibraryVersions:
     @cached_property
     def versions(self):  # noqa: no-self-use, to use cached_property
@@ -45,14 +46,8 @@ class LibraryVersions:
         return {'serviceVersion': os.environ.get('RELEASE')}
 
 
-library_versions = LibraryVersions()
-
-
 class MDMEventCaptor:
-    _library_versions = None
-
-    def __init__(self, library_versions):
-        self._library_versions = library_versions
+    library_versions = LibraryVersions()
 
     def capture(self, event, entity_type, entity_guid, **kwargs):
         if not self._is_bus_enabled:
@@ -70,7 +65,7 @@ class MDMEventCaptor:
                 'event': event,
                 'objectType': entity_type,
                 'objectGuid': entity_guid},
-            **self._library_versions.versions,
+            **self.library_versions.versions,
             **kwargs})
 
     @cached_property
@@ -103,4 +98,4 @@ class MDMEventCaptor:
         return getattr(settings, 'RABBITMQ_URL', '')
 
 
-mdm_event_captor = MDMEventCaptor(library_versions)
+mdm_event_captor = MDMEventCaptor()
