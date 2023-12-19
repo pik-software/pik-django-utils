@@ -46,8 +46,14 @@ class LibraryVersions:
         return {'serviceVersion': os.environ.get('RELEASE')}
 
 
+library_versions = LibraryVersions()
+
+
 class MDMEventCaptor:
-    library_versions = LibraryVersions()
+    _library_versions = None
+
+    def __init__(self, library_versions):  # noqa: pylint - redefined-outer-name
+        self._library_versions = library_versions
 
     def capture(self, event, entity_type, entity_guid, **kwargs):
         if not self._is_bus_enabled:
@@ -65,7 +71,7 @@ class MDMEventCaptor:
                 'event': event,
                 'objectType': entity_type,
                 'objectGuid': entity_guid},
-            **self.library_versions.versions,
+            **self._library_versions.versions,
             **kwargs})
 
     @cached_property
@@ -98,4 +104,4 @@ class MDMEventCaptor:
         return getattr(settings, 'RABBITMQ_URL', '')
 
 
-mdm_event_captor = MDMEventCaptor()
+mdm_event_captor = MDMEventCaptor(library_versions)
