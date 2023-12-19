@@ -3,7 +3,7 @@ import platform
 import logging
 import uuid
 from contextlib import ContextDecorator
-from typing import Dict, Type
+from typing import Dict
 
 import django
 from django.conf import settings
@@ -20,7 +20,7 @@ from tenacity import (
 from pik.api.camelcase.viewsets import camelcase_type_field_hook
 from pik.api_settings import api_settings
 from pik.utils.case_utils import camelize
-from pik.bus.mdm import mdm_event_captor
+from pik.bus.mdm import mdm_event_captor, library_versions
 from pik.bus.exceptions import (
     ModelMissingError, MDMTransactionIsAlreadyStartedError)
 from pik.bus.types import ModelDispatch
@@ -136,7 +136,8 @@ class MessageProducer:
             **kwargs)
 
 
-message_producer = MessageProducer(settings.RABBITMQ_URL, mdm_event_captor)
+message_producer = MessageProducer(
+    getattr(settings, 'RABBITMQ_URL', ''), mdm_event_captor)
 
 
 class InstanceHandler:
@@ -201,7 +202,7 @@ class InstanceHandler:
 
     @property
     def producers_setting(self):
-        return settings.RABBITMQ_PRODUCES
+        return getattr(settings, 'RABBITMQ_PRODUCES', {})
 
     @property
     def _envelope(self):
@@ -222,7 +223,7 @@ class InstanceHandler:
         return data
 
     @property
-    def _serializer_cls(self) -> Type[Serializer]:
+    def _serializer_cls(self) -> Serializer:
         try:
             return self.models_dispatch[self.model_name]['serializer']
         except KeyError as exc:
@@ -244,16 +245,11 @@ class InstanceHandler:
             'frameworkVersion': django.get_version(),
             'operatingSystemVersion': (
                 f'{platform.system()} {platform.version()}'),
-            # TODO: why it`s methods of MDMCaptor?
-            **self._event_captor.service_version,
-            **self._event_captor.generator_version,
-            **self._event_captor.lib_version}
+            **library_versions.versions}
 
     @property
     def headers(self):
-        return {
-            # TODO: why it`s methods of MDMCaptor?
-            **self._event_captor.entities_version}
+        return library_versions.entities_version
 
     def _produce(self, envelope):
         self._producer.produce(envelope, exchange=self._exchange)
@@ -310,11 +306,15 @@ class ResponseCommandInstanceHandler(InstanceHandler):
         """
 
         result = {}
-        for config in settings.RABBITMQ_RESPONSES.values():
+        for config in cls.get_responses_setting().values():
             serializer_cls = import_string(config[0])
             result[serializer_cls.Meta.model.__name__] = (
                 f'{serializer_cls.__module__}.{serializer_cls.__name__}')
         return result
+
+    @classmethod
+    def get_responses_setting(cls):
+        return getattr(settings, 'RABBITMQ_RESPONSES', {})
 
     def _produce(self, envelope):
         self._producer.produce(

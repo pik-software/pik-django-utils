@@ -17,10 +17,13 @@ def ignore_if_migrate(func):
     return wrapper
 
 
+producer_enabled = getattr(settings, 'RABBITMQ_PRODUCER_ENABLE', False)
+
+
 @receiver(post_save)
 @ignore_if_migrate
 def produce_entity(instance, **kwargs):
-    if not settings.RABBITMQ_PRODUCER_ENABLE:
+    if not producer_enabled:
         return
     try:
         InstanceHandler(instance, mdm_event_captor, message_producer).handle()
@@ -28,6 +31,7 @@ def produce_entity(instance, **kwargs):
         capture_exception(exc)
 
 
+responser_enabled = getattr(settings, 'RABBITMQ_RESPONSER_ENABLE', False)
 produces_settings4response_command = (
     ResponseCommandInstanceHandler.get_produce_settings())
 
@@ -35,11 +39,10 @@ produces_settings4response_command = (
 @receiver(post_save)
 @ignore_if_migrate
 def produce_command_response(instance, **kwargs):
-    if not settings.RABBITMQ_RESPONSER_ENABLE:
+    if not responser_enabled:
         return
     # Ignoring not response command messages.
-    # We dn`t generate senders from produces_settings4response_command to
-    # create decorators because is unnecessary complication.
+    # We dn`t set senders with decorators because is unnecessary complication.
     if instance.__class__.__name__ not in produces_settings4response_command:
         return
     try:

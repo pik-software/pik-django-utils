@@ -21,12 +21,27 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         django.setup()
 
-        if not self._is_rabbitmq_enabled:
+        if not self._consumer_enabled_settings:
             logger.warning('RABBITMQ_CONSUMER_ENABLE is set to False')
             # Do nothing to prevent the container from closing.
             self._do_nothing()
         logger.info('Starting worker for queues %s"', self.queues)
         self._run_consumer()
+
+    @property
+    def _consumer_enabled_settings(self):
+        return getattr(settings, 'RABBITMQ_CONSUMER_ENABLE', False)
+
+    @staticmethod
+    def _do_nothing():
+        loop = asyncio.get_event_loop()
+        try:
+            loop.run_forever()
+        finally:
+            loop.close()
+
+    def _run_consumer(self):
+        self._message_consumer(**self.get_consumer_kwargs()).consume()
 
     def get_consumer_kwargs(self, **kwargs):
         return {
@@ -37,32 +52,21 @@ class Command(BaseCommand):
             'message_handler': self._message_handler,
             **kwargs}
 
-    def _run_consumer(self):
-        self._message_consumer(**self.get_consumer_kwargs()).consume()
-
-    @property
-    def _is_rabbitmq_enabled(self):
-        return settings.RABBITMQ_CONSUMER_ENABLE
-
-    @staticmethod
-    def _do_nothing():
-        loop = asyncio.get_event_loop()
-        try:
-            loop.run_forever()
-        finally:
-            loop.close()
-
     @property
     def rabbitmq_url(self) -> str:
-        return settings.RABBITMQ_URL
+        return getattr(settings, 'RABBITMQ_URL', '')
 
     @property
     def consumer_name(self) -> str:
-        return URLParameters(settings.RABBITMQ_URL).credentials.username
+        return URLParameters(self.rabbitmq_url).credentials.username
 
     @property
     def queues(self) -> list:
-        return list(settings.RABBITMQ_CONSUMES.keys())
+        return list(self.consumes_setting.keys())
+
+    @property
+    def consumes_setting(self):
+        return getattr(settings, 'RABBITMQ_CONSUMES', {})
 
     @property
     def event_captor(self):
