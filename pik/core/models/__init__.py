@@ -3,9 +3,10 @@ from .soft_deleted import SoftDeleted
 from .owned import NullOwned, Owned
 from .uided import Uided, PUided
 from .versioned import Versioned
-from .historized import Historized
+from .historized import Historized, PikHistoricalRecords
 from .base import BasePHistorical, BaseHistorical
 
 __all__ = [
     'Dated', 'SoftDeleted', 'NullOwned', 'Owned', 'Uided', 'PUided',
-    'Versioned', 'Historized', 'BasePHistorical', 'BaseHistorical']
+    'Versioned', 'Historized', 'BasePHistorical', 'BaseHistorical',
+    'PikHistoricalRecords']
