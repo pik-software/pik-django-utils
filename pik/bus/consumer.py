@@ -102,11 +102,10 @@ class MessageHandler:
     @cached_property
     def _uid(self):
         # TODO: remove try-except, guid must be only UUID.
-        # TODO: return guid.lower() here and remove all other lower() call.
         try:
             guid = self._payload.get('guid')
             uuid.UUID(guid)  # For validation.
-            return guid
+            return guid.lower()
         except Exception as error:  # noqa: broad-except
             capture_exception(error)
             return None
@@ -173,7 +172,7 @@ class MessageHandler:
         from .models import PIKMessageException  # noqa: cyclic import workaround
         dependants = PIKMessageException.objects.filter(
             dependencies__contains={
-                self._payload['type']: self._uid.lower()})
+                self._payload['type']: self._uid})
         for dependant in dependants:
             handler = self.__class__(
                 dependant.message, dependant.queue, mdm_event_captor)
