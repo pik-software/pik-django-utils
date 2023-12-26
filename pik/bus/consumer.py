@@ -105,7 +105,7 @@ class MessageHandler:
         try:
             guid = self._payload.get('guid')
             uuid.UUID(guid)  # For validation.
-            return guid
+            return guid.lower()
         except Exception as error:  # noqa: broad-except
             capture_exception(error)
             return None
