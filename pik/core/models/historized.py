@@ -3,10 +3,9 @@ from simple_history.models import HistoricalRecords
 
 
 class PikHistoricalRecords(HistoricalRecords):
-
-    def contribute_to_class(self, cls, name):
-        if getattr(cls, '_is_history_enabled', True):
-            super().contribute_to_class(cls, name)
+    def finalize(self, sender, **kwargs):
+        if getattr(sender, '_is_history_enabled', True):
+            super().finalize(sender, **kwargs)
 
 
 class Historized(models.Model):
