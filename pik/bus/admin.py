@@ -29,6 +29,8 @@ class PIKMessageExceptionAdmin(AdminProgressMixIn, admin.ModelAdmin):
     actions = ('_process_message', '_delete_selected')
     readonly_fields = fields
 
+    list_per_page = 10_000
+
     @admin.display(description='Ошибка')
     def _exception(self, obj):  # noqa: no-self-use
         return prettyjson(
