@@ -321,10 +321,12 @@ class ResponseCommandInstanceHandler(InstanceHandler):
             envelope, exchange=self._exchange, routing_key=self._routing_key)
 
 
-class CommandEntityInstanceHandler(InstanceHandler):
+class CommandGeneratedEntityInstanceHandler(InstanceHandler):
     """
     Handling of entities generated during execution command.
     """
+
+    COMMAND_SUFFIX = 'command'
 
     def __init__(  # noqa: pylint - too-many-arguments
             self, instance, event_captor, producer,
@@ -336,7 +338,7 @@ class CommandEntityInstanceHandler(InstanceHandler):
     @property
     def producers_setting(self):
         return {
-            f'{key}.routed': value
+            f'{key}.{self.COMMAND_SUFFIX}': value
             for key, value in super().producers_setting.items()}
 
     def _produce(self, envelope):
