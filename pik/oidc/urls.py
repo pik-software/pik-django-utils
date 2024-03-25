@@ -8,8 +8,10 @@ from .views import (
 urlpatterns = [  # noqa: invalid-name
     # We need to override default `social_python` `complete` behavior in order
     # to provide backchannel logout implementation.
-    re_path(r'^openid/complete/(?P<backend>[^/]+)/', complete),
-    re_path(r'^openid/logout/(?P<backend>[^/]+)/$',
+    re_path(
+        r'^openid/complete/(?P<backend>[^/]+)/', complete),
+    re_path(
+        r'^openid/logout/(?P<backend>[^/]+)/$',
         oidc_backchannel_logout, name='oidc_backchannel_logout'),
 
     path(r'openid/', include('social_django.urls', namespace='social')),

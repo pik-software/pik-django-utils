@@ -185,6 +185,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 patch('pik.utils.decorators.close_old_db_connections', lambda x: x).start()
 
 
+DRFSO2_URL_NAMESPACE = 'auth-api'
+
+
 try:
     from .settings_local import *  # noqa: pylint=unused-wildcard-import, pylint=wildcard-import
 except ImportError:

@@ -13,7 +13,8 @@ from rest_framework import status
 
 @pytest.fixture(name='backchannel_logout_url')
 def backchannel_logout_url_fixture():
-    return reverse('oidc_backchannel_logout', kwargs={'backend': 'pik'})
+    return reverse(
+        'auth-api:oidc_backchannel_logout', kwargs={'backend': 'pik'})
 
 
 @pytest.fixture(name='session_store')
