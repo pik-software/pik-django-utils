@@ -1,12 +1,12 @@
 from unittest.mock import patch, Mock
-from urllib.parse import urlencode
+# from urllib.parse import urlencode
 
 import pytest
 
 import django.test
 from django.urls import reverse
 
-from rest_framework import status
+# from rest_framework import status
 
 
 @pytest.mark.django_db
