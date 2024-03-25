@@ -1,12 +1,9 @@
 from unittest.mock import patch, Mock
-# from urllib.parse import urlencode
 
 import pytest
 
 import django.test
 from django.urls import reverse
-
-# from rest_framework import status
 
 
 @pytest.mark.django_db
@@ -20,6 +17,8 @@ def test_logout(client):
     assert url == '/admin/logout/'
 
     # TODO: fix test https://jira.pik.ru/browse/ESB-340
+    # from urllib.parse import urlencode
+    # from rest_framework import status
     # resp = client.get(url)
     # assert resp.status_code == status.HTTP_302_FOUND
 
