@@ -17,7 +17,6 @@ from ..models import MySimpleModel, OverriddenQuerysetModel
 @pytest.fixture(name='test_model', params=[
     (MySimpleModel, MySimpleModelFactory),
 ])
-@pytest.mark.django_db
 def test_model_fixture(request):
     return request.param
 
